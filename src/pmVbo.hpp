@@ -41,6 +41,8 @@ class pmVbo
     void setTexCoordsIndex(int _i);
     void setDrawMode(mode _mode){ drawMode = _mode; cout << "changed draw mode to : " << drawMode << endl;};
     
+    vector<ofVec3f>                 getVertices(int _index){return vecVboVerts[_index];};
+    
     // POINT LINE CALCULATIONS
     ofPoint                         projectPointToLine(ofPoint Point,ofPoint LineStart,ofPoint LineEnd);
     ofTexture                       texture;

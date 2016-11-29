@@ -3,7 +3,14 @@
 #include "ofMain.h"
 #include "ofxSVG.h"
 #include "pmVbo.hpp"
+#include "ofxSyphon.h"
 
+typedef struct
+{
+    int _hexaCentroidIndex;
+    int _ring;
+    int _num;
+} hexagonPixel;
 
 class ofApp : public ofBaseApp{
 
@@ -60,14 +67,33 @@ class ofApp : public ofBaseApp{
 
     // TEXTURE 
     ofImage                 image;
+    ofImage                 imageToSave;
     
     ofShader                shader;
+    bool                    useShader;
     
+    void                    updateMatrices();
+
     ofTexture               tex;
     ofBufferObject          buffer;
     vector<ofMatrix4x4>     matrices;
-    void                    updateMatrices();
 
+//    ofTexture               texB;
+//    ofBufferObject          bufferB;
+//    vector<ofMatrix4x4>     matricesB;
 
-
+    ofPoint                 projectPointToLine(ofPoint Point,ofPoint LineStart,ofPoint LineEnd);
+    static bool             sortPointsOnDistanceToOrigin(ofPoint &p1, ofPoint &p2);
+    vector<ofPoint>         reverseVerticesInVector(vector<ofPoint> _v);
+    vector<ofPoint>         orderVerticesOfHexagonBasedOnDistanceToOrigin(vector<ofPoint> _v);
+    void                    orderHexagonOnRings(int _index);
+    
+    int                     numRings;
+    int                     numHexasPerRing;
+    vector<vector<hexagonPixel>>    hexaPix;
+    
+    // SYPHON
+    ofxSyphonClient         syphon;
+    bool                    useSyphon;
+    
 };

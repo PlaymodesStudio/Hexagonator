@@ -135,7 +135,7 @@ void pmVbo::draw(int _primitive)
 //    ofSetColor(255,255,0);
 //    for(int i=0;i<vecVboVerts[currentVboVerts].size();i++)
 //    {
-//        if(true)
+//        if(i==0)
 //        {
 //            ofDrawBitmapString(ofToString(i) +" : " + ofToString(vecVboVerts[currentVboVerts][i]),vecVboVerts[currentVboVerts][i].x, vecVboVerts[currentVboVerts][i].y);
 //            //ofDrawBitmapString(ofToString(vboTexCoord[i]), vboVert[i].x, vboVert[i].y+20);

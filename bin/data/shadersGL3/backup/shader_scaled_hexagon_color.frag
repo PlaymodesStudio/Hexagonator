@@ -1,7 +1,6 @@
 #version 400
 
-flat in vec4 hexColor;
-//in vec4 hexColor;
+in vec4 hexColor;
 out vec4 out_color;
 
 void main()

@@ -11,10 +11,20 @@ void ofApp::setup(){
 
     mode = 1;
     numModes = 2;
-    
+    numRings = 35;
+    numHexasPerRing = 64;
+    useShader = true;
     numVertexsOneHexagonWithCenter = 7;
     numVertexsOneHexagon = 6;
     drawPrimitive = GL_TRIANGLES;
+    
+    
+    /////////////////////////////
+    /// PM VBO
+    /////////////////////////////
+    
+    pmVbo1.setup(svg.getNumPath(),7);
+
     
     /////////////////////////////
     /// SHADER
@@ -44,17 +54,51 @@ void ofApp::setup(){
     ofClear(255,0,255, 0);
     fboOut.end();
 
+
+    /////////////////////////////
+    /// SYPHON
+    /////////////////////////////
+    syphon.setup();
+    //using Syphon app Simple Server, found at http://syphon.v002.info/
+    //syphon.set("","Simple Server");
+    syphon.set("MIRABCN_Generator","MIRAMAD_Generator");
+    useSyphon = true;
+
+    /////////////////////////////
+    // IMAGE AS TEXTRE
+    /////////////////////////////
+    image.load("./tex/mapaPixels64x35.png");
+    //    image.load("./tex/eye.jpg");
+    //image.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
+    pmVbo1.setTextureReference(image.getTexture());
+    
+    // use syphon texture
+    if(useSyphon)
+    {
+        syphon.bind();
+        syphon.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
+        pmVbo1.setTextureReference(syphon.getTexture());
+        syphon.unbind();
+    }
     
     /////////////////////////////
     /// SVG
     /////////////////////////////
     
-    svgFilename = "./svg/test_svg_complet.svg";
-    svg.load(svgFilename);
     
+    svgFilename = "./svg/test_svg_part.svg";
+//    svgFilename = "./svg/testSVG9Hexagons.svg";
+//    svgFilename = "./svg/test_svg_part_nomes2.svg";
+//    svgFilename = "./svg/testOrdreRadial.svg";
+//    svgFilename = "./svg/polarExampleAngle.svg";
+//    svgFilename = "./svg/test_svg_partCENTRAT.svg";
+
+    svg.load(svgFilename);
+
     cout << "Setup :: Main SVG opened :: " << svgFilename << endl;
     cout << "SVGpaths has " << svg.getNumPath() << " paths. " << endl;
     
+    /// READ SVG INTO svgPolys vector !
     for (int i = 0; i < svg.getNumPath(); i++)
     {
         ofPath p = svg.getPathAt(i);
@@ -73,27 +117,30 @@ void ofApp::setup(){
     cout << "SVGpolys has " << svgPolys.size()  << " polylines objects. " << endl;
     
     /////////////////////////////
-    /// PM VBO
+    // PREPARE VERTEXS AND VECTORS
     /////////////////////////////
-    
-    pmVbo1.setup(svg.getNumPath(),7);
-    
-    
-    /////////////////////////////
-    // IMAGE FOR TEXTRE
-    ////////////////////
-    image.load("./tex/eye.jpg");
-    image.getTexture().getWidth();
-    pmVbo1.setTextureReference(image.getTexture());
 
-    
-    /////////////////////////////
-    // PREPARE VERTEXS
-    /////////////////////////////
+    // allocating "hexaPix" final destination
+    hexaPix.resize(numRings);
+    for(int i=0;i<numRings;i++)
+    {
+        hexaPix[i].resize(numHexasPerRing,hexagonPixel());
+        for(int j=0;j<numHexasPerRing;j++)
+        {
+            hexagonPixel h;
+            h._num=-1;
+            h._hexaCentroidIndex=-1;
+            h._ring=-1;
+            
+            hexaPix[i][j] = h;
+        }
+    }
 
     vector<ofVec3f> vertexsA;
+    vector<ofVec3f> vertexsB;
     
     vertexsA.resize(svg.getNumPath()*numVertexsOneHexagonWithCenter, ofVec3f());
+    vertexsB.resize(svg.getNumPath()*numVertexsOneHexagonWithCenter, ofVec3f());
     
     // for each path (hexagon)
     for(int i=0;i<svg.getNumPath();i++)
@@ -106,25 +153,62 @@ void ofApp::setup(){
         // the lines.size is = 1 always ... just one line for each path.
         for(int j=0;j<(int)lines.size();j++)
         {
+            
             // get hexagon center ...
             polygonCentroids.push_back(lines[j].getCentroid2D());
             // get the vertices of the path (hexagon)
-            vector<ofPoint> vecP  = lines[j].getVertices();
-            if(vecP.size()!=6) cout << " !!! Some polygons have not 6 vertexs on the path !! " << vecP.size() << " i : " << i << endl;
+            vector<ofPoint> vec  = lines[j].getVertices();
+            if(vec.size()!=6) cout << " !!! Some polygons have not 6 vertexs on the path !! " << vec.size() << " i : " << i << endl;
+            else cout << ">>>> Current path : " << i << " number of vertexs = " << vec.size() << " __ AREA is : " << lines[j].getArea() << endl;
             
+            // INTERNAL ORDER (CW vs CCW)
+            // http://stackoverflow.com/questions/14505565/detect-if-a-set-of-points-in-an-array-that-are-the-vertices-of-a-complex-polygon?noredirect=1&lq=1
+            // http://stackoverflow.com/questions/1165647/how-to-determine-if-a-list-of-polygon-points-are-in-clockwise-order
+            // with the area we can detect is the polyline is CW or CCW
+            vector<ofPoint> vecV;
+            vecV.resize(vec.size());
+            
+            if(lines[j].getArea()>0)
+            {
+                vecV = reverseVerticesInVector(vec);
+            }
+            else
+            {
+                vecV = vec;
+            }
+            
+            // FIRST ELEMENT ORDER (based on minimum distance to origin (600,600))
+            vector<ofPoint> vecOrdered = orderVerticesOfHexagonBasedOnDistanceToOrigin(vecV);
+            
+            // HEXAGONs ORDER BASED ON RINGS
+            orderHexagonOnRings(i);
+
             // create the vboVert as follows = vertex[0] will always be the centroid, and the rest are the triangulation (6 triangles for 1 hexagon)
             //      _
             //     /.\
             //     \_/
             //
-            
-            // VERTS [0] : centroid + 6 v for each hexagon
+
+            // VERTS : all to ORIGIN !! TBO model matrix makes the trick with centroid !
             /////////////////////////////////////////////
-            vertexsA[(i*numVertexsOneHexagonWithCenter)+0] = ofVec3f(polygonCentroids[i]);
-            for(int k=0;k<vecP.size();k++)
+            vertexsA[(i*numVertexsOneHexagonWithCenter)+0] = ofVec3f(0.0,0.0,0.0);
+            vertexsB[(i*numVertexsOneHexagonWithCenter)+0] = ofVec3f(polygonCentroids[i]);
+            
+            
+            for(int k=0;k<vecOrdered.size();k++)
             {
-                vertexsA[(i*numVertexsOneHexagonWithCenter)+k+1] = vecP[k];
+                vertexsA[(i*numVertexsOneHexagonWithCenter)+k+1] = vecOrdered[k] - polygonCentroids[i];
+                vertexsB[(i*numVertexsOneHexagonWithCenter)+k+1] = vecOrdered[k];
+                
             }
+            
+//            // VERTS [0] : centroid + 6 v for each hexagon
+//            /////////////////////////////////////////////
+//            vertexsA[(i*numVertexsOneHexagonWithCenter)+0] = ofVec3f(polygonCentroids[i]);
+//            for(int k=0;k<vecP.size();k++)
+//            {
+//                vertexsA[(i*numVertexsOneHexagonWithCenter)+k+1] = vecP[k];
+//            }
             
 //            // VERTS [1] : 6v for each hexagon
 //            /////////////////////////////////
@@ -136,10 +220,17 @@ void ofApp::setup(){
         }
     }
     
-//    for(int i=0;i<vertexsB.size();i++)
-//    {
-//        cout << " VertexsB" << i << " :: " << vertexsB[i] << endl;
-//    }
+    for(int i=0;i<vertexsB.size();i++)
+    {
+        ofPoint origin = ofPoint(600,600);
+        if(i%7==0)
+        {
+//          cout << " VertexsB " << i/7 << " :: Distance to Origin " << origin.distance(vertexsB[i]) << endl;
+            cout << origin.distance(vertexsB[i]) <<",";
+        }
+    }
+    cout << endl;
+    
     
     /////////////////////////////
     // PREPARE COLOR
@@ -168,8 +259,24 @@ void ofApp::setup(){
     {
         // for each vertex we need to create a ofVec2f
         ofVec2f v;
+        int whichHexagonAreWe = (i/numVertexsOneHexagonWithCenter);
+
         // UV coordinates are not normalized !! are w,h !!
-        v = ofVec2f(vertexsA[i].x, vertexsA[i].y);
+        //v = ofVec2f((vertexsA[i].x/float(fboOut.getWidth())) * image.getWidth(), (vertexsA[i].y/float(fboOut.getHeight()))* image.getHeight());
+        // for a given hexagon "whichHexagonAreWe" ...
+        v = ofVec2f(-1,-1);
+
+        for(int n=0;n<hexaPix.size();n++)
+        {
+            for(int m=0;m<hexaPix[n].size();m++)
+            {
+                if(hexaPix[n][m]._hexaCentroidIndex==whichHexagonAreWe)
+                {
+                    v = ofVec2f(hexaPix[n][m]._num,hexaPix[n][m]._ring);
+                }
+            }
+        }
+
         
         texCoordA[i]=v;
         
@@ -179,15 +286,15 @@ void ofApp::setup(){
     // TEXCOORDS 1
     // this draws the texture quantized to the hexagons based on it's UV coordinates of the centroid
     vector<ofVec2f> texCoordB;
-    texCoordB.resize(vertexsA.size(),ofVec2f());
+    texCoordB.resize(vertexsB.size(),ofVec2f());
 
-    for(int i=0;i<vertexsA.size();i++)
+    for(int i=0;i<vertexsB.size();i++)
     {
         // for each vertex we need to create a ofVec2f
         ofVec2f v;
         int whichHexagonAreWe = (i/numVertexsOneHexagonWithCenter);
-        
-        v = ofVec2f(vertexsA[whichHexagonAreWe*numVertexsOneHexagonWithCenter].x,vertexsA[whichHexagonAreWe*numVertexsOneHexagonWithCenter].y);
+        v = ofVec2f((vertexsB[whichHexagonAreWe*numVertexsOneHexagonWithCenter].x / float(fboOut.getWidth()))* image.getWidth(),(vertexsB[whichHexagonAreWe*numVertexsOneHexagonWithCenter].y / float(fboOut.getHeight()) ) * image.getHeight());
+//        v = ofVec2f((vertexsA[i].x/float(fboOut.getWidth())) * image.getWidth(), (vertexsA[i].y/float(fboOut.getHeight()))* image.getHeight());
 
         texCoordB[i]=v;
     }
@@ -262,20 +369,20 @@ void ofApp::setup(){
     
     // SET VBO DATA
     /////////////////////////////
-
-    pmVbo1.setVertData(vertexsA, 0);
+    
+    pmVbo1.setVertData(vertexsB, 0);
     pmVbo1.setColorData(colorsA,0);
     pmVbo1.setFacesData(faces,0);
     pmVbo1.setTexCoordsData(texCoordA,0);
     pmVbo1.setTexCoordsData(texCoordB,1);
-    
     pmVbo1.setDrawMode(TRIANGLES);
 
     
     /// TBO STUFF (Texture Buffer Object)
     //////////////////////////////////////
     
-    matrices.resize(svg.getNumPath()*7*4);
+    matrices.resize(svg.getNumPath());
+//    matricesB.resize(svg.getNumPath());
     
     // upload the transformation for each box using a
     // texture buffer.
@@ -284,40 +391,226 @@ void ofApp::setup(){
     buffer.allocate();
     buffer.bind(GL_TEXTURE_BUFFER);
     buffer.setData(matrices,GL_STREAM_DRAW);
-    
+
+//    bufferB.allocate();
+//    bufferB.bind(GL_TEXTURE_BUFFER);
+//    bufferB.setData(matrices,GL_STREAM_DRAW);
+
     // using GL_RGBA32F allows to read each row of each matrix
     // as a float vec4 from the shader.
     // Note that we're allocating the texture as a Buffer Texture:
     // https://www.opengl.org/wiki/Buffer_Texture
     tex.allocateAsBufferTexture(buffer,GL_RGBA32F);
+//    texB.allocateAsBufferTexture(buffer,GL_RGBA32F);
 
-    // now we bind the texture to the shader as a uniform
-    // so we can read the texture buffer from it
+    
+    
+    
     shader.begin();
     shader.setUniformTexture("tex",tex,0);
+    shader.setUniform1i("u_numHexags",svg.getNumPath());
+    shader.setUniform4f("u_color", ofFloatColor(1.0,0.5,0.0,1.0));
+    shader.setUniform1i("u_useMatrix", 1);
     shader.end();
 
-    updateMatrices();
 
 }
+
+//--------------------------------------------------------------
+void ofApp::orderHexagonOnRings(int _index)
+{
+    float x = polygonCentroids[_index].x - svg.getWidth()/2;
+    float y = svg.getHeight()/2- polygonCentroids[_index].y;
+    
+    float radius = ofPoint(x,y).length();
+    float angle = ofRadToDeg(atan2(y,x));
+    angle = angle<0 ? angle+360 : angle;
+    
+    float angleStepPerHexa = 360.0 / float(numHexasPerRing);
+
+//    float minDiff = 100000;
+//    int whichIndexInRing = -1;
+//    for(int i=0;i<numHexasPerRing;i++)
+//    {
+//        float currentAngle = (angleStepPerHexa * i) + (angleStepPerHexa/4.0);
+//        float currentDiff = fabs(angle-currentAngle);
+//        if(currentDiff<minDiff)
+//        {
+//            minDiff=currentDiff;
+//            whichIndexInRing=i;
+//        }
+//    }
+    
+    //int whichIndexInRing = floor( (angle - (angleStepPerHexa/2) ) / angleStepPerHexa); // + 32 ;
+    
+    int minDiff = 10000;
+    int whichIndexInRing = -1;
+    for(int i=0;i<64;i++)
+    {
+        //calculate the projected distance
+        //ofPoint ofApp::projectPointToLine(ofPoint Point,ofPoint LineStart,ofPoint LineEnd)
+        ofPoint p = projectPointToLine(polygonCentroids[_index], ofPoint(600,600), ofPoint(600 + 600*cos(ofDegToRad(i*angleStepPerHexa)),600 + 600*sin(ofDegToRad(i*angleStepPerHexa))));
+        
+        
+        if(polygonCentroids[_index].distance(p) < minDiff)
+        {
+            whichIndexInRing = i;
+            minDiff = polygonCentroids[_index].distance(p);
+        }
+//        cout << i << " : Hexagon  id = " << _index << " Dist = " << polygonCentroids[_index].distance(p) << " Min Dist : " << minDiff << " CENTROID OF THIS INDEX : " << polygonCentroids[_index] <<" ANGLE of RAY : "<< whichIndexInRing*angleStepPerHexa << endl;
+        
+    }
+    
+    
+//    for(int j=0;j<64;j++)
+//    {
+//        //calculate the projected distance
+//        //ofPoint ofApp::projectPointToLine(ofPoint Point,ofPoint LineStart,ofPoint LineEnd)
+//        p = projectPointToLine(polygonCentroids[i], ofPoint(600,600), ofPoint(600 + 600*cos(ofDegToRad(j*angleStepPerHexa)),600 + 600*sin(ofDegToRad(j*angleStepPerHexa))));
+//        
+//        ofSetColor(0,255,255);
+//        //ofDrawCircle(p,4);
+//        //ofDrawLine(600,600,600 +600*cos(ofDegToRad(j*angleStepPerHexa)),600 + 600*sin(ofDegToRad(j*angleStepPerHexa)));
+//        
+//        
+//        ofSetColor(255,128,0,32);
+//        
+//        if(polygonCentroids[i].distance(p) < minDiff)
+//        {
+//            whichIndexInRing = j;
+//            minDiff = p.distance(polygonCentroids[i]);
+//            minP=p;
+//        }
+//    }
+
+    
+    cout << "Centroid of path " << _index  << " XYZ : " << x << " , " << y << "  R : " << radius << " angle: " <<angle << "  which Index in Ring : " << whichIndexInRing << endl;
+    
+    /*    142.224,152.899,163.647,175.084,186.791,198.733,210.743,223.235,235.692,249.293,262.73,348.333,363.898,379.651,318.797,290.542,276.35,395.129,410.934,446.176,428.658,630.816,706.984,656.708,680.376,607.385,482.558,521.008,463.945,501.519,542.217,563.313,584.573,304.961,333.73,
+    */
+    
+    int whichRing = -1;
+    vector<float> ringsRadius = { 142.224,152.899,163.647,175.084,186.791,198.733,210.743,223.235,235.692,249.293,262.73,276.35,290.542,304.961,318.797,333.73,348.333,363.898,379.651,395.129,410.934,428.658,446.176,463.945,482.558,501.519,521.008,542.217,563.313,584.573,607.385,656.708,630.816,680.376,706.984};
+
+    for(int j=0;j<ringsRadius.size();j++)
+    {
+        float deltaError = ofMap(j,0.0,ringsRadius.size(),6,16);
+        if(fabs(radius-ringsRadius[j]) < deltaError )
+        {
+            whichRing=j;
+            
+        }
+//        cout << "__ difference was : " << fabs(radius-ringsRadius[j]) << " Radius : " << radius << " RingsRadius " << ringsRadius[j] << "Which RING ? : " << whichRing << endl;
+    }
+//        int _hexaCentroidIndex;
+//        int _ring;
+//        int _num;
+
+    cout << " which Ring : " << whichRing << endl;
+    
+    // !!!!
+    // !!!!
+    // !!!!
+    // !!!!
+
+    whichRing=0;
+    
+//    hexaPix[whichRing][whichIndexInRing]._hexaCentroidIndex = _index;
+//    hexaPix[whichRing][whichIndexInRing]._num = whichIndexInRing;
+//    hexaPix[whichRing][whichIndexInRing]._ring = whichRing;
+    
+    cout << "-----------------------------" << endl;
+}
+//typedef struct
+//{
+//    int _centroidIndex;
+//    int _ring;
+//    int _num;
+//} hexagonPixel;
+//vector<vector<hexagonPixel> hexaPix;
+
+//--------------------------------------------------------------
+vector<ofPoint> ofApp::reverseVerticesInVector(vector<ofPoint> _v)
+{
+    vector<ofPoint> vecAux;
+    vecAux.resize(_v.size());
+    
+    for(int i=0;i<_v.size();i++)
+    {
+        vecAux[i] = _v[(_v.size()-1)-i];
+    }
+    return vecAux;
+}
+//--------------------------------------------------------------
+vector<ofPoint> ofApp::orderVerticesOfHexagonBasedOnDistanceToOrigin(vector<ofPoint> _v)
+{
+    
+    /// INNER ORDERING : the first vertex of each hexagon has to be the closest to the origin
+    //get the closest vertex to origin and it's index;
+    ofPoint origin = ofPoint(svg.getWidth()/2,svg.getHeight()/2);
+    float minDistToOrigin = 100000;
+    int minDistToOrigin_index = -1;
+    for (int k=0;k<_v.size();k++)
+    {
+        if((origin.distance(_v[k])) < minDistToOrigin)
+        {
+            minDistToOrigin = origin.distance(_v[k]);
+            minDistToOrigin_index = k;
+        }
+        //                else if (origin.distance(vecV[k]) == minDistToOrigin)
+        //                {
+        //                    if(vecV[k].x > vecV[minDistToOrigin_index].x)
+        //                    {
+        //                        minDistToOrigin = origin.distance(vecV[k]);
+        //                        minDistToOrigin_index = k;
+        //                        cout << "OOOOOOOO" << endl;
+        //                    }
+        //                }
+        //                else{
+        //                    cout << ">>>>>>>> " << k << " : dist " << origin.distance(vecV[k])  << " min is : " << minDistToOrigin << endl;
+        //
+        //                }
+    }
+    
+    // sort vertices based on distance to origin and recreate a vector with good order
+    vector<ofPoint> vecOrdered;
+    vecOrdered.resize(_v.size());
+    
+    for(int k=0;k<_v.size();k++)
+    {
+        //cout << " reordering [" <<k<<"]" << (minDistToOrigin_index + k ) % 6 << endl;
+        vecOrdered[k]=_v[(minDistToOrigin_index + k ) % 6];
+        
+    }
+    // END OF INNER ORDERING
+    return vecOrdered;
+}
+
 //--------------------------------------------------------------
 void ofApp::updateMatrices()
 {
     for(size_t i=0;i<matrices.size();i++){
         ofNode node;
         ofVec3f scale(1.0,1.0,1.0);
-        node.setScale(scale);
+        
+        float factor = sin (ofGetElapsedTimef()*2 + (i*0.5));
+        
+        node.setPosition(polygonCentroids[i]);
+        node.setScale((ofMap(factor,-1.0,1.0,0.2,0.8)/1.0));
 
         matrices[i] = node.getLocalTransformMatrix();
     }
     
+    
     // and upload them to the texture buffer
     buffer.updateData(0,matrices);
+//    bufferB.updateData(0,matricesB);
 }
 
 //--------------------------------------------------------------
 void ofApp::update()
 {
+    updateMatrices();
 }
 
 //--------------------------------------------------------------
@@ -334,12 +627,12 @@ void ofApp::draw()
 
     // SHADING ...
 
-    ofSetColor(0,128,255);
+    ofSetColor(0,16,32);
     ofFill();
 
     ofDrawRectangle(0,0,svg.getWidth(),svg.getHeight());
     
-    shader.begin();
+    if(useShader) shader.begin();
     
     if(mode==0)
     {
@@ -353,12 +646,252 @@ void ofApp::draw()
         modeString = "pmVBO " ;
 
         ofSetColor(255);
+//        shader.setUniform4f("u_color", ofFloatColor(0.0,0.0,0.0,1.0));
+//        shader.setUniform1i("u_useMatrix", 0);
+        shader.setUniform4f("u_color", ofFloatColor(1.0,0.5,0.0,1.0));
+        shader.setUniform1i("u_useMatrix", 0);
         pmVbo1.draw(drawPrimitive);
+
     }
 
     // ... END SHADING
-    shader.end();
+    if(useShader) shader.end();
 
+//    // DRAW VERTEX COORDINATES
+//    ofSetColor(255,255,0);
+//    vector<ofVec3f> v= pmVbo1.getVertices(0);
+//    for(int i=0;i<v.size();i++)
+//    {
+//        if(i%7==0)
+////            if(true)
+//        {
+//            ofDrawBitmapString(ofToString(i/7)  ,v[i].x, v[i].y) ; //+" : " + ofToString(v[i]),v[i].x, v[i].y);
+//            //ofDrawBitmapString(".",v[i].x,v[i].y);
+//            //ofDrawBitmapString(ofToString(vboTexCoord[i]), vboVert[i].x, vboVert[i].y+20);
+//        }
+//
+//    }
+
+    // draw helpers
+    ///////////////////
+    
+    // draw center
+    ofSetColor(255,0,255);
+    ofDrawCircle(600,600, 5);
+
+    ofSetColor(255,0,255,128);
+    float angleStepPerHexa = 360.0 / numHexasPerRing ;
+
+    
+//    // draw rays of 64ths
+//    for(int i=0;i<64;i++)
+//    {
+//        float specialOffset = 0.0;
+//        if(i==4) specialOffset = -0.5 ;//* sin(ofGetElapsedTimef()/8);
+//        else specialOffset = 0;
+//        
+//        ofDrawLine(600, 600,600 + 1000*cos(ofDegToRad(angleStepPerHexa*i + specialOffset)),600 + 1000*sin(ofDegToRad(angleStepPerHexa*i + specialOffset)) );
+//        
+//        ofDrawBitmapString(ofToString(i), 600 + 300*cos(ofDegToRad((angleStepPerHexa*i + specialOffset))), 600 + 300*sin(ofDegToRad((angleStepPerHexa*i + specialOffset))));
+//    }
+    
+//    // draw centroids
+//    for(int i=0;i<polygonCentroids.size();i++)
+//    {
+//        //ofDrawLine(600, 600,600 + 1000*cos(ofDegToRad((angleStep*i)+ (angleStep/2.0))),600 + 1000*sin(ofDegToRad((angleStep*i)+ (angleStep/2.0))) );
+//        ofSetColor(255,255,0);
+//        ofDrawCircle(polygonCentroids[i].x,polygonCentroids[i].y, 3);
+//    }
+
+    // ORDERS !! IN DRAW ....
+    // draw projections
+    for(int i=0;i<polygonCentroids.size();i++)
+    {
+        /// 0..64 ORDER INSIDE A RING ...
+
+        ofPoint p;
+        ofPoint minP;
+        
+        float minDiff = 12000;
+        ofPoint minPoint;
+        int whichIndexInRing = -1;
+
+        for(int j=0;j<64;j++)
+        {
+
+            float specialOffset = 0.0;
+            if(j==4) specialOffset = -0.5; //* sin(ofGetElapsedTimef()/8);
+            else if(j==5) specialOffset = -0.5; //* sin(ofGetElapsedTimef()/8);
+            else if(j==7) specialOffset = -0.5; //* sin(ofGetElapsedTimef()/8);
+            else if(j==9) specialOffset = -0.35; //* sin(ofGetElapsedTimef()/8);
+            else if(j==10) specialOffset = -0.35; //* sin(ofGetElapsedTimef()/8);
+            else if(j==11) specialOffset = -0.5; //* sin(ofGetElapsedTimef()/8);
+            else if(j==12) specialOffset = -0.55; //* sin(ofGetElapsedTimef()/8);
+            else if(j==13) specialOffset = -0.75; //* sin(ofGetElapsedTimef()/8);
+            else if(j==14) specialOffset = -1.0; //* sin(ofGetElapsedTimef()/8);
+            else if(j==15) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
+            else if(j==16) specialOffset = -1.75; //* sin(ofGetElapsedTimef()/8);
+            else if(j==17) specialOffset = -1.75; //* sin(ofGetElapsedTimef()/8);
+            else if(j==18) specialOffset = -1.5; //* sin(ofGetElapsedTimef()/8);
+            else if(j==19) specialOffset = -1.5; //* sin(ofGetElapsedTimef()/8);
+            else if(j==20) specialOffset = -1.5; //* sin(ofGetElapsedTimef()/8);
+            else if(j==21) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
+            else if(j==22) specialOffset = -1.5; //* sin(ofGetElapsedTimef()/8);
+            else if(j==23) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
+            else if(j==24) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
+            else if(j==25) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
+            else if(j==26) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
+            else if(j==27) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
+            else if(j==28) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
+            else if(j==29) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
+            else if(j==34) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
+            else if(j==35) specialOffset = -0.55; //* sin(ofGetElapsedTimef()/8);
+            else if(j==37) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
+            else if(j==38) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
+            else if(j==39) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
+            else if(j==40) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
+            else if(j==41) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
+            else if(j==42)specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
+            else if(j==43) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
+            else if(j==44) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
+            else if(j==45) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
+            else if(j==46) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
+            else if(j==47) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
+            else if(j==48) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
+            else if(j==49) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
+            else if(j==50) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
+            else if(j==51) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
+            else if(j==52) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
+            else if(j==53) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
+            else if(j==54) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
+            else if(j==55) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
+            else specialOffset = 0;
+            
+            if(i==1) // draw ray lines
+            {
+                ofSetColor(255,0,255,128);
+                ofDrawLine(600, 600,600 + 1000*cos(ofDegToRad(angleStepPerHexa*j + specialOffset)),600 + 1000*sin(ofDegToRad(angleStepPerHexa*j + specialOffset)) );
+                ofDrawBitmapString(ofToString(j), 600 + 300*cos(ofDegToRad((angleStepPerHexa*j + specialOffset))), 600 + 300*sin(ofDegToRad((angleStepPerHexa*j + specialOffset))));
+            }
+            
+
+            //calculate the projected distance
+            //ofPoint ofApp::projectPointToLine(ofPoint Point,ofPoint LineStart,ofPoint LineEnd)
+
+            p = projectPointToLine(polygonCentroids[i], ofPoint(600,600), ofPoint(600 + 1200*cos(ofDegToRad(j*angleStepPerHexa + specialOffset)),600 + 1200*sin(ofDegToRad(j*angleStepPerHexa + specialOffset))));
+            
+            if(polygonCentroids[i].distance(p) < minDiff)
+            {
+                whichIndexInRing = j;
+                minDiff = polygonCentroids[i].distance(p);
+                minP=p;
+
+            }
+            
+
+            
+        }
+
+        /// RING ORDER
+        /////////////////
+        
+        float x = polygonCentroids[i].x - svg.getWidth()/2;
+        float y = svg.getHeight()/2- polygonCentroids[i].y;
+        
+        float radius = ofPoint(x,y).length();
+        float angle = ofRadToDeg(atan2(y,x));
+        angle = angle<0 ? angle+360 : angle;
+
+        int whichRing = -1;
+        vector<float> ringsRadius = { 142.224,152.899,163.647,175.084,186.791,198.733,210.743,223.235,235.692,249.293,262.73,276.35,290.542,304.961,318.797,333.73,348.333,363.898,379.651,395.129,410.934,428.658,446.176,463.945,482.558,501.519,521.008,542.217,563.313,584.573,607.385,656.708,630.816,680.376,706.984};
+        float minDiffAngle = 10000000;
+        
+        for(int j=0;j<ringsRadius.size();j++)
+        {
+            float diff = fabs(radius-ringsRadius[j]);
+            if(diff < minDiffAngle)
+            {
+                minDiffAngle = diff;
+                whichRing=j;
+            }
+        }
+
+//        // draw centroids
+//        float alpha;
+//        
+//        if(whichIndexInRing%2==0) alpha = 255;
+//        else alpha = 32;
+//        
+//        if(whichRing%8 == 0) ofSetColor(255.0,0,0,alpha);
+//        else if(whichRing%8 == 1) ofSetColor(255.0,255,0,alpha);
+//        else if(whichRing%8 == 2) ofSetColor(0,255,0,alpha);
+//        else if(whichRing%8 == 3) ofSetColor(0,255,255,alpha);
+//        else if(whichRing%8 == 4) ofSetColor(0,0,255,alpha);
+//        else if(whichRing%8 == 5) ofSetColor(255,0,255,alpha);
+//        else if(whichRing%8 == 6) ofSetColor(255,255,0,alpha);
+//        else if(whichRing%8 == 7) ofSetColor(255,255,255,alpha);
+//        else ofSetColor(255.0 * (float(whichRing)/ringsRadius.size()),alpha);
+//        
+//        ofDrawCircle(polygonCentroids[i].x,polygonCentroids[i].y, 10);
+//
+//        // draw centroid to min point
+//        ofSetColor(255,0,0,255);
+//        ofDrawLine(polygonCentroids[i],minP);
+//
+//        // draw minP
+//        ofSetColor(0,255,0);
+//        ofDrawCircle(minP.x,minP.y, 1);
+        
+        // RINGS ORDER
+        
+        hexaPix[whichRing][whichIndexInRing]._hexaCentroidIndex = i;
+        hexaPix[whichRing][whichIndexInRing]._num = whichIndexInRing;
+        hexaPix[whichRing][whichIndexInRing]._ring = whichRing;
+
+//        vector<float> ringRadius;
+//        ringRadius.resize(19);
+//        ringRadius = {142,153,165,175,187,198,210,224,236,250,264,277,291,306,320,335,349,366,381}
+        
+    }
+    
+    /// UPDATE TEX COORDS
+    if(ofGetFrameNum()==1)
+    {
+        vector<ofVec2f> texCoordA;
+        texCoordA.resize(pmVbo1.getVertices(0).size(),ofVec2f());
+        
+        for(int k=0;k<pmVbo1.getVertices(0).size();k++)
+        {
+            cout << k << " / "  << pmVbo1.getVertices(0).size() << endl;
+            // for each vertex we need to create a ofVec2f
+            ofVec2f v;
+            int whichHexagonAreWe = (k/numVertexsOneHexagonWithCenter);
+            
+            // UV coordinates are not normalized !! are w,h !!
+            //v = ofVec2f((vertexsA[i].x/float(fboOut.getWidth())) * image.getWidth(), (vertexsA[i].y/float(fboOut.getHeight()))* image.getHeight());
+            // for a given hexagon "whichHexagonAreWe" ...
+            v = ofVec2f(-1,-1);
+            float IndexStep = 1.0; //syphon.getWidth() / numHexasPerRing;
+            float RingStep = 1.0; //syphon.getWidth() / numRings;
+            for(int n=0;n<hexaPix.size();n++)
+            {
+                for(int m=0;m<hexaPix[n].size();m++)
+                {
+                    if(hexaPix[n][m]._hexaCentroidIndex==whichHexagonAreWe)
+                    {
+                        v = ofVec2f((hexaPix[n][m]._num * IndexStep) + 0.5,(hexaPix[n][m]._ring * RingStep) + 0.5);
+                    }
+                }
+            }
+            
+            texCoordA[k]=v;
+            
+            //cout << "setup __ TexCoord : " << i << " :: " << texCoordA[i] << endl;
+        }
+        pmVbo1.setTexCoordsData(texCoordA,0);
+    }
+
+    
     
     fboOut.end();
 
@@ -366,11 +899,23 @@ void ofApp::draw()
     ofPushMatrix();
     ofSetColor(255,255,255);
     fboOut.draw(0,0,ofGetHeight(),ofGetHeight());
+
+
+    /// THIS IS THE WAY I FIGURED OUT HOW TO MAKE SYHPON WORK ...
+    
+    if(useSyphon && ofGetFrameNum()==300)
+    {
+        syphon.bind();
+        pmVbo1.setTextureReference(syphon.getTexture());
+        pmVbo1.texture.setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
+        syphon.unbind();
+    }
+    
     ofPopMatrix();
     
     /// DRAW INFO STRING
     ofSetColor(255);
-    ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())) + " | Mode : " + ofToString(mode) + " " +modeString,10,ofGetHeight()*.90 +  30);
+    ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())) + " | Mode : " + ofToString(mode) + " " +modeString + " Shader? : " + ofToString(useShader),10,ofGetHeight()*.90 +  30);
     
     /// SAVE IMAGE
     if(saveNow)
@@ -379,9 +924,9 @@ void ofApp::draw()
         ofPixels pixels;
         fboOut.readToPixels(pixels);
         ofImage image;
-        image.allocate(fboResolution.x,fboResolution.y, OF_IMAGE_COLOR);
-        image.setFromPixels(pixels);
-        image.save("./captures/" + ofGetTimestampString() +".png" );
+        imageToSave.allocate(fboResolution.x,fboResolution.y, OF_IMAGE_COLOR);
+        imageToSave.setFromPixels(pixels);
+        imageToSave.save("./captures/" + ofGetTimestampString() +".png" );
     }
 
 }
@@ -401,6 +946,7 @@ void ofApp::keyPressed(int key){
     {
         int i = (pmVbo1.currentVboTexCoords + 1)%2;
         pmVbo1.setTexCoordsIndex(i);
+        cout << " Set Tex Coords : " << i << endl;
     }
     else if(key=='u')
     {
@@ -425,6 +971,10 @@ void ofApp::keyPressed(int key){
     else if(key=='P')
     {
         drawPrimitive=GL_TRIANGLES;
+    }
+    else if(key=='h')
+    {
+        useShader = !useShader;
     }
     
     
@@ -485,3 +1035,44 @@ void ofApp::dragEvent(ofDragInfo info)
 
 }
 
+//--------------------------------------------------------------
+bool ofApp::sortPointsOnDistanceToOrigin(ofPoint &p1, ofPoint &p2)
+{
+    ofPoint origin = ofPoint(600,600);
+    float dist1,dist2;
+    dist1  = origin.distance(p1);
+    dist2  = origin.distance(p2);
+
+    return dist2>dist1;
+}
+
+
+//--------------------------------------------------------------
+ofPoint ofApp::projectPointToLine(ofPoint Point,ofPoint LineStart,ofPoint LineEnd)
+{
+    float LineMag;
+    float U;
+    ofPoint Intersection;
+    
+    LineMag = LineEnd.distance(LineStart);
+    
+    U = ( ( ( Point.x - LineStart.y ) * ( LineEnd.x - LineStart.x ) ) +
+         ( ( Point.y - LineStart.y ) * ( LineEnd.y - LineStart.y ) ) +
+         ( ( Point.z - LineStart.z ) * ( LineEnd.z - LineStart.z ) ) ) /
+    ( LineMag * LineMag );
+    
+    if( U < 0.0f || U > 1.0f )
+    {
+        return ofVec3f(1000000,1000000);//cout << " closest point does not fall within the line segment !! " << endl;
+        //cout << " closest point does not fall within the line segment !! " << endl;
+    }
+    
+    Intersection.x = LineStart.x + U * ( LineEnd.x - LineStart.x );
+    Intersection.y = LineStart.y + U * ( LineEnd.y - LineStart.y );
+    Intersection.z = LineStart.z + U * ( LineEnd.z - LineStart.z );
+    
+    //    *Distance = Magnitude( Point, &Intersection );
+    
+    
+    return Intersection;//.length();
+}
