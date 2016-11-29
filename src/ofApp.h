@@ -42,58 +42,53 @@ class ofApp : public ofBaseApp{
     ofFbo               fboOut;
     ofVec2f             fboResolution;
 
-    /// VARS
-    int                 mode;
-    int                 numModes;
-    string              modeString;
-    bool                saveNow;
-    int                 numVertexsOneHexagonWithCenter;
-    int                 numVertexsOneHexagon;
-    int                 drawPrimitive;
-    
-    /// VBO
-    pmVbo               pmVbo1;
-    
-    
-    vector<ofPoint>         svgVecPoints;
-    vector<ofPoint>         polygonCentroids;
-    
-    ofVboMesh               vboMesh;
-    ofVbo                   vbo;
-    vector<vector<ofVec3f>> vecVboVerts;
-    vector<ofIndexType>     vboFaces;
-    vector<ofFloatColor>    vboColor;
-    vector<vector<ofVec2f>> vecVboTexCoords;
-
-    // TEXTURE 
+    // IMAGE TEXTURE
     ofImage                 image;
     ofImage                 imageToSave;
-    
+
+    // SYPHON TEXTURE
+    ofxSyphonClient         syphon;
+    bool                    useSyphon;
+
+    /// VARS
+    int                     numVertexsOneHexagonWithCenter;
+    int                     numVertexsOneHexagon;
+    int                     numRings;
+    int                     numHexasPerRing;
+
+    int                     mode;
+    int                     numModes;
+    string                  modeString;
+    bool                    saveNow;
+    int                     drawPrimitive;
+
+    /// VBO
+    pmVbo pmVbo1;
+
+    // DATA VECTORS
+    vector<ofVec3f>         vertexsTransformed;
+    vector<ofVec3f>         vertexsOriginal;
+    vector<ofPoint>         hexagonCentroids;
+    vector<vector<hexagonPixel>>    hexaPix;
+
+    // SHADER
     ofShader                shader;
     bool                    useShader;
     
+    // MATRIX DATA UPDATE
     void                    updateMatrices();
-
+    // TBO : Texture Buffer Object used to give encoded data to Shader as a texture
     ofTexture               tex;
     ofBufferObject          buffer;
     vector<ofMatrix4x4>     matrices;
 
-//    ofTexture               texB;
-//    ofBufferObject          bufferB;
-//    vector<ofMatrix4x4>     matricesB;
-
+    /// ORDERS AND LOAD OPERATIONS
     ofPoint                 projectPointToLine(ofPoint Point,ofPoint LineStart,ofPoint LineEnd);
     static bool             sortPointsOnDistanceToOrigin(ofPoint &p1, ofPoint &p2);
     vector<ofPoint>         reverseVerticesInVector(vector<ofPoint> _v);
     vector<ofPoint>         orderVerticesOfHexagonBasedOnDistanceToOrigin(vector<ofPoint> _v);
-    void                    orderHexagonOnRings(int _index);
+    void                    orderHexagonOnRingsAndIds(int _index);
     
-    int                     numRings;
-    int                     numHexasPerRing;
-    vector<vector<hexagonPixel>>    hexaPix;
     
-    // SYPHON
-    ofxSyphonClient         syphon;
-    bool                    useSyphon;
     
 };
