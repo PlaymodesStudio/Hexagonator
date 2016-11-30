@@ -62,7 +62,7 @@ void ofApp::setup(){
     //using Syphon app Simple Server, found at http://syphon.v002.info/
     //syphon.set("","Simple Server");
     syphon.set("MIRABCN_Generator","MIRAMAD_Generator");
-    useSyphon = false;
+    useSyphon = true;
 
     /////////////////////////////
     // IMAGE AS TEXTRE
@@ -290,59 +290,6 @@ void ofApp::setup(){
         //cout << "setup __ TexCoord : " << i << " :: " << texCoordA[i] << endl;
     }
     
-//    // TEXCOORDS 1
-//    // this draws the texture quantized to the hexagons based on it's UV coordinates of the centroid
-//    vector<ofVec2f> texCoordB;
-//    texCoordB.resize(vertexsOriginal.size(),ofVec2f());
-//
-//    for(int i=0;i<vertexsOriginal.size();i++)
-//    {
-//        // for each vertex we need to create a ofVec2f
-//        ofVec2f v;
-//        int whichHexagonAreWe = (i/numVertexsOneHexagonWithCenter);
-//        v = ofVec2f((vertexsOriginal[whichHexagonAreWe*numVertexsOneHexagonWithCenter].x / float(fboOut.getWidth()))* image.getWidth(),(vertexsOriginal[whichHexagonAreWe*numVertexsOneHexagonWithCenter].y / float(fboOut.getHeight()) ) * image.getHeight());
-////        v = ofVec2f((vertexsTransformed[i].x/float(fboOut.getWidth())) * image.getWidth(), (vertexsTransformed[i].y/float(fboOut.getHeight()))* image.getHeight());
-//
-//        texCoordB[i]=v;
-//    }
-//    
-    
-    /// UPDATE TEX COORDS
-//    {
-//        vector<ofVec2f> texCoordA;
-//        texCoordA.resize(pmVbo1.getVertices(0).size(),ofVec2f());
-//        
-//        for(int k=0;k<pmVbo1.getVertices(0).size();k++)
-//        {
-//            cout << k << " / "  << pmVbo1.getVertices(0).size() << endl;
-//            // for each vertex we need to create a ofVec2f
-//            ofVec2f v;
-//            int whichHexagonAreWe = (k/numVertexsOneHexagonWithCenter);
-//            
-//            // UV coordinates are not normalized !! are w,h !!
-//            //v = ofVec2f((vertexsTransformed[i].x/float(fboOut.getWidth())) * image.getWidth(), (vertexsTransformed[i].y/float(fboOut.getHeight()))* image.getHeight());
-//            // for a given hexagon "whichHexagonAreWe" ...
-//            v = ofVec2f(-1,-1);
-//            float IndexStep = 1.0; //syphon.getWidth() / numHexasPerRing;
-//            float RingStep = 1.0; //syphon.getWidth() / numRings;
-//            for(int n=0;n<hexaPix.size();n++)
-//            {
-//                for(int m=0;m<hexaPix[n].size();m++)
-//                {
-//                    if(hexaPix[n][m]._hexaCentroidIndex==whichHexagonAreWe)
-//                    {
-//                        v = ofVec2f((hexaPix[n][m]._num * IndexStep) + 0.5,(hexaPix[n][m]._ring * RingStep) + 0.5);
-//                    }
-//                }
-//            }
-//            
-//            texCoordA[k]=v;
-//            
-//            //cout << "setup __ TexCoord : " << i << " :: " << texCoordA[i] << endl;
-//        }
-//        pmVbo1.setTexCoordsData(texCoordA,0);
-//    }
-
 //    // TEXCOORDS 2
 //    // this should get a gradient of UV coordinates based on the vector (origin to centroid) ?¿
 //    /////////////////////////////
@@ -407,7 +354,6 @@ void ofApp::setup(){
         {
             faces[(i*3)+2] = i+2+(whichHexagonAreWe-1);
         }
-        //cout << "setup __ Face : " << i << " : " << faces[(i*3)+0] << " , " << faces[(i*3)+1] << " , " << faces[(i*3)+2] << endl;
     }
     
     
@@ -444,6 +390,8 @@ void ofApp::setup(){
 
     
     
+    // SHADER INITS
+    ////////////////
     
     shader.begin();
     shader.setUniformTexture("tex",tex,0);
@@ -458,12 +406,8 @@ void ofApp::setup(){
 //--------------------------------------------------------------
 void ofApp::orderHexagonOnRingsAndIds(int i)
 {
-    float angleStepPerHexa = 360.0 / numHexasPerRing ;
+        float angleStepPerHexa = 360.0 / numHexasPerRing ;
     
-    // ORDERS !! IN DRAW ....
-    // draw projections
-//    for(int i=0;i<hexagonCentroids.size();i++)
-//    {
         /// 0..64 ORDER INSIDE A RING ...
         
         ofPoint p;
@@ -572,44 +516,14 @@ void ofApp::orderHexagonOnRingsAndIds(int i)
                 whichRing=j;
             }
         }
-        
-        //        // draw centroids
-        //        float alpha;
-        //
-        //        if(whichIndexInRing%2==0) alpha = 255;
-        //        else alpha = 32;
-        //
-        //        if(whichRing%8 == 0) ofSetColor(255.0,0,0,alpha);
-        //        else if(whichRing%8 == 1) ofSetColor(255.0,255,0,alpha);
-        //        else if(whichRing%8 == 2) ofSetColor(0,255,0,alpha);
-        //        else if(whichRing%8 == 3) ofSetColor(0,255,255,alpha);
-        //        else if(whichRing%8 == 4) ofSetColor(0,0,255,alpha);
-        //        else if(whichRing%8 == 5) ofSetColor(255,0,255,alpha);
-        //        else if(whichRing%8 == 6) ofSetColor(255,255,0,alpha);
-        //        else if(whichRing%8 == 7) ofSetColor(255,255,255,alpha);
-        //        else ofSetColor(255.0 * (float(whichRing)/ringsRadius.size()),alpha);
-        //
-        //        ofDrawCircle(hexagonCentroids[i].x,hexagonCentroids[i].y, 10);
-        //
-        //        // draw centroid to min point
-        //        ofSetColor(255,0,0,255);
-        //        ofDrawLine(hexagonCentroids[i],minP);
-        //
-        //        // draw minP
-        //        ofSetColor(0,255,0);
-        //        ofDrawCircle(minP.x,minP.y, 1);
-        
-        // RINGS ORDER
+    
+    
+        // RINGS ORDER put data into hexaPix which will feed texCoord
         
         hexaPix[whichRing][whichIndexInRing]._hexaCentroidIndex = i;
         hexaPix[whichRing][whichIndexInRing]._num = whichIndexInRing;
         hexaPix[whichRing][whichIndexInRing]._ring = whichRing;
         
-        //        vector<float> ringRadius;
-        //        ringRadius.resize(19);
-        //        ringRadius = {142,153,165,175,187,198,210,224,236,250,264,277,291,306,320,335,349,366,381}
-        
-//    }
     
 }
 
@@ -642,19 +556,6 @@ vector<ofPoint> ofApp::orderVerticesOfHexagonBasedOnDistanceToOrigin(vector<ofPo
             minDistToOrigin = origin.distance(_v[k]);
             minDistToOrigin_index = k;
         }
-        //                else if (origin.distance(vecV[k]) == minDistToOrigin)
-        //                {
-        //                    if(vecV[k].x > vecV[minDistToOrigin_index].x)
-        //                    {
-        //                        minDistToOrigin = origin.distance(vecV[k]);
-        //                        minDistToOrigin_index = k;
-        //                        cout << "OOOOOOOO" << endl;
-        //                    }
-        //                }
-        //                else{
-        //                    cout << ">>>>>>>> " << k << " : dist " << origin.distance(vecV[k])  << " min is : " << minDistToOrigin << endl;
-        //
-        //                }
     }
     
     // sort vertices based on distance to origin and recreate a vector with good order
@@ -689,7 +590,6 @@ void ofApp::updateMatrices()
     
     // and upload them to the texture buffer
     buffer.updateData(0,matrices);
-//    bufferB.updateData(0,matricesB);
 }
 
 //--------------------------------------------------------------
@@ -731,8 +631,6 @@ void ofApp::draw()
         modeString = "pmVBO " ;
 
         ofSetColor(255);
-//        shader.setUniform4f("u_color", ofFloatColor(0.0,0.0,0.0,1.0));
-//        shader.setUniform1i("u_useMatrix", 0);
         shader.setUniform4f("u_color", ofFloatColor(1.0,0.5,0.0,1.0));
         shader.setUniform1i("u_useMatrix", 0);
         pmVbo1.draw(drawPrimitive);
@@ -924,6 +822,8 @@ void ofApp::gotMessage(ofMessage msg){
 //--------------------------------------------------------------
 void ofApp::dragEvent(ofDragInfo info)
 {
+    useSyphon = false;
+    
     if( info.files.size() > 0 )
     {
         image.load(info.files[0]);
