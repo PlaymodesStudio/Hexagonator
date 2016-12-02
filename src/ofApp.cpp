@@ -92,7 +92,10 @@ void ofApp::setup(){
 //    svgFilename = "./svg/testOrdreRadial.svg";
 //    svgFilename = "./svg/polarExampleAngle.svg";
 //    svgFilename = "./svg/test_svg_partCENTRAT.svg";
+//    svgFilename = "./svg/vector_complet_v1.svg";
+//    svgFilename = "./svg/vector_complet_v2_flat.svg";
 
+    
     svg.load(svgFilename);
 
     cout << "Setup :: Main SVG opened :: " << svgFilename << endl;
@@ -360,7 +363,7 @@ void ofApp::setup(){
     // SET VBO DATA
     /////////////////////////////
     
-    pmVbo1.setVertData(vertexsOriginal, 0);
+    pmVbo1.setVertData(vertexsTransformed, 0);
     pmVbo1.setColorData(colorsA,0);
     pmVbo1.setFacesData(faces,0);
     pmVbo1.setTexCoordsData(texCoordC,2);
@@ -369,32 +372,50 @@ void ofApp::setup(){
     pmVbo1.setDrawMode(TRIANGLES);
 
     
-    /// TBO STUFF (Texture Buffer Object)
+    /// TRANSFORM TBO STUFF (Texture Buffer Object)
     //////////////////////////////////////
     
-    matrices.resize(svg.getNumPath());
+    matricesTransform.resize(svg.getNumPath());
     
     // upload the transformation for each box using a
     // texture buffer.
     // for that we need to upload the matrices to the buffer
     // and allocate the texture using it
-    buffer.allocate();
-    buffer.bind(GL_TEXTURE_BUFFER);
-    buffer.setData(matrices,GL_STREAM_DRAW);
+    bufferTransform.allocate();
+    bufferTransform.bind(GL_TEXTURE_BUFFER);
+    bufferTransform.setData(matricesTransform,GL_STREAM_DRAW);
 
     // using GL_RGBA32F allows to read each row of each matrix
     // as a float vec4 from the shader.
     // Note that we're allocating the texture as a Buffer Texture:
     // https://www.opengl.org/wiki/Buffer_Texture
-    tex.allocateAsBufferTexture(buffer,GL_RGBA32F);
+    texTransform.allocateAsBufferTexture(bufferTransform,GL_RGBA32F);
 
+    /// CUBIC COLORS TBO STUFF (Texture Buffer Object)
+    //////////////////////////////////////
     
+    matricesCubeColors.resize(svg.getNumPath() * 3);
     
+    // upload the
+    // texture buffer.
+    // for that we need to upload the matrices to the buffer
+    // and allocate the texture using it
+    bufferCubeColors.allocate();
+    bufferCubeColors.bind(GL_TEXTURE_BUFFER);
+    bufferCubeColors.setData(matricesCubeColors,GL_STREAM_DRAW);
+    
+    // using GL_RGBA32F allows to read each row of each matrix
+    // as a float vec4 from the shader.
+    // Note that we're allocating the texture as a Buffer Texture:
+    // https://www.opengl.org/wiki/Buffer_Texture
+    texCubeColors.allocateAsBufferTexture(bufferCubeColors,GL_RGBA32F);
+
     // SHADER INITS
     ////////////////
     
     shader.begin();
-    shader.setUniformTexture("tex",tex,0);
+    shader.setUniformTexture("texTransform",texTransform,0);
+    shader.setUniformTexture("texCubeColors",texCubeColors,1);
     shader.setUniform1i("u_numHexags",svg.getNumPath());
     shader.setUniform4f("u_color", ofFloatColor(1.0,0.5,0.0,1.0));
     shader.setUniform1i("u_useMatrix", 1);
@@ -452,7 +473,7 @@ void ofApp::orderHexagonOnRingsAndIds(int i)
             else if(j==39) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
             else if(j==40) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
             else if(j==41) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
-            else if(j==42)specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
+            else if(j==42) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
             else if(j==43) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
             else if(j==44) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
             else if(j==45) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
@@ -575,7 +596,9 @@ vector<ofPoint> ofApp::orderVerticesOfHexagonBasedOnDistanceToOrigin(vector<ofPo
 //--------------------------------------------------------------
 void ofApp::updateMatrices()
 {
-    for(size_t i=0;i<matrices.size();i++){
+
+    // TRANSFORM MATRIX
+    for(size_t i=0;i<matricesTransform.size();i++){
         ofNode node;
         ofVec3f scale(1.0,1.0,1.0);
         
@@ -584,18 +607,36 @@ void ofApp::updateMatrices()
         node.setPosition(hexagonCentroids[i]);
         node.setScale((ofMap(factor,-1.0,1.0,0.2,0.8)/1.0));
 
-        matrices[i] = node.getLocalTransformMatrix();
+        matricesTransform[i] = node.getLocalTransformMatrix();
     }
-    
-    
     // and upload them to the texture buffer
-    buffer.updateData(0,matrices);
+    bufferTransform.updateData(0,matricesTransform);
+
+    // TRANSFORM CUBE COLORS
+    for(size_t i=0;i<svg.getNumPath();i++)
+    {
+//        ofFloatColor cube1(fabs(1.0 * sin(ofGetElapsedTimef()/5.0)),0.0,0.0,1.0);
+//        ofFloatColor cube2(0.0,fabs(1.0 * cos(ofGetElapsedTimef())),0.0,1.0);
+//        ofFloatColor cube3(0.0,0.0,fabs(1.0 * sin(ofGetElapsedTimef()/13.0)),1.0);
+
+        ofFloatColor cube1(0.0,0.75,0.75,1.0);
+        ofFloatColor cube2(0.0,0.5,0.55,1.0);
+        ofFloatColor cube3(0.0,0.25,0.25,1.0);
+        
+        matricesCubeColors[(i*3)+0] = cube1;
+        matricesCubeColors[(i*3)+1] = cube2;
+        matricesCubeColors[(i*3)+2] = cube3;
+    }
+    // and upload them to the texture buffer
+    bufferCubeColors.updateData(0,matricesCubeColors);
+
 }
 
 //--------------------------------------------------------------
 void ofApp::update()
 {
     updateMatrices();
+
 }
 
 //--------------------------------------------------------------
@@ -632,7 +673,7 @@ void ofApp::draw()
 
         ofSetColor(255);
         shader.setUniform4f("u_color", ofFloatColor(1.0,0.5,0.0,1.0));
-        shader.setUniform1i("u_useMatrix", 0);
+        shader.setUniform1i("u_useMatrix", 1);
         pmVbo1.draw(drawPrimitive);
 
     }
@@ -769,6 +810,10 @@ void ofApp::keyPressed(int key){
     else if(key=='h')
     {
         useShader = !useShader;
+    }
+    else if(key=='q')
+    {
+        drawPrimitive=GL_QUADS;
     }
     
     

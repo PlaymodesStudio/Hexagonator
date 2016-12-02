@@ -78,10 +78,15 @@ class ofApp : public ofBaseApp{
     // MATRIX DATA UPDATE
     void                    updateMatrices();
     // TBO : Texture Buffer Object used to give encoded data to Shader as a texture
-    ofTexture               tex;
-    ofBufferObject          buffer;
-    vector<ofMatrix4x4>     matrices;
-
+    ofTexture               texTransform;
+    ofBufferObject          bufferTransform;
+    vector<ofMatrix4x4>     matricesTransform;
+    // TBO : Texture Buffer Object used to give colors to faces of "cubic" effect
+    ofTexture               texCubeColors;
+    ofBufferObject          bufferCubeColors;
+    vector<ofFloatColor>    matricesCubeColors;
+    
+    
     /// ORDERS AND LOAD OPERATIONS
     ofPoint                 projectPointToLine(ofPoint Point,ofPoint LineStart,ofPoint LineEnd);
     static bool             sortPointsOnDistanceToOrigin(ofPoint &p1, ofPoint &p2);
