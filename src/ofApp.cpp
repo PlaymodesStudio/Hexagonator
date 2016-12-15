@@ -14,6 +14,8 @@ void ofApp::setup(){
     numRings = 35;
     numHexasPerRing = 64;
     useShader = true;
+    useTransformMatrix = false;
+    showVertices = false;
     numVertexsOneHexagonWithCenter = 7;
     numVertexsOneHexagon = 6;
     drawPrimitive = GL_TRIANGLES;
@@ -62,12 +64,12 @@ void ofApp::setup(){
     //using Syphon app Simple Server, found at http://syphon.v002.info/
     //syphon.set("","Simple Server");
     syphon.set("MIRABCN_Generator","MIRAMAD_Generator");
-    useSyphon = true;
+    useSyphon = false;
 
     /////////////////////////////
     // IMAGE AS TEXTRE
     /////////////////////////////
-    image.load("./tex/mapaPixels64x35.png");
+    //image.load("./tex/mapaPixels64x35.png");
     image.load("./tex/eye.jpg");
     image.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
     pmVbo1.setTextureReference(image.getTexture());
@@ -87,7 +89,7 @@ void ofApp::setup(){
     
     
     svgFilename = "./svg/test_svg_part.svg";
-//    svgFilename = "./svg/testSVG9Hexagons.svg";
+//    svgFilename = "./svg/testSVG3Hexagons.svg";
 //    svgFilename = "./svg/test_svg_part_nomes2.svg";
 //    svgFilename = "./svg/testOrdreRadial.svg";
 //    svgFilename = "./svg/polarExampleAngle.svg";
@@ -125,7 +127,7 @@ void ofApp::setup(){
 
     // allocating "hexaPix" final destination
     // hexaPixel stores information on the relation of each hexagon id and xyz position as an order to generate Texture Coordinates
-    // to draw a given data "texture" (syphon). As ex. hexaPix is [m][n].
+    // to draw a given data "texture" (syphon). As ex. hexaPix is [n][m] = [numRings][numHexasPerRing] = [35][64]
     // 'm' is the id inside a given ring (0..63) .
     // 'n' is the ring id (0..35)
     // that is why thtat this "pixel mapping" texture coordinates allow us to read a 64x35 texture and give each pixel color to a full hexagon.
@@ -138,8 +140,8 @@ void ofApp::setup(){
         {
             hexagonPixel h;
             h._num=-1;
-            h._hexaCentroidIndex=-1;
             h._ring=-1;
+            h._pathId = -1;
             
             hexaPix[i][j] = h;
         }
@@ -148,6 +150,7 @@ void ofApp::setup(){
     // VERTEX ARRAYS for feeding the VBO    
     vertexsTransformed.resize(svg.getNumPath()*numVertexsOneHexagonWithCenter, ofVec3f());
     vertexsOriginal.resize(svg.getNumPath()*numVertexsOneHexagonWithCenter, ofVec3f());
+    vertexsRibbon.resize(svg.getNumPath()*4,ofVec3f());
     
     // for each path (hexagon)
     for(int i=0;i<svg.getNumPath();i++)
@@ -229,6 +232,28 @@ void ofApp::setup(){
                 vertexsOriginal[(i*numVertexsOneHexagonWithCenter)+k+1] = vecOrdered[k];
                 
             }
+            
+            // VERTS RIBBON [2] : 4v for each hexagon -> to draw the ribbon
+            ////////////////////////////////////////////////////////
+            ofPoint p1,p2,p3,p4;
+            float ribbonWidth = 0.1;
+            
+            ofVec2f v01 = ofVec2f(vecOrdered[1] - vecOrdered[0]);
+            ofVec2f v34 = ofVec2f(vecOrdered[4] - vecOrdered[3]);
+            
+            p1 = vecOrdered[0] + (v01/2.) - (v01 * (ribbonWidth/2.0));
+            p2 = vecOrdered[0] + (v01/2.) + (v01 * (ribbonWidth/2.0));
+            p3 = vecOrdered[3] + (v34/2.) - (v34 * (ribbonWidth/2.0));
+            p4 = vecOrdered[3] + (v34/2.) + (v34 * (ribbonWidth/2.0));
+            //p2 = vecOrdered[0] + (v01 * 0.66);
+//            p3 = vecOrdered[3] + (v34 * 0.33);
+//            p4 = vecOrdered[3] + (v34 * 0.66);
+            
+            vertexsRibbon[(i*4)+0] = p1;
+            vertexsRibbon[(i*4)+1] = p2;
+            vertexsRibbon[(i*4)+2] = p3;
+            vertexsRibbon[(i*4)+3] = p4;
+
         }
     }
     
@@ -279,7 +304,7 @@ void ofApp::setup(){
         {
             for(int m=0;m<hexaPix[n].size();m++)
             {
-                if(hexaPix[n][m]._hexaCentroidIndex==whichHexagonAreWe)
+                if(hexaPix[n][m]._pathId==whichHexagonAreWe)
                 {
                     v = ofVec2f(hexaPix[n][m]._num,hexaPix[n][m]._ring);
                 }
@@ -337,9 +362,12 @@ void ofApp::setup(){
     // each path (an hexagon) becomes into 6 faces ( allocate x3 i1,i2,i3 3 indeces per face/triangle)
 
     vector<ofIndexType> faces;
-    faces.resize((numVertexsOneHexagon)*3*svg.getNumPath(),ofIndexType());
+    vector<ofIndexType> facesRibonQuads;
 
-    int numFaces =svg.getNumPath()*(numVertexsOneHexagonWithCenter-1);
+    faces.resize(svg.getNumPath()*(numVertexsOneHexagon) * 3,ofIndexType());
+    facesRibonQuads.resize(svg.getNumPath() * 2 * 3 ,ofIndexType());
+
+    int numFaces =svg.getNumPath()*(numVertexsOneHexagon);
     for(int i=0;i<numFaces;i++)
     {
         int whichHexagonAreWe = (i/numVertexsOneHexagon)+1;
@@ -359,13 +387,32 @@ void ofApp::setup(){
         }
     }
     
+    // FACES FOR QUAD
+    numFaces = svg.getNumPath()*2;
+    cout << "Setup quad faces : NumFaces is : " << numFaces << endl;
+    for(int i=0;i<numFaces;i++)
+    {
+        int whichQuadAreWe = (i/2)+1;
+        int whichFaceInQuad = (i%2);
+        
+        facesRibonQuads[(i*3)+ 0] = (whichQuadAreWe-1)*4;
+        facesRibonQuads[(i*3)+ 1] = (whichQuadAreWe-1)*4 + (whichFaceInQuad) + 1;
+        facesRibonQuads[(i*3)+ 2] = (whichQuadAreWe-1)*4 + (whichFaceInQuad) + 2;
+        
+        cout << "   Face " << i << " Quad " << whichQuadAreWe << " FaceInQuad : " << whichFaceInQuad << " FACES index : " << facesRibonQuads[(i*3)+ 0] << " , " << facesRibonQuads[(i*3)+ 1] << " , " << facesRibonQuads[(i*3)+ 2] << endl;
+    }
+    
     
     // SET VBO DATA
     /////////////////////////////
+
+//    pmVbo1.setVertData(vertexsOriginal, 1);
+    pmVbo1.setVertData(vertexsRibbon, 0);
+//    pmVbo1.setVertData(vertexsTransformed, 0);
     
-    pmVbo1.setVertData(vertexsTransformed, 0);
     pmVbo1.setColorData(colorsA,0);
-    pmVbo1.setFacesData(faces,0);
+//    pmVbo1.setFacesData(faces,0);
+    pmVbo1.setFacesData(facesRibonQuads,0);
     pmVbo1.setTexCoordsData(texCoordC,2);
     pmVbo1.setTexCoordsData(texCoordB,1);
     pmVbo1.setTexCoordsData(texCoordA,0);
@@ -418,7 +465,7 @@ void ofApp::setup(){
     shader.setUniformTexture("texCubeColors",texCubeColors,1);
     shader.setUniform1i("u_numHexags",svg.getNumPath());
     shader.setUniform4f("u_color", ofFloatColor(1.0,0.5,0.0,1.0));
-    shader.setUniform1i("u_useMatrix", 1);
+    shader.setUniform1i("u_useMatrix", 0);
     shader.end();
 
 
@@ -541,10 +588,9 @@ void ofApp::orderHexagonOnRingsAndIds(int i)
     
         // RINGS ORDER put data into hexaPix which will feed texCoord
         
-        hexaPix[whichRing][whichIndexInRing]._hexaCentroidIndex = i;
+        hexaPix[whichRing][whichIndexInRing]._pathId = i;
         hexaPix[whichRing][whichIndexInRing]._num = whichIndexInRing;
         hexaPix[whichRing][whichIndexInRing]._ring = whichRing;
-        
     
 }
 
@@ -631,17 +677,112 @@ void ofApp::updateMatrices()
     bufferCubeColors.updateData(0,matricesCubeColors);
 
 }
+//--------------------------------------------------------------
+void ofApp::updateVertexsForQuad()
+{
+    float ribbonWidth = 1.0 * (sin(ofGetElapsedTimef()) + 1.0)/8.0 ;
+    //ribbonWidth = ofRandomuf();
+
+    int howManyHexagonsWeVisited = 0;
+    for(int i=0;i<numHexasPerRing;i++)
+    {
+        for(int j=0;j<numRings;j++)
+        {
+            if(hexaPix[j][i]._pathId != -1 )
+            {
+                vector<ofPoint>     vertOfHexagon;
+                ofPoint p1,p2,p3,p4;
+                ofVec2f v01,v34;
+                vertOfHexagon.resize(numVertexsOneHexagonWithCenter);
+                float ribbonWidthDivider = 1.0;
+                
+                // first get the 7 original vertices of the array
+                for(int k=0;k<7;k++)
+                {
+                    int w = hexaPix[j][i]._pathId;
+                    vertOfHexagon[k] = vertexsOriginal[(w*numVertexsOneHexagonWithCenter)+1 + k ];
+                }
+//                cout << " HEXA " << hexaPix[j][i]._ring << " , " << hexaPix[j][i]._num << " :: " << (float(hexaPix[j][i]._ring + 1)) / float(numRings) << endl;
+
+                ribbonWidthDivider = 4.0 * (float(hexaPix[j][i]._ring + 0)) / float(numRings);
+                
+                // VERTS RIBBON [2] : 4v for each hexagon -> to draw the ribbon
+                ////////////////////////////////////////////////////////
+                
+                v01 = ofVec2f(vertOfHexagon[1] - vertOfHexagon[0]);
+                v34 = ofVec2f(vertOfHexagon[4] - vertOfHexagon[3]);
+                
+                //
+                //        // VERTS RIBBON [2] : 4v for each hexagon -> to draw the ribbon
+                //        ////////////////////////////////////////////////////////
+                //        ofPoint p1,p2,p3,p4;
+                //        float ribbonWidth = 0.1;
+                //
+                //        ofVec2f v01 = ofVec2f(vecOrdered[1] - vecOrdered[0]);
+                //        ofVec2f v34 = ofVec2f(vecOrdered[4] - vecOrdered[3]);
+                //
+                //        p1 = vecOrdered[0] + (v01/2.) - (v01 * (ribbonWidth/2.0));
+                //        p2 = vecOrdered[0] + (v01/2.) + (v01 * (ribbonWidth/2.0));
+                //        p3 = vecOrdered[3] + (v34/2.) - (v34 * (ribbonWidth/2.0));
+                //        p4 = vecOrdered[3] + (v34/2.) + (v34 * (ribbonWidth/2.0));
+                //        //p2 = vecOrdered[0] + (v01 * 0.66);
+                //        //            p3 = vecOrdered[3] + (v34 * 0.33);
+                //        //            p4 = vecOrdered[3] + (v34 * 0.66);
+                //
+                //        vertexsRibbon[(i*4)+0] = p1;
+                //        vertexsRibbon[(i*4)+1] = p2;
+                //        vertexsRibbon[(i*4)+2] = p3;
+                //        vertexsRibbon[(i*4)+3] = p4;
+                
+                
+                
+                //           typedef struct
+                //        {
+                //            int _hexaCentroidIndex;
+                //            int _ring;
+                //            int _num;
+                //        } hexagonPixel;
+                
+                
+                p1 = vertOfHexagon[0] + (v01/2.) - (v01 * (ribbonWidth*ribbonWidthDivider));
+                p2 = vertOfHexagon[0] + (v01/2.) + (v01 * (ribbonWidth*ribbonWidthDivider));
+                p3 = vertOfHexagon[3] + (v34/2.) - (v34 * (ribbonWidth*ribbonWidthDivider));
+                p4 = vertOfHexagon[3] + (v34/2.) + (v34 * (ribbonWidth*ribbonWidthDivider));
+                //p2 = vecOrdered[0] + (v01 * 0.66);
+                //            p3 = vecOrdered[3] + (v34 * 0.33);
+                //            p4 = vecOrdered[3] + (v34 * 0.66);
+                
+                vertexsRibbon[(howManyHexagonsWeVisited*4)+0] = p1;
+                vertexsRibbon[(howManyHexagonsWeVisited*4)+1] = p2;
+                vertexsRibbon[(howManyHexagonsWeVisited*4)+2] = p3;
+                vertexsRibbon[(howManyHexagonsWeVisited*4)+3] = p4;
+                //
+                
+                howManyHexagonsWeVisited = howManyHexagonsWeVisited + 1 ;
+                
+            }
+        }
+    }
+    
+//    cout << "ribbon width : " << ribbonWidth << " HowMany Visited : " << howManyHexagonsWeVisited <<  endl;
+//    cout << vertexsRibbon[0][0] << endl;
+
+}
 
 //--------------------------------------------------------------
 void ofApp::update()
 {
     updateMatrices();
-
+    updateVertexsForQuad();
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::draw()
 {
+    
+    pmVbo1.updateVertData(vertexsRibbon,0);
+    //vbo.updateVertexData(vecVboVerts[currentVboVerts].data(), vecVboVerts[currentVboVerts].size());
     
     string modeString;
     
@@ -673,7 +814,10 @@ void ofApp::draw()
 
         ofSetColor(255);
         shader.setUniform4f("u_color", ofFloatColor(1.0,0.5,0.0,1.0));
-        shader.setUniform1i("u_useMatrix", 1);
+        
+        if(useTransformMatrix) shader.setUniform1i("u_useMatrix", 1);
+        else shader.setUniform1i("u_useMatrix", 0);
+        
         pmVbo1.draw(drawPrimitive);
 
     }
@@ -681,21 +825,23 @@ void ofApp::draw()
     // ... END SHADING
     if(useShader) shader.end();
 
-//    // DRAW VERTEX COORDINATES
-//    ofSetColor(255,255,0);
-//    vector<ofVec3f> v= pmVbo1.getVertices(0);
-//    for(int i=0;i<v.size();i++)
-//    {
-//        if(i%7==0)
-////            if(true)
-//        {
-//            ofDrawBitmapString(ofToString(i/7)  ,v[i].x, v[i].y) ; //+" : " + ofToString(v[i]),v[i].x, v[i].y);
-//            //ofDrawBitmapString(".",v[i].x,v[i].y);
-//            //ofDrawBitmapString(ofToString(vboTexCoord[i]), vboVert[i].x, vboVert[i].y+20);
-//        }
-//
-//    }
+    if(showVertices)
+    {
+        // DRAW VERTEX COORDINATES
+        ofSetColor(255,255,0);
+        vector<ofVec3f> v= pmVbo1.getCurrentVertices();
+        for(int i=0;i<v.size();i++)
+        {
+//            if(i%7==0)
+                if(true)
+            {
+                ofDrawBitmapString(ofToString(i)  ,v[i].x, v[i].y) ; //+" : " + ofToString(v[i]),v[i].x, v[i].y);
+                //ofDrawBitmapString(".",v[i].x,v[i].y);
+                //ofDrawBitmapString(ofToString(vboTexCoord[i]), vboVert[i].x, vboVert[i].y+20);
+            }
 
+        }
+    }
     // draw helpers
     ///////////////////
     
@@ -799,6 +945,10 @@ void ofApp::keyPressed(int key){
     {
         pmVbo1.setDrawMode(TRIANGLES);
     }
+    else if(key=='n')
+    {
+        pmVbo1.setDrawMode(QUADS);
+    }
     else if(key=='p')
     {
         drawPrimitive=GL_LINE_LOOP;
@@ -807,13 +957,37 @@ void ofApp::keyPressed(int key){
     {
         drawPrimitive=GL_TRIANGLES;
     }
+    else if(key=='o')
+    {
+        drawPrimitive=GL_QUADS;
+    }
     else if(key=='h')
     {
         useShader = !useShader;
     }
-    else if(key=='q')
+    else if(key=='1')
     {
-        drawPrimitive=GL_QUADS;
+        pmVbo1.setVertices(0);
+        cout << "1" << endl;
+    }
+    else if(key=='2')
+    {
+        pmVbo1.setVertices(1);
+        cout << "2" << endl;
+    }
+    else if(key=='3')
+    {
+        pmVbo1.setVertices(2);
+        cout << "3" << endl;
+
+    }
+    else if(key=='i')
+    {
+        showVertices = !showVertices;
+    }
+    else if(key=='r')
+    {
+        useTransformMatrix = !useTransformMatrix;
     }
     
     

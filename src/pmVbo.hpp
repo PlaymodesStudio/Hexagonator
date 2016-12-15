@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include "ofMain.h"
 
-enum mode { TRIANGLES, CONTOURS};
+enum mode { TRIANGLES, CONTOURS, QUADS};
 
 class pmVbo
 {
@@ -36,13 +36,16 @@ class pmVbo
     void setFacesData(vector<ofIndexType> _vf, int _index);
     void setTexCoordsData(vector<ofVec2f> _v, int _index);
     void setTextureReference(ofTexture _tex);
-    
+
+    void updateVertData(vector<ofVec3f> _v, int index);
+
     void setUseTexture(bool _b){ useTexture = _b;};
     void setTexCoordsIndex(int _i);
+    void setVertices(int _i);
     void setDrawMode(mode _mode){ drawMode = _mode; cout << "changed draw mode to : " << drawMode << endl;};
     
     vector<ofVec3f>                 getVertices(int _index){return vecVboVerts[_index];};
-    
+    vector<ofVec3f>                 getCurrentVertices(){return vecVboVerts[currentVboVerts];};
     // POINT LINE CALCULATIONS
     ofPoint                         projectPointToLine(ofPoint Point,ofPoint LineStart,ofPoint LineEnd);
     ofTexture                       texture;

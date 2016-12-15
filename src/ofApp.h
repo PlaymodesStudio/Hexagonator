@@ -7,9 +7,9 @@
 
 typedef struct
 {
-    int _hexaCentroidIndex;
     int _ring;
     int _num;
+    int _pathId;
 } hexagonPixel;
 
 class ofApp : public ofBaseApp{
@@ -49,6 +49,8 @@ class ofApp : public ofBaseApp{
     // SYPHON TEXTURE
     ofxSyphonClient         syphon;
     bool                    useSyphon;
+    bool                    showVertices;
+    bool                    useTransformMatrix;
 
     /// VARS
     int                     numVertexsOneHexagonWithCenter;
@@ -68,7 +70,9 @@ class ofApp : public ofBaseApp{
     // DATA VECTORS
     vector<ofVec3f>         vertexsTransformed;
     vector<ofVec3f>         vertexsOriginal;
+    vector<ofVec3f>         vertexsRibbon;
     vector<ofPoint>         hexagonCentroids;
+    
     vector<vector<hexagonPixel>>    hexaPix;
 
     // SHADER
@@ -93,7 +97,7 @@ class ofApp : public ofBaseApp{
     vector<ofPoint>         reverseVerticesInVector(vector<ofPoint> _v);
     vector<ofPoint>         orderVerticesOfHexagonBasedOnDistanceToOrigin(vector<ofPoint> _v);
     void                    orderHexagonOnRingsAndIds(int _index);
-    
+    void                    updateVertexsForQuad();
     
     
 };

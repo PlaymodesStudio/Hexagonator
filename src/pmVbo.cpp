@@ -52,9 +52,18 @@ void pmVbo::setVertData(vector<ofVec3f> _v, int _index)
 {
     vecVboVerts[_index] = _v;
     vbo.setVertexData(vecVboVerts[_index].data(),vecVboVerts[_index].size(),GL_DYNAMIC_DRAW);
+    currentVboVerts = _index;
 
 }
 
+//--------------------------------------------------------------
+void pmVbo::updateVertData(vector<ofVec3f> _v, int _index)
+{
+    vecVboVerts[_index] = _v;
+    vbo.updateVertexData(vecVboVerts[_index].data(),vecVboVerts[_index].size());
+    currentVboVerts = _index;
+    
+}
 //--------------------------------------------------------------
 void pmVbo::setColorData(vector<ofFloatColor> _vc, int _index)
 {
@@ -120,6 +129,13 @@ void pmVbo::draw(int _primitive)
             int numVertexsPerOneFace = 18;
             vbo.drawElements(_primitive,(vecVboVerts[currentVboVerts].size()/vertModulo)*numVertexsPerOneFace );
         }
+        case QUADS :
+        {
+            int numVertexPerQuad = 4;
+//            vbo.drawElements(_primitive,(vecVboVerts[currentVboVerts].size() * numVertexPerQuad) );
+            vbo.drawElements(_primitive,4 * numVertexPerQuad );
+        }
+
     }
     
 
@@ -202,4 +218,10 @@ void pmVbo::setTexCoordsIndex(int _i)
 {
     currentVboTexCoords=_i;
     vbo.updateTexCoordData(vecVboTexCoords[currentVboTexCoords].data(),vecVboVerts[currentVboVerts].size());
+}
+//--------------------------------------------------------------
+void pmVbo::setVertices(int _i)
+{
+    currentVboVerts = _i;
+    vbo.updateVertexData(vecVboVerts[currentVboVerts].data(), vecVboVerts[currentVboVerts].size());
 }
