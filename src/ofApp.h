@@ -4,6 +4,8 @@
 #include "ofxSVG.h"
 #include "pmVbo.hpp"
 #include "ofxSyphon.h"
+#include "pmHexagonCanvas.hpp"
+
 
 typedef struct
 {
@@ -40,6 +42,7 @@ class ofApp : public ofBaseApp{
 
     /// FBO
     ofFbo               fboOut;
+    ofFbo               fboSyphon;
     ofVec2f             fboResolution;
 
     // IMAGE TEXTURE
@@ -51,7 +54,11 @@ class ofApp : public ofBaseApp{
     bool                    useSyphon;
     bool                    showVertices;
     bool                    useTransformMatrix;
+    bool                    useCubeColors;
 
+    /// HEXAGON CANVAS
+    pmHexagonCanvas         hexagonCanvas;
+    
     /// VARS
     int                     numVertexsOneHexagonWithCenter;
     int                     numVertexsOneHexagon;

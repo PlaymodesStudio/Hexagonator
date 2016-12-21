@@ -23,7 +23,7 @@ pmVbo::pmVbo()
     vecVboColors.resize(PMVBO_MAX_VECTORS);
     vecVboTexCoords.resize(PMVBO_MAX_VECTORS);
     
-    useTexture = false;
+    useTexture = true;
     drawMode = TRIANGLES;
 }
 //--------------------------------------------------------------
@@ -51,9 +51,11 @@ void pmVbo::setup(int _numElements,int _vertModulo)
 void pmVbo::setVertData(vector<ofVec3f> _v, int _index)
 {
     vecVboVerts[_index] = _v;
+    
     vbo.setVertexData(vecVboVerts[_index].data(),vecVboVerts[_index].size(),GL_DYNAMIC_DRAW);
     currentVboVerts = _index;
 
+    cout << "pmVbo : setting vert data for num vertices : " << _v.size() << " = " << vecVboVerts[_index].size() << endl;
 }
 
 //--------------------------------------------------------------
@@ -97,13 +99,13 @@ void pmVbo::setTextureReference(ofTexture _tex)
 //--------------------------------------------------------------
 void pmVbo::draw(int _primitive)
 {
-    //drawDebug(currentVboVerts);
+//    drawDebug(currentVboVerts);
     
     if(useTexture)
     {
         // BIND TEXTURE
         vbo.bind();
-        texture.bind();
+        //texture.bind();
     }
     
     switch(drawMode)
@@ -142,7 +144,7 @@ void pmVbo::draw(int _primitive)
     if(useTexture)
     {
         // UNBIND TEXTURE
-        texture.unbind();
+        //texture.unbind();
         vbo.unbind();
     }
 
@@ -191,6 +193,7 @@ ofPoint pmVbo::projectPointToLine(ofPoint Point,ofPoint LineStart,ofPoint LineEn
 //--------------------------------------------------------------
 void pmVbo::drawDebug(int _index)
 {
+    cout << "pmVbo drawing debug for index : " << _index << endl;
     // VERTEXS
     for(int i=0;i<vecVboVerts[_index].size();i++)
     {
