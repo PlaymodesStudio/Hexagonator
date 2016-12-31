@@ -15,7 +15,9 @@ pmHexagonCanvas::pmHexagonCanvas()
     numRings=35;
     numIdsPerRing=64;
 
-    hexagonsData.resize(numRings*numIdsPerRing);
+    //    vector<float> ringsRadius = { 142.224,153.599,163.647,175.084,186.791,198.733,210.743,223.235,235.692,249.293,262.73,276.35,290.542,304.961,318.797,333.73,348.333,363.898,379.651,395.129,410.934,428.658,446.176,463.945,482.558,501.519,521.008,542.217,563.313,584.573,607.385,656.708,630.816,680.376,706.984};
+    ringsRadius = { 142.5,153.5,163.5,175.0,186.791,198.733,210.743,223.235,235.692,249.293,262.73,276.35,290.542,304.961,318.797,333.73,348.333,363.898,379.651,395.129,410.934,432.658,450.176,468.945,488.558, 505.519,521.008,542.217,569.313,588.573,612.385,636,664.816,680.376,706.984};
+
 }
 
 //----------------------------------------------------------
@@ -29,7 +31,16 @@ void pmHexagonCanvas::setup(string _filename)
     cout << "SVGpaths has " << svg.getNumPath() << " paths. " << endl;
 
     numHexagons = svg.getNumPath();
-    
+
+    // resize index data to size of pixel texture
+    hexagonsIndexData.resize(numRings);
+    for(int i=0;i<numRings;i++)
+    {
+        hexagonsIndexData[i].resize(numIdsPerRing);
+    }
+    // resize hexagonsData to num hexagons
+    hexagonsData.resize(numHexagons);
+
     for(int i=0;i<numHexagons;i++)
     {
         // for each path/hexagon ... create the hexagon data
@@ -38,8 +49,21 @@ void pmHexagonCanvas::setup(string _filename)
         
         // determine which Ring and which IDInRing
         orderHexagonOnRingsAndIds(i);
-        
+
+        // remake texture coordinates based on rings and ids for a 64 x 35 texture ...
+        vector<ofVec2f> newTexCoord;
+        newTexCoord.resize(7);
+        for(int j=0;j<newTexCoord.size();j++)
+        {
+            //newTexCoord[j] = ofVec2f(0.5,0.5);
+            float halfPixelWidth = (1.0/64.0)/2;
+            float halfPixelHeight = (1.0/35.0)/2;
+            newTexCoord[j] = ofVec2f((float(hexagonsData[i].whichIdInRing)/64.0) + halfPixelWidth , (float(hexagonsData[i].whichRing)/35.0) + halfPixelHeight	);
+        }
+        hexagonsData[i].hexagon.setHexagonTexCoord(newTexCoord);
     }
+    
+    
     
 }
 
@@ -210,7 +234,7 @@ void pmHexagonCanvas::orderHexagonOnRingsAndIds(int _index)
         else if(j==53) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
         else if(j==54) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
         else if(j==55) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
-        else specialOffset = 0;
+        else specialOffset = -1.5;
         
 //        if(i==1) // draw ray lines
 //        {
@@ -223,6 +247,7 @@ void pmHexagonCanvas::orderHexagonOnRingsAndIds(int _index)
         //calculate the projected distance
         //ofPoint ofApp::projectPointToLine(ofPoint Point,ofPoint LineStart,ofPoint LineEnd)
         
+//        p = projectPointToLine(hexagonsData[_index].hexagon.getCentroid(), ofPoint(600,600), ofPoint(600 + 1200*cos(ofDegToRad(j*angleStepPerHexa + specialOffset)),600 + 1200*sin(ofDegToRad(j*angleStepPerHexa + specialOffset))));
         p = projectPointToLine(hexagonsData[_index].hexagon.getCentroid(), ofPoint(600,600), ofPoint(600 + 1200*cos(ofDegToRad(j*angleStepPerHexa + specialOffset)),600 + 1200*sin(ofDegToRad(j*angleStepPerHexa + specialOffset))));
         
         if(hexagonsData[_index].hexagon.getCentroid().distance(p) < minDiff)
@@ -248,24 +273,29 @@ void pmHexagonCanvas::orderHexagonOnRingsAndIds(int _index)
     angle = angle<0 ? angle+360 : angle;
     
     int whichRing = -1;
-    vector<float> ringsRadius = { 142.224,152.899,163.647,175.084,186.791,198.733,210.743,223.235,235.692,249.293,262.73,276.35,290.542,304.961,318.797,333.73,348.333,363.898,379.651,395.129,410.934,428.658,446.176,463.945,482.558,501.519,521.008,542.217,563.313,584.573,607.385,656.708,630.816,680.376,706.984};
-    float minDiffAngle = 10000000;
+    float minDiffAngle = 1000000.0f;
     
     for(int j=0;j<ringsRadius.size();j++)
     {
         float diff = fabs(radius-ringsRadius[j]);
+        
         if(diff < minDiffAngle)
         {
             minDiffAngle = diff;
             whichRing=j;
         }
+        
     }
     
+//    if(i%2) whichRing=0;
+//    else whichRing = 706.984;
     
     // RINGS ORDER put data 
     hexagonsData[_index].whichRing = whichRing;
     hexagonsData[_index].whichIdInRing = whichIndexInRing;
-        
+    
+    // set index Data into the right position
+    hexagonsIndexData[whichRing][whichIndexInRing] = _index;
 }
 
 //--------------------------------------------------------------

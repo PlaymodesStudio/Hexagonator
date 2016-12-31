@@ -1,6 +1,8 @@
+
 #include "ofApp.h"
 //--------------------------------------------------------------
 void ofApp::setup(){
+
 
     // Use GL_TEXTURE_2D Textures (normalized texture coordinates 0..1)
     ofDisableArbTex();
@@ -48,12 +50,12 @@ void ofApp::setup(){
     /////////////////////////////
 
     fboResolution = ofVec2f(1200,1200);
+    
     fboOut.allocate(fboResolution.x, fboResolution.y,GL_RGB,8);
     //fboOut.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
     fboOut.begin();
     ofClear(255,0,255, 0);
     fboOut.end();
-    
     
     fboSyphon.allocate(fboResolution.x, fboResolution.y,GL_RGB,8);
     //fboOut.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
@@ -68,33 +70,59 @@ void ofApp::setup(){
     syphon.setup();
     
     //using Syphon app Simple Server, found at http://syphon.v002.info/
-    syphon.setApplicationName("Simple Server");
-    syphon.setServerName("");
+//    syphon.setApplicationName("Simple Server");
+//    syphon.setServerName("");
 //    syphon.set("","Simple Server");
-//    syphon.set("MIRABCN_Generator","MIRAMAD_Generator");
-    useSyphon = true;
+    syphon.set("Gen_Grayscale","MIRABCN_Generator");
+    syphon.bind();
+    syphon.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
+    syphon.unbind();
+    useSyphon = false;
 
     /////////////////////////////
     // IMAGE AS TEXTRE
     /////////////////////////////
-    //image.load("./tex/mapaPixels64x35.png");
-    image.load("./tex/eye.jpg");
+    image.load("./tex/mapaPixels64x35_2.png");
+    //image.load("./tex/eye.jpg");
     image.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
-    pmVbo1.setTextureReference(image.getTexture());
+    //pmVbo1.setTextureReference(image.getTexture());
     
-    // use syphon texture
-//    if(useSyphon)
-//    {
-//        //syphon.bind();
-//        syphon.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
-//        pmVbo1.setTextureReference(syphon.getTexture());
-//        //syphon.unbind();
-//    }
+    // MASK
+    mask.load("./masks/testMask.png");
+
+    // VIDEO
+    videoPlayer.load("./videos/rings.mov");
+    videoPlayer.setLoopState(OF_LOOP_NORMAL);
+    videoPlayer.play();
+    while(!videoPlayer.isLoaded())
+    {
+      cout << " ... loading video " << endl;
+    }
+    videoPlayer.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
+    // !!!
+    pmVbo1.setTextureReference(videoPlayer.getTexture());
+    // !!!
+    
+    
+    ////////////
+    // OSC
+    ////////////
+    oscReceiver.setup(1234);
+    vecOsc.resize(64);
+    for(int i=0;i<vecOsc.size();i++)
+    {
+        vecOsc[i].resize(35);
+        for(int j=0;j<35;j++)
+        {
+            vecOsc[i][j] = 1.0;
+        }
+    }
     
     // HEXAGONS DATA AND CANVAS
     /////////////////////////////
     
     svgFilename = "./svg/test_svg_part.svg";
+    svgFilename = "./svg/santi2.svg";
 //        svgFilename = "./svg/testSVG3Hexagons.svg";
     //    svgFilename = "./svg/test_svg_part_nomes2.svg";
     //    svgFilename = "./svg/testOrdreRadial.svg";
@@ -121,14 +149,6 @@ void ofApp::setup(){
     pmVbo1.setColorData(hexagonCanvas.getColorData(),0);
     pmVbo1.setFacesData(hexagonCanvas.getFaceData(),0);
     pmVbo1.setDrawMode(TRIANGLES);
-    
-////    pmVbo1.setFacesData(faces,0);
-//    pmVbo1.setFacesData(facesRibonQuads,0);
-//    pmVbo1.setTexCoordsData(texCoordB,1);
-//    pmVbo1.setTexCoordsData(texCoordA,0);
-//    pmVbo1.setDrawMode(TRIANGLES);
-
-    
     
     /// TRANSFORM TBO STUFF (Texture Buffer Object)
     //////////////////////////////////////
@@ -167,7 +187,6 @@ void ofApp::setup(){
     // Note that we're allocating the texture as a Buffer Texture:
     // https://www.opengl.org/wiki/Buffer_Texture
     texCubeColors.allocateAsBufferTexture(bufferCubeColors,GL_RGBA32F);
-
     
      
     // SHADER INITS
@@ -186,19 +205,50 @@ void ofApp::setup(){
 }
 
 //--------------------------------------------------------------
+void ofApp::updateOsc()
+{
+    if(oscReceiver.hasWaitingMessages())
+    {
+        ofxOscMessage m;
+        oscReceiver.getNextMessage(m);
+//        cout << m.getAddress() << endl;
+        
+        int whichId;
+        int whichRing;
+        
+        for(int i=0;i<m.getNumArgs();i++)
+        {
+            //int                         getHexagonIndex(int x, int y){return hexagonsIndexData[x][y];};
+            whichRing = i % 35;
+            whichId = int(float(i) / 35.0);
+            
+            // save the osc value in the vector<vector<>>
+            vecOsc[whichId][whichRing] = m.getArgAsFloat(i);
+        }
+
+    }
+}
+
+//--------------------------------------------------------------
 void ofApp::updateMatrices()
 {
     vector<ofPoint> centr = hexagonCanvas.getCentroidData();
 
     // TRANSFORM MATRIX
-    for(size_t i=0;i<matricesTransform.size();i++){
+    for(size_t i=0;i<matricesTransform.size();i++)
+    {
         ofNode node;
         ofVec3f scale(1.0,1.0,1.0);
         
         float factor = sin (ofGetElapsedTimef()*2 + (i*0.5));
         
+        ofVec2f myHexagonCoordinates = hexagonCanvas.getHexagonIdAndRing(i);
+        factor = vecOsc[myHexagonCoordinates.x][myHexagonCoordinates.y];
+        //cout << "scale " << i << " : " << factor << endl;
+        
+        
         node.setPosition(ofVec3f(centr[i]));
-        node.setScale((ofMap(factor,-1.0,1.0,0.2,0.8)/1.0));
+        node.setScale((ofMap(factor,0.0,1.0,0.0,1.0)/1.0));
 
         matricesTransform[i] = node.getLocalTransformMatrix();
     }
@@ -319,68 +369,48 @@ void ofApp::updateVertexsForQuad()
 //--------------------------------------------------------------
 void ofApp::update()
 {
-    updateMatrices();
     //updateVertexsForQuad();
-    
+    updateOsc();
+    updateMatrices();
+
+    videoPlayer.update();
+    videoPlayer.setSpeed(0.125);
+
 }
 
 //--------------------------------------------------------------
 void ofApp::draw()
 {
-    
-    /// THIS IS THE WAY I FIGURED OUT HOW TO MAKE SYHPON WORK ...
-    
-//    if(useSyphon && ofGetFrameNum()==300)
-//    {
-//        syphon.bind();
-//        pmVbo1.setTextureReference(syphon.getTexture());
-//        pmVbo1.texture.setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
-//        syphon.unbind();
-//        cout << "binding syphon!!" << endl;
-//        
-//        //        syphon.bind();
-//        //        shader.begin();
-//        //        shader.setUniformTexture("uTexture",syphon.getTexture(),0);
-//        //        shader.end();
-//        //        syphon.unbind();
-//
-//    }
-    
-
-    
     //pmVbo1.updateVertData(vertexsRibbon,0);
     //vbo.updateVertexData(vecVboVerts[currentVboVerts].data(), vecVboVerts[currentVboVerts].size());
     
-    /// DRAW SYPHON INTO FBO TO RETRIEVE IT's TEXTURE
+    /// DRAW SYPHON INTO FBO TO LATER RETRIEVE IT's TEXTURE
     fboSyphon.begin();
-    syphon.draw(0,0,fboResolution.x,fboResolution.y);
+        syphon.draw(0,0,fboResolution.x,fboResolution.y);
     fboSyphon.end();
     
     
     string modeString;
     
     
+    //    ofEnableSmoothing();
+    //    ofEnableAntiAliasing();
     
     /// DRAW INTO FBO
     fboOut.begin();
-    
-//    ofEnableSmoothing();
-//    ofEnableAntiAliasing();
-
-    // SHADING ...
-
-    ofSetColor(0,64,128);
-    ofFill();
-
-    ofDrawRectangle(0,0,1200,1200);
-    
-    if(useShader)
     {
-        //image.getTexture().bind();
-        shader.begin();
+        ofSetColor(0,30,30);
+        ofFill();
+        ofDrawRectangle(0,0,1200,1200);
+        
+        
+        if(useShader)
+        {
+            shader.begin();
+            // choose which texture to feed into the shader (image or syphon)
             if(!useSyphon)
             {
-                shader.setUniformTexture("uTexture", image, 2);
+                shader.setUniformTexture("uTexture", videoPlayer, 2);
 //                image.bind();
 //                shader.setUniform1i("uTexture", 2);
 //                image.unbind();
@@ -389,109 +419,91 @@ void ofApp::draw()
             else
             {
                 shader.setUniformTexture("uTexture", fboSyphon.getTexture(), 2);
-//                syphon.bind();
-//                shader.setUniform1i("uTexture",2);
-//                syphon.unbind();
             }
-    }
-    
-    if(mode==0)
-    {
-        modeString = "svg draw";
+       }
         
-        ofSetColor(255,255,255);
-        svg.draw();
-    }
-    else if (mode == 1)
-    {
-        modeString = "pmVBO " ;
-
-        ofSetColor(255);
-        shader.setUniform4f("u_color", ofFloatColor(1.0,0.5,0.0,1.0));
-        
-        if(useTransformMatrix) shader.setUniform1i("u_useMatrix", 1);
-        else shader.setUniform1i("u_useMatrix", 0);
-
-        if(useCubeColors) shader.setUniform1i("u_useCubeColors", 1);
-        else shader.setUniform1i("u_useCubeColors", 0);
-
-        
-        pmVbo1.draw(drawPrimitive);
-
-    }
-
-    // ... END SHADING
-    if(useShader) shader.end();
-
-    if(showVertices)
-    {
-        // DRAW VERTEX COORDINATES
-        ofSetColor(255,255,0);
-        vector<ofVec3f> v= pmVbo1.getCurrentVertices();
-        int whichHexagon = 0;
-        for(int i=0;i<v.size();i++)
+        if(mode==0)
         {
-            whichHexagon = float(i)/7.0;
-//            if(i%7==0)
-                if(true)
-            {
-                // JU
-                ofDrawBitmapString(ofToString(i)  ,v[i].x + hexagonCanvas.getCentroidData()[whichHexagon].x, v[i].y + hexagonCanvas.getCentroidData()[whichHexagon].y) ; //+" : " + ofToString(v[i]),v[i].x, v[i].y);
-                //cout << "ofApp Draw :: drawing coordinates for vertex : " << i << " : " << v[i] << endl;
-                //ofDrawBitmapString(".",v[i].x,v[i].y);
-                //ofDrawBitmapString(ofToString(vboTexCoord[i]), vboVert[i].x, vboVert[i].y+20);
-            }
+            modeString = "svg draw";
+            
+            ofSetColor(255,255,255);
+            svg.draw();
+        }
+        else if (mode == 1)
+        {
+            modeString = "pmVBO " ;
+
+            ofSetColor(255);
+            shader.setUniform4f("u_color", ofFloatColor(1.0,0.5,0.0,1.0));
+            
+            if(useTransformMatrix) shader.setUniform1i("u_useMatrix", 1);
+            else shader.setUniform1i("u_useMatrix", 0);
+
+            if(useCubeColors) shader.setUniform1i("u_useCubeColors", 1);
+            else shader.setUniform1i("u_useCubeColors", 0);
+
+            pmVbo1.draw(drawPrimitive);
 
         }
+
+        // ... END SHADING
+        if(useShader) shader.end();
+
+        if(showVertices)
+        {
+            // DRAW VERTEX COORDINATES
+            ofSetColor(255,255,0);
+            vector<ofVec3f> v= pmVbo1.getCurrentVertices();
+            int whichHexagon = 0;
+            for(int i=0;i<v.size();i++)
+            {
+                whichHexagon = float(i)/7.0;
+                if(true)
+                {
+                    ofDrawBitmapString(ofToString(i)  ,v[i].x + hexagonCanvas.getCentroidData()[whichHexagon].x, v[i].y + hexagonCanvas.getCentroidData()[whichHexagon].y) ; //+" : " + ofToString(v[i]),v[i].x, v[i].y);
+                }
+            }
+        }
     }
-    // draw helpers
-    ///////////////////
     
-    // draw texture
-    ofSetColor(255);
-    image.draw(0,ofGetHeight()-100,200,200);
-    syphon.draw(200,ofGetHeight()-100,200,200);
-    
-    // draw center
-    
-    ofSetColor(255,0,255);
-    ofDrawCircle(600,600, 5);
+    /// DRAW THE MASK
+//    ofSetColor(255);
+//    mask.draw(0,0,1200,1200);
 
-    ofSetColor(255,0,255,128);
+    // DRAW CENTER AND CIRCLE RADIUS
+//    ofSetColor(255);
+//    ofDrawLine(0,600,1200,600);
+//    ofDrawLine(600,0,600,1200);
+//    ofNoFill();
+//    ofSetCircleResolution(128);
+//    ofDrawCircle(600,600,ofGetMouseX());
+//    ofFill();
 
-    
-//    // draw rays of 64ths
-//    for(int i=0;i<64;i++)
-//    {
-//        float specialOffset = 0.0;
-//        if(i==4) specialOffset = -0.5 ;//* sin(ofGetElapsedTimef()/8);
-//        else specialOffset = 0;
-//        
-//        ofDrawLine(600, 600,600 + 1000*cos(ofDegToRad(angleStepPerHexa*i + specialOffset)),600 + 1000*sin(ofDegToRad(angleStepPerHexa*i + specialOffset)) );
-//        
-//        ofDrawBitmapString(ofToString(i), 600 + 300*cos(ofDegToRad((angleStepPerHexa*i + specialOffset))), 600 + 300*sin(ofDegToRad((angleStepPerHexa*i + specialOffset))));
-//    }
-    
-//    // draw centroids
-//    for(int i=0;i<hexagonCentroids.size();i++)
-//    {
-//        //ofDrawLine(600, 600,600 + 1000*cos(ofDegToRad((angleStep*i)+ (angleStep/2.0))),600 + 1000*sin(ofDegToRad((angleStep*i)+ (angleStep/2.0))) );
-//        ofSetColor(255,255,0);
-//        ofDrawCircle(hexagonCentroids[i].x,hexagonCentroids[i].y, 3);
-//    }
 
+    ofNoFill();
+    ofSetCircleResolution(128);
+
+    for(int i=0;i<hexagonCanvas.ringsRadius.size();i++)
+    {
+      ofDrawCircle(600,600,hexagonCanvas.ringsRadius[i]);
+    }
+    ofFill();
     
     
+    /// END FBO !! 
     fboOut.end();
 
     /// DRAW FBO TO SCREEN
     ofPushMatrix();
-    ofSetColor(255,255,255);
-    fboOut.draw(0,0,ofGetHeight(),ofGetHeight());
-
-
+        ofSetColor(255,255,255);
+        fboOut.draw(0,0,ofGetHeight(),ofGetHeight());
     ofPopMatrix();
-    
+
+    // draw texture previews
+//    ofSetColor(255);
+//    image.draw(0,ofGetHeight()-100,200,200);
+//    syphon.draw(200,ofGetHeight()-100,200,200);
+
     /// DRAW INFO STRING
     ofSetColor(255);
     ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())) + " | Mode : " + ofToString(mode) + " " +modeString + " Shader? : " + ofToString(useShader),10,ofGetHeight()*.90 +  30);

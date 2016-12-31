@@ -1,5 +1,6 @@
 ofxDatGui_PM
 ofxExprtk
+ofxOsc
 ofxSvg
 ofxSyphon
 ofxXmlSettings

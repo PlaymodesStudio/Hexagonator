@@ -5,13 +5,14 @@
 #include "pmVbo.hpp"
 #include "ofxSyphon.h"
 #include "pmHexagonCanvas.hpp"
-
+#include "ofxOsc.h"
 
 typedef struct
 {
     int _ring;
     int _num;
     int _pathId;
+    float _scale;
 } hexagonPixel;
 
 class ofApp : public ofBaseApp{
@@ -48,6 +49,10 @@ class ofApp : public ofBaseApp{
     // IMAGE TEXTURE
     ofImage                 image;
     ofImage                 imageToSave;
+    ofImage                 mask;
+    
+    // VIDEO
+    ofVideoPlayer           videoPlayer;
 
     // SYPHON TEXTURE
     ofxSyphonClient         syphon;
@@ -58,6 +63,11 @@ class ofApp : public ofBaseApp{
 
     /// HEXAGON CANVAS
     pmHexagonCanvas         hexagonCanvas;
+    
+    /// OSC
+    ofxOscReceiver          oscReceiver;
+    void                    updateOsc();
+    vector<vector<float>>   vecOsc;
     
     /// VARS
     int                     numVertexsOneHexagonWithCenter;

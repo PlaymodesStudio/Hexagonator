@@ -19,6 +19,7 @@ typedef struct
     pmHexagonGuell      hexagon;
     int                 whichRing;
     int                 whichIdInRing;
+    float               scale;
 }hexagonData;
 
 class pmHexagonCanvas
@@ -34,6 +35,11 @@ class pmHexagonCanvas
         vector<ofFloatColor>        getColorData();
         vector<ofIndexType>         getFaceData();
         vector<ofPoint>             getCentroidData();
+        ofVec2f                     getHexagonIdAndRing(int _index){return ofVec2f(hexagonsData[_index].whichIdInRing , hexagonsData[_index].whichRing );};
+//        void                        setHexagonScale(int _index, float _f){hexagonsData[_index].scale=_f;};
+//        float                       getHexagonScale(int _index){return hexagonsData[_index].scale;};
+    
+        vector<float>               ringsRadius;
     
     private :
 
@@ -42,6 +48,7 @@ class pmHexagonCanvas
     
         ofxSVG                      svg;
         vector<hexagonData>         hexagonsData;
+        vector<vector<int>>  hexagonsIndexData;  // each index gives the position on the hexagonsData vector of the [ring][id] element.
         string                      svgFilename;
     
         int                         numHexagons;

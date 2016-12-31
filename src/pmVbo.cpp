@@ -92,6 +92,7 @@ void pmVbo::setTexCoordsData(vector<ofVec2f> _v, int _index)
 //--------------------------------------------------------------
 void pmVbo::setTextureReference(ofTexture _tex)
 {
+    cout << _tex.getWidth() << " ... " << _tex.getHeight() << endl;
     texture.allocate(_tex.getWidth(),_tex.getHeight(),GL_RGB);
     texture = _tex;
 }
