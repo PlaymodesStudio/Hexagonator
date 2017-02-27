@@ -4,18 +4,20 @@
 void ofApp::setup(){
 
 
+
     // Use GL_TEXTURE_2D Textures (normalized texture coordinates 0..1)
     ofDisableArbTex();
 
-    ofSetVerticalSync(false);
+    ofSetVerticalSync(true);
+    ofSetFrameRate(60);
     ofBackground(32);
     
     /////////////////////////////
     /// VARS
     /////////////////////////////
 
-    mode = 1;
-    numModes = 2;
+    mode = 0;
+    numModes = 1;
     numRings = 35;
     numHexasPerRing = 64;
     useShader = true;
@@ -25,8 +27,30 @@ void ofApp::setup(){
     numVertexsOneHexagonWithCenter = 7;
     numVertexsOneHexagon = 6;
     drawPrimitive = GL_TRIANGLES;
+    textureSource = 1; // image as initial texture source
+    recordedFrame = 0;
+    lastTimeWeReceivedOsc = 0.0;
+    usingOsc = false;
     
+    /////////////////////////////
+    /// VIDEO RECORDING
+    /////////////////////////////
+
+    isRecording = false;
     
+//    fileExt = ".mov"; // ffmpeg uses the extension to determine the container type. run 'ffmpeg -formats' to see supported formats
+//    desiredFramerate = 60;
+//    
+//    // override the default codecs if you like
+//    // run 'ffmpeg -codecs' to find out what your implementation supports (or -formats on some older versions)
+//    // prores codecs info !! https://trac.ffmpeg.org/wiki/Encode/VFX
+//    
+////    videoRecorder.setVideoCodec("prores");
+//    videoRecorder.setVideoCodec("png");
+//    //videoRecorder.setVideoBitrate("800k");
+//    //videoRecorder.setAudioCodec("mp3");
+//    //videoRecorder.setAudioBitrate("192k");
+//    ofAddListener(videoRecorder.outputFileCompleteEvent, this, &ofApp::recordingComplete);
 
     /////////////////////////////
     /// SHADER
@@ -77,30 +101,51 @@ void ofApp::setup(){
     syphon.bind();
     syphon.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
     syphon.unbind();
-    useSyphon = false;
 
     /////////////////////////////
     // IMAGE AS TEXTRE
     /////////////////////////////
-    image.load("./tex/mapaPixels64x35_2.png");
+    imageFilename = "./tex/64x35RGB.png";
+    image.load(imageFilename);
     //image.load("./tex/eye.jpg");
     image.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
     //pmVbo1.setTextureReference(image.getTexture());
     
     // MASK
-    mask.load("./masks/testMask.png");
+    mask.load("./masks/maskAll.png");
+    maskWireframe.load("./masks/wireYellow.png");
+    
 
     // VIDEO
-    videoPlayer.load("./videos/rings.mov");
+    videoFilename = "./videos/indexsh264.mov";
+    videoPlayer.load(videoFilename);
     videoPlayer.setLoopState(OF_LOOP_NORMAL);
-    videoPlayer.play();
+    if(textureSource==1) videoPlayer.play();
+    
+    
     while(!videoPlayer.isLoaded())
     {
       cout << " ... loading video " << endl;
     }
     videoPlayer.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
+    
+    
     // !!!
-    pmVbo1.setTextureReference(videoPlayer.getTexture());
+    switch (textureSource)
+    {
+        case 0:
+            pmVbo1.setTextureReference(image.getTexture());
+            break;
+        case 1:
+            pmVbo1.setTextureReference(videoPlayer.getTexture());
+            break;
+        case 2:
+            pmVbo1.setTextureReference(syphon.getTexture());
+            break;
+            
+        default:
+            break;
+    }
     // !!!
     
     
@@ -108,21 +153,14 @@ void ofApp::setup(){
     // OSC
     ////////////
     oscReceiver.setup(1234);
-    vecOsc.resize(64);
-    for(int i=0;i<vecOsc.size();i++)
-    {
-        vecOsc[i].resize(35);
-        for(int j=0;j<35;j++)
-        {
-            vecOsc[i][j] = 1.0;
-        }
-    }
+    resetVecOscVector();
     
     // HEXAGONS DATA AND CANVAS
     /////////////////////////////
     
+    
     svgFilename = "./svg/test_svg_part.svg";
-    svgFilename = "./svg/santi2.svg";
+  svgFilename = "./svg/santi2.svg";
 //        svgFilename = "./svg/testSVG3Hexagons.svg";
     //    svgFilename = "./svg/test_svg_part_nomes2.svg";
     //    svgFilename = "./svg/testOrdreRadial.svg";
@@ -145,7 +183,35 @@ void ofApp::setup(){
 //    /////////////////////////////
 //
     pmVbo1.setVertData(hexagonCanvas.getVertexData(), 0);
+
+    //////
+    //////
+    // vector<ofVec2f> vecTexCoord
+    // try to get centroid data to convert it to texCoord of centroids (we need 2 way of texCoord ... based on Rings and based on Centroids)
+    // we got 1 centroid per path = 2735 paths
+    vector<ofPoint> vCentroidPoints = hexagonCanvas.getCentroidData();
+    cout << "Getting texCoord Data ... size " << hexagonCanvas.getTextureCoords().size() << endl;
+    cout << "Getting Centroid Data ... size " << vCentroidPoints.size() << endl;
+    vector<ofVec2f> vecCentroidTexCoord;
+    vecCentroidTexCoord.resize(hexagonCanvas.getNumHexagons()*7);
+    cout << "MY Centroid Data ... size " << vecCentroidTexCoord.size() << endl;
+    
+    for(int i=0;i<hexagonCanvas.getNumHexagons();i++)
+    {
+        for(int j=0;j<7;j++)
+        {
+            vecCentroidTexCoord[(i*7)+j] = vCentroidPoints[i] / 1200.0 ;
+        }
+    }
+    // index 1
+    pmVbo1.setTexCoordsData(vecCentroidTexCoord,1);
+    // index 0
     pmVbo1.setTexCoordsData(hexagonCanvas.getTextureCoords(),0);
+
+    //pmVbo1.setTexCoordsData(, 1);
+    //////
+    //////
+
     pmVbo1.setColorData(hexagonCanvas.getColorData(),0);
     pmVbo1.setFacesData(hexagonCanvas.getFaceData(),0);
     pmVbo1.setDrawMode(TRIANGLES);
@@ -200,18 +266,24 @@ void ofApp::setup(){
     shader.setUniform1i("u_useMatrix", 1);
     shader.end();
 
-
     updateMatrices();
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::updateOsc()
 {
+    float now = ofGetElapsedTimef();
+    
     if(oscReceiver.hasWaitingMessages())
     {
+        usingOsc = true;
+        
+        lastTimeWeReceivedOsc = now;
+        
         ofxOscMessage m;
         oscReceiver.getNextMessage(m);
-//        cout << m.getAddress() << endl;
+        //cout << m.getAddress() << endl;
         
         int whichId;
         int whichRing;
@@ -226,6 +298,14 @@ void ofApp::updateOsc()
             vecOsc[whichId][whichRing] = m.getArgAsFloat(i);
         }
 
+    }
+    
+    if( ((now - lastTimeWeReceivedOsc) > 3.0) && usingOsc )
+    {
+        usingOsc = false;
+        cout << "RESETTING OSC VECTOR :: seems like we're not receiving any more OSC????  "  << (now - lastTimeWeReceivedOsc) << endl;
+        
+        resetVecOscVector();
     }
 }
 
@@ -373,9 +453,9 @@ void ofApp::update()
     updateOsc();
     updateMatrices();
 
-    videoPlayer.update();
-    videoPlayer.setSpeed(0.125);
+    if(textureSource==1 && videoPlayer.isLoaded()) videoPlayer.update();
 
+   
 }
 
 //--------------------------------------------------------------
@@ -385,61 +465,63 @@ void ofApp::draw()
     //vbo.updateVertexData(vecVboVerts[currentVboVerts].data(), vecVboVerts[currentVboVerts].size());
     
     /// DRAW SYPHON INTO FBO TO LATER RETRIEVE IT's TEXTURE
-    fboSyphon.begin();
+    if(textureSource==2)
+    {
+        fboSyphon.begin();
         syphon.draw(0,0,fboResolution.x,fboResolution.y);
-    fboSyphon.end();
+        fboSyphon.end();
+    }
     
-    
-    string modeString;
-    
-    
-    //    ofEnableSmoothing();
-    //    ofEnableAntiAliasing();
-    
+    //////////////////////
     /// DRAW INTO FBO
+    //////////////////////
+    
     fboOut.begin();
     {
-        ofSetColor(0,30,30);
+        // draw background
+        ofSetColor(0,0,0);
         ofFill();
         ofDrawRectangle(0,0,1200,1200);
-        
         
         if(useShader)
         {
             shader.begin();
             // choose which texture to feed into the shader (image or syphon)
-            if(!useSyphon)
-            {
-                shader.setUniformTexture("uTexture", videoPlayer, 2);
+                switch (textureSource)
+                {
+                    case 0:
+                        shader.setUniformTexture("uTexture", image, 2);
+                        break;
+                    case 1:
+                        shader.setUniformTexture("uTexture", videoPlayer, 2);
+                        break;
+                    case 2:
+                        shader.setUniformTexture("uTexture", fboSyphon.getTexture(), 2);
+                        break;
+                        
+                    default:
+                        break;
+                }
+//                shader.setUniformTexture("uTexture", videoPlayer, 2);
+//                shader.setUniformTexture("uTexture", image, 2);
 //                image.bind();
 //                shader.setUniform1i("uTexture", 2);
 //                image.unbind();
                 
-            }
-            else
-            {
-                shader.setUniformTexture("uTexture", fboSyphon.getTexture(), 2);
-            }
        }
         
-        if(mode==0)
+        if (mode == 0)
         {
-            modeString = "svg draw";
-            
-            ofSetColor(255,255,255);
-            svg.draw();
-        }
-        else if (mode == 1)
-        {
-            modeString = "pmVBO " ;
-
             ofSetColor(255);
             shader.setUniform4f("u_color", ofFloatColor(1.0,0.5,0.0,1.0));
             
             if(useTransformMatrix) shader.setUniform1i("u_useMatrix", 1);
             else shader.setUniform1i("u_useMatrix", 0);
 
-            if(useCubeColors) shader.setUniform1i("u_useCubeColors", 1);
+            if(useCubeColors)
+            {
+                shader.setUniform1i("u_useCubeColors", 1);
+            }
             else shader.setUniform1i("u_useCubeColors", 0);
 
             pmVbo1.draw(drawPrimitive);
@@ -467,9 +549,41 @@ void ofApp::draw()
     }
     
     /// DRAW THE MASK
-//    ofSetColor(255);
-//    mask.draw(0,0,1200,1200);
+    ofSetColor(128,128,128,128);
+    maskWireframe.draw(0,0,1200,1200);
+    ofSetColor(255);
+    mask.draw(0,0,1200,1200);
 
+    /// DRAW VIDEO FILE INFO
+    if(isRecording) ofSetColor(255,0,0);
+    else ofSetColor(128);
+    
+    switch (textureSource)
+    {
+        case 0:
+            ofDrawBitmapString(imageFilename + " : " + ofToString(videoPlayer.getCurrentFrame()),550,30);
+            ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), 550,45);
+            break;
+        case 1:
+            if(videoPlayer.isLoaded())
+            {
+                ofDrawBitmapString(videoFilename + " // Current Frame :  " + ofToString(videoPlayer.getCurrentFrame()),550,30);
+            }
+            ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), 550,45);
+            break;
+        case 2:
+            ofDrawBitmapString("Syhpon",550,30);
+            ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), 550,45);
+            break;
+            
+        default:
+            break;
+    }
+    if(isRecording)
+    {
+        ofDrawBitmapString("REC : Recorded Frame : " + ofToString(recordedFrame) + " // Time : " +ofToString(ofGetElapsedTimef()), 550,60 );
+    }
+    
     // DRAW CENTER AND CIRCLE RADIUS
 //    ofSetColor(255);
 //    ofDrawLine(0,600,1200,600);
@@ -480,23 +594,89 @@ void ofApp::draw()
 //    ofFill();
 
 
-    ofNoFill();
-    ofSetCircleResolution(128);
-
-    for(int i=0;i<hexagonCanvas.ringsRadius.size();i++)
-    {
-      ofDrawCircle(600,600,hexagonCanvas.ringsRadius[i]);
-    }
-    ofFill();
+    // DRAW CIRCLE RADIUS
+//    ofNoFill();
+//    ofSetColor(127);
+//    ofSetCircleResolution(128);
+//    for(int i=0;i<hexagonCanvas.ringsRadius.size();i++)
+//    {
+//      ofDrawCircle(600,600,hexagonCanvas.ringsRadius[i]);
+//    }
+//    ofFill();
     
     
     /// END FBO !! 
     fboOut.end();
 
+    ///
+    // RECORDING !!
+    ///
+    
+    
+//    if(isRecording)
+//    { // FRAME NEW ?????????
+//        ofPixels pixels;
+//        fboOut.readToPixels(pixels);
+//        bool success = videoRecorder.addFrame(pixels);
+//        if (!success) {
+//            ofLogWarning("This frame was not added!");
+//        }
+//    }
+//    
+//    // Check if the video recorder encountered any error while writing video frame or audio smaples.
+//    if (videoRecorder.hasVideoError()) {
+//        ofLogWarning("The video recorder failed to write some frames!");
+//    }
+//    
+//    if (videoRecorder.hasAudioError()) {
+//        ofLogWarning("The video recorder failed to write some audio samples!");
+//    }
+    ///
+    ///
+    /// END RECORDING !!
+
+    
+    
+    if(isRecording && (textureSource==1))
+    {
+        //currentFolderName
+        
+        if(recordedFrame>videoPlayer.getTotalNumFrames()-1)
+        {
+            // stop the recording
+            isRecording = false;
+            recordedFrame = 0;
+            videoPlayer.play();
+            videoPlayer.setPaused(false);
+            
+        }
+        else
+        {
+            cout << "Rendering video : Length " << videoPlayer.getTotalNumFrames() << " // Rec.Frames = " << recordedFrame << endl;
+
+            ofImage currentFrame;
+            ofPixels pixels;
+            fboOut.readToPixels(pixels);
+            currentFrame.allocate(fboResolution.x,fboResolution.y, OF_IMAGE_COLOR);
+            currentFrame.setFromPixels(pixels);
+            currentFrame.save(currentFolderName + "/" +ofToString(recordedFrame) +".png" );
+            
+            videoPlayer.nextFrame();
+            
+            
+        }
+        
+        recordedFrame = recordedFrame + 1;
+        
+    }
+
+    
+    
+    
     /// DRAW FBO TO SCREEN
     ofPushMatrix();
         ofSetColor(255,255,255);
-        fboOut.draw(0,0,ofGetHeight(),ofGetHeight());
+        fboOut.draw(0,0,ofGetWidth(),ofGetWidth());
     ofPopMatrix();
 
     // draw texture previews
@@ -504,9 +684,6 @@ void ofApp::draw()
 //    image.draw(0,ofGetHeight()-100,200,200);
 //    syphon.draw(200,ofGetHeight()-100,200,200);
 
-    /// DRAW INFO STRING
-    ofSetColor(255);
-    ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())) + " | Mode : " + ofToString(mode) + " " +modeString + " Shader? : " + ofToString(useShader),10,ofGetHeight()*.90 +  30);
     
     /// SAVE IMAGE
     if(saveNow)
@@ -520,6 +697,7 @@ void ofApp::draw()
     }
 
 }
+                      
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
@@ -534,9 +712,10 @@ void ofApp::keyPressed(int key){
     }
     else if(key=='t')
     {
-        int i = (pmVbo1.currentVboTexCoords + 1)%3;
-        pmVbo1.setTexCoordsIndex(i);
-        cout << " Set Tex Coords : " << i << endl;
+        
+        // cout change tex coord test
+        pmVbo1.setTexCoordsIndex(1);
+        
     }
     else if(key=='u')
     {
@@ -546,29 +725,31 @@ void ofApp::keyPressed(int key){
     {
         pmVbo1.setUseTexture(false);
     }
-    else if(key=='m')
-    {
-        pmVbo1.setDrawMode(CONTOURS);
-    }
-    else if(key=='M')
-    {
-        pmVbo1.setDrawMode(TRIANGLES);
-    }
     else if(key=='n')
     {
         pmVbo1.setDrawMode(QUADS);
     }
-    else if(key=='p')
-    {
-        drawPrimitive=GL_LINE_LOOP;
-    }
-    else if(key=='P')
-    {
-        drawPrimitive=GL_TRIANGLES;
-    }
     else if(key=='o')
     {
         drawPrimitive=GL_QUADS;
+    }
+    else if(key=='p')
+    {
+        if(videoPlayer.isPaused()) videoPlayer.setPaused(false);
+        else videoPlayer.setPaused(true);
+        //videoPlayer.stop();
+        cout << " pausing " << endl;
+//        drawPrimitive=GL_LINE_LOOP;
+    }
+    else if(key=='-')
+    {
+        videoPlayer.nextFrame();
+        //        drawPrimitive=GL_TRIANGLES;
+    }
+    else if(key=='.')
+    {
+        videoPlayer.previousFrame();
+        //        drawPrimitive=GL_TRIANGLES;
     }
     else if(key=='h')
     {
@@ -576,19 +757,15 @@ void ofApp::keyPressed(int key){
     }
     else if(key=='1')
     {
-        pmVbo1.setVertices(0);
-        cout << "1" << endl;
+        textureSource=0;
     }
     else if(key=='2')
     {
-        pmVbo1.setVertices(1);
-        cout << "2" << endl;
+        textureSource=1;
     }
     else if(key=='3')
     {
-        pmVbo1.setVertices(2);
-        cout << "3" << endl;
-
+        textureSource=2;
     }
     else if(key=='i')
     {
@@ -602,14 +779,68 @@ void ofApp::keyPressed(int key){
     {
         useCubeColors = !useCubeColors;
     }
-    else if(key=='y')
+    else if(key=='q')
     {
-        useSyphon = !useSyphon;
+        isRecording=!isRecording;
+        
+        if(isRecording)
+        {
+            if(textureSource==1) // video
+            {
+                // extract video filename
+                string videoName;
+                vector<string> vfs = ofSplitString(videoFilename, "/");
+                videoName = vfs[vfs.size()-1];
+                
+                // create folder
+                string path = "./videoCaptures/" + videoName + "_" +ofToString(ofGetTimestampString());
+                currentFolderName = path;
+                ofDirectory dir(path);
+                if(!dir.exists())
+                {
+                    dir.create(true);
+                    //videoPlayer.stop();
+                    videoPlayer.setPosition(0.0);
+                    videoPlayer.setPaused(true);
+                    
+                    recordedFrame = 0;
+                    
+                    cout << "STARTING NEW RENDERING : Video Pos ." << videoPlayer.getPosition() << endl;
+                }
+            }
+            else
+            {
+                recordedFrame = 0;
+                capture.startRecording("capture.mov", 60.0);
+            }
+        }
+        else  // NOT RECORDING
+        {
+            if(textureSource!=1)
+            {
+                capture.stopRecording();
+            }
+            else if (textureSource==1)
+            {
+                videoPlayer.play();
+            }
+        }
+        //        if(!isRecording)
+//        {
+//            cout << ">>>>> STOP RECORDING" << endl;
+//            videoRecorder.close();
+//        }
+//        else
+//        {
+//            cout << ">>>> START RECORDING !!!!! " << endl;
+//            videoRecorder.setup("./recordings/" +ofGetTimestampString()+fileExt, fboOut.getWidth(), fboOut.getHeight(), desiredFramerate, 0, 0);
+//            videoRecorder.start();
+//        }
     }
-    
-    
+
 }
 
+                      
 //--------------------------------------------------------------
 void ofApp::keyReleased(int key){
 
@@ -655,20 +886,48 @@ void ofApp::gotMessage(ofMessage msg){
 
 }
 
+                      
 //--------------------------------------------------------------
 void ofApp::dragEvent(ofDragInfo info)
 {
-    useSyphon = false;
     
     if( info.files.size() > 0 )
     {
-        image.load(info.files[0]);
-        image.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
-        pmVbo1.setTextureReference(image.getTexture());
+        vector<string> dragFileName = ofSplitString(info.files[0], "/");
+        string dragFileExtension = ofSplitString(dragFileName[dragFileName.size()-1],".")[1];
+        cout << ">> Dragged File ... \n" << info.files[0] << " : ext: " << dragFileExtension << endl;
+        if(dragFileExtension=="png" || dragFileExtension == "jpg")
+        {
+            textureSource = 0;
+            cout << "Loading new texture ... " << endl;
+            imageFilename = info.files[0];
+            image.load(imageFilename);
+            image.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
+            pmVbo1.setTextureReference(image.getTexture());
+            
+            if(videoPlayer.isLoaded()) videoPlayer.stop();
+            
+        }
+        else if (dragFileExtension=="mov")
+        {
+            textureSource = 1;
+            cout << "Loading new video ... " << endl;
+            videoFilename=ofToString("./videos/" + ofSplitString(dragFileName[dragFileName.size()-1],".")[0] +"." +dragFileExtension);
+            videoPlayer.load(videoFilename);
+            videoPlayer.setLoopState(OF_LOOP_NORMAL);
+            videoPlayer.play();
+            while(!videoPlayer.isLoaded())
+            {
+                cout << " ... loading video " << endl;
+            }
+            videoPlayer.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
+            pmVbo1.setTextureReference(videoPlayer.getTexture());
+        }
     }
 
 }
 
+                      
 //--------------------------------------------------------------
 bool ofApp::sortPointsOnDistanceToOrigin(ofPoint &p1, ofPoint &p2)
 {
@@ -681,6 +940,7 @@ bool ofApp::sortPointsOnDistanceToOrigin(ofPoint &p1, ofPoint &p2)
 }
 
 
+                      
 //--------------------------------------------------------------
 ofPoint ofApp::projectPointToLine(ofPoint Point,ofPoint LineStart,ofPoint LineEnd)
 {
@@ -710,3 +970,29 @@ ofPoint ofApp::projectPointToLine(ofPoint Point,ofPoint LineStart,ofPoint LineEn
     
     return Intersection;//.length();
 }
+//--------------------------------------------------------------
+void ofApp::recordingComplete(ofxVideoRecorderOutputFileCompleteEventArgs& args){
+    cout << "The recoded video file is now complete." << endl;
+}
+
+//--------------------------------------------------------------
+void ofApp::exit(){
+    ofRemoveListener(videoRecorder.outputFileCompleteEvent, this, &ofApp::recordingComplete);
+    videoRecorder.close();
+}
+
+//--------------------------------------------------------------
+void ofApp::resetVecOscVector()
+{
+  vecOsc.resize(64);
+  for(int i=0;i<vecOsc.size();i++)
+  {
+      vecOsc[i].resize(35);
+      for(int j=0;j<35;j++)
+      {
+          vecOsc[i][j] = 1.0;
+      }
+  }
+  
+}
+                      

@@ -16,7 +16,7 @@ pmHexagonCanvas::pmHexagonCanvas()
     numIdsPerRing=64;
 
     //    vector<float> ringsRadius = { 142.224,153.599,163.647,175.084,186.791,198.733,210.743,223.235,235.692,249.293,262.73,276.35,290.542,304.961,318.797,333.73,348.333,363.898,379.651,395.129,410.934,428.658,446.176,463.945,482.558,501.519,521.008,542.217,563.313,584.573,607.385,656.708,630.816,680.376,706.984};
-    ringsRadius = { 142.5,153.5,163.5,175.0,186.791,198.733,210.743,223.235,235.692,249.293,262.73,276.35,290.542,304.961,318.797,333.73,348.333,363.898,379.651,395.129,410.934,432.658,450.176,468.945,488.558, 505.519,521.008,542.217,569.313,588.573,612.385,636,664.816,680.376,706.984};
+    ringsRadius = { 142.5,153.5,163.5,168.5,188.791,198.733,210.743,223.235,235.692,249.293,262.73,276.35,290.542,304.961,318.797,333.73,348.333,363.898,379.651,395.129,410.934,432.658,450.176,468.945,488.558, 505.519,521.008,548.217,569.313,588.573,612.385,636,664.816,680.376,706.984};
 
 }
 
@@ -192,7 +192,8 @@ void pmHexagonCanvas::orderHexagonOnRingsAndIds(int _index)
         if(j==4) specialOffset = -0.5; //* sin(ofGetElapsedTimef()/8);
         else if(j==5) specialOffset = -0.5; //* sin(ofGetElapsedTimef()/8);
         else if(j==7) specialOffset = -0.5; //* sin(ofGetElapsedTimef()/8);
-        else if(j==9) specialOffset = -0.35; //* sin(ofGetElapsedTimef()/8);
+        else if(j==8) specialOffset = -0.35; //* sin(ofGetElapsedTimef()/8);
+        else if(j==9) specialOffset = -3.0; //* sin(ofGetElapsedTimef()/8);
         else if(j==10) specialOffset = -0.35; //* sin(ofGetElapsedTimef()/8);
         else if(j==11) specialOffset = -0.5; //* sin(ofGetElapsedTimef()/8);
         else if(j==12) specialOffset = -0.55; //* sin(ofGetElapsedTimef()/8);
@@ -207,7 +208,7 @@ void pmHexagonCanvas::orderHexagonOnRingsAndIds(int _index)
         else if(j==21) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
         else if(j==22) specialOffset = -1.5; //* sin(ofGetElapsedTimef()/8);
         else if(j==23) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
-        else if(j==24) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
+        else if(j==24) specialOffset = -0.55; //* sin(ofGetElapsedTimef()/8);
         else if(j==25) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
         else if(j==26) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
         else if(j==27) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
@@ -217,8 +218,8 @@ void pmHexagonCanvas::orderHexagonOnRingsAndIds(int _index)
         else if(j==35) specialOffset = -0.55; //* sin(ofGetElapsedTimef()/8);
         else if(j==37) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
         else if(j==38) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
-        else if(j==39) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
-        else if(j==40) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
+        else if(j==39) specialOffset = -0.15; //* sin(ofGetElapsedTimef()/8);
+        else if(j==40) specialOffset = -1.35; //* sin(ofGetElapsedTimef()/8);
         else if(j==41) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
         else if(j==42) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
         else if(j==43) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
@@ -232,8 +233,8 @@ void pmHexagonCanvas::orderHexagonOnRingsAndIds(int _index)
         else if(j==51) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
         else if(j==52) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
         else if(j==53) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
-        else if(j==54) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
-        else if(j==55) specialOffset = -1.55; //* sin(ofGetElapsedTimef()/8);
+        else if(j==54) specialOffset = -0.55; //* sin(ofGetElapsedTimef()/8);
+        else if(j==55) specialOffset = -0.55; //* sin(ofGetElapsedTimef()/8);
         else specialOffset = -1.5;
         
 //        if(i==1) // draw ray lines

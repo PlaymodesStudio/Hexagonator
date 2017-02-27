@@ -48,7 +48,7 @@ class pmHexagonCanvas
     
         ofxSVG                      svg;
         vector<hexagonData>         hexagonsData;
-        vector<vector<int>>  hexagonsIndexData;  // each index gives the position on the hexagonsData vector of the [ring][id] element.
+        vector<vector<int>>         hexagonsIndexData;  // each index gives the position on the hexagonsData vector of the [ring][id] element.
         string                      svgFilename;
     
         int                         numHexagons;

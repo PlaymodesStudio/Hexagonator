@@ -6,6 +6,8 @@
 #include "ofxSyphon.h"
 #include "pmHexagonCanvas.hpp"
 #include "ofxOsc.h"
+#include "ofxVideoRecorder.h"
+#include "ofxAVScreenCapture.h"
 
 typedef struct
 {
@@ -21,6 +23,7 @@ class ofApp : public ofBaseApp{
 		void setup();
 		void update();
 		void draw();
+        void exit();
 
 		void keyPressed(int key);
 		void keyReleased(int key);
@@ -48,12 +51,17 @@ class ofApp : public ofBaseApp{
 
     // IMAGE TEXTURE
     ofImage                 image;
+    string                  imageFilename;
     ofImage                 imageToSave;
     ofImage                 mask;
+    ofImage                 maskWireframe;
     
     // VIDEO
     ofVideoPlayer           videoPlayer;
-
+    string                  videoFilename;
+    string                  currentFolderName;
+    int                     recordedFrame;
+    
     // SYPHON TEXTURE
     ofxSyphonClient         syphon;
     bool                    useSyphon;
@@ -68,6 +76,9 @@ class ofApp : public ofBaseApp{
     ofxOscReceiver          oscReceiver;
     void                    updateOsc();
     vector<vector<float>>   vecOsc;
+    float                   lastTimeWeReceivedOsc;
+    bool                    usingOsc;
+    void                    resetVecOscVector();
     
     /// VARS
     int                     numVertexsOneHexagonWithCenter;
@@ -91,6 +102,7 @@ class ofApp : public ofBaseApp{
     vector<ofPoint>         hexagonCentroids;
     
     vector<vector<hexagonPixel>>    hexaPix;
+    int                     textureSource; // 0 : image 1 : video 2 : syphon 
 
     // SHADER
     ofShader                shader;
@@ -115,6 +127,16 @@ class ofApp : public ofBaseApp{
     vector<ofPoint>         orderVerticesOfHexagonBasedOnDistanceToOrigin(vector<ofPoint> _v);
     void                    orderHexagonOnRingsAndIds(int _index);
     void                    updateVertexsForQuad();
+    
+    // VIDEO RECORDING
+    ofxVideoRecorder        videoRecorder;
+    bool                    isRecording;
+    string                  fileName;
+    string                  fileExt;
+    int                     desiredFramerate;
+    void recordingComplete(ofxVideoRecorderOutputFileCompleteEventArgs& args);
+
+    ofxAVScreenCapture      capture;
     
     
 };

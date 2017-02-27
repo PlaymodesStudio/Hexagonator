@@ -1,6 +1,6 @@
-ofxDatGui_PM
-ofxExprtk
+ofxAVScreenCapture
 ofxOsc
 ofxSvg
 ofxSyphon
+ofxVideoRecorder
 ofxXmlSettings
