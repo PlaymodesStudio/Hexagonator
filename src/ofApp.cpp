@@ -203,9 +203,9 @@ void ofApp::setup(){
             vecCentroidTexCoord[(i*7)+j] = vCentroidPoints[i] / 1200.0 ;
         }
     }
-    // index 1
+    // index 1 we store the texcoords "normal" ... flat texture mapping
     pmVbo1.setTexCoordsData(vecCentroidTexCoord,1);
-    // index 0
+    // index 0 we store the texcoords "ring and id" mode 
     pmVbo1.setTexCoordsData(hexagonCanvas.getTextureCoords(),0);
 
     //pmVbo1.setTexCoordsData(, 1);
