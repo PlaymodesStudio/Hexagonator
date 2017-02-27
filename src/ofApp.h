@@ -8,6 +8,7 @@
 #include "ofxOsc.h"
 #include "ofxVideoRecorder.h"
 #include "ofxAVScreenCapture.h"
+#include "ofxDatGui.h"
 
 typedef struct
 {
@@ -137,6 +138,9 @@ class ofApp : public ofBaseApp{
     void recordingComplete(ofxVideoRecorderOutputFileCompleteEventArgs& args);
 
     ofxAVScreenCapture      capture;
-    
+
+    // DAT GUI
+    ofxDatGui*              gui;
+    ofParameter<int>        test;
     
 };

@@ -268,6 +268,10 @@ void ofApp::setup(){
 
     updateMatrices();
     
+    /// DAT GUI
+    gui = new ofxDatGui();
+    gui->addLabel("COSA");
+    gui->addSlider(test);
 }
 
 //--------------------------------------------------------------

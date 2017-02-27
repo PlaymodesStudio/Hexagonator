@@ -1,4 +1,5 @@
 ofxAVScreenCapture
+ofxDatGui_PM
 ofxOsc
 ofxSvg
 ofxSyphon
