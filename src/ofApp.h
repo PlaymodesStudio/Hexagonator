@@ -8,7 +8,7 @@
 #include "ofxOsc.h"
 #include "ofxVideoRecorder.h"
 #include "ofxAVScreenCapture.h"
-#include "ofxDatGui.h"
+#include "parametersControl.h"
 
 typedef struct
 {
@@ -138,9 +138,21 @@ class ofApp : public ofBaseApp{
     void recordingComplete(ofxVideoRecorderOutputFileCompleteEventArgs& args);
 
     ofxAVScreenCapture      capture;
-
-    // DAT GUI
-    ofxDatGui*              gui;
-    ofParameter<int>        test;
+    
+    //GUI
+    //Each gui window is a parameterGroup, each parameter in parameterGroup a element in the gui. The parametersControl class keeps parameterGroup and gui is sync. The translation of parameterGroup to datgui elements is as follows:
+    // ofParameter<int>     --->    int slider;
+    // ofParameter<float>   --->    float slider;
+    // ofParameter<bool>    --->    toggle;
+    // ofParameter<string>  --->    textfield (if the name of parameter ends with '_label', it becomes a label)
+    // ofParameter<ofColor> --->    colorPicker element;
+    // especial case: to use a dropdown you need a ofParameter<int> that will hold the selected index. For creating a dropdown you can use the static function addDropdownToParameterGroupFromParameters, from parametersControl;
+    
+    ofParameterGroup    parameters;
+    ofParameter<int>    dropdownTest;
+    ofParameter<string> labelTest;
+    ofParameter<string> saveFilename;
+    ofParameter<ofColor>    colorPicker;
+    
     
 };

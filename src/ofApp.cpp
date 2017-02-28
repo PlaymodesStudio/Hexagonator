@@ -4,7 +4,6 @@
 void ofApp::setup(){
 
 
-
     // Use GL_TEXTURE_2D Textures (normalized texture coordinates 0..1)
     ofDisableArbTex();
 
@@ -268,10 +267,16 @@ void ofApp::setup(){
 
     updateMatrices();
     
-    /// DAT GUI
-    gui = new ofxDatGui();
-    gui->addLabel("COSA");
-    gui->addSlider(test);
+    
+    //GUI
+    parameters.setName("Parameter test");
+    parameters.add(labelTest.set("This is a label_label", " "));
+//    parametersControl::addDropdownToParameterGroupFromParameters(parameters, "dropdownTest", {"video", "syphon", "image", "svg Sequence"}, dropdownTest);
+    parameters.add(saveFilename.set("Save name", "test.mov"));
+    parameters.add(colorPicker.set("color", ofColor::white, ofColor::white, ofColor::black));
+    parametersControl::getInstance().createGuiFromParams(parameters, ofColor::orange);
+    
+    parametersControl::getInstance().setup();
 }
 
 //--------------------------------------------------------------
