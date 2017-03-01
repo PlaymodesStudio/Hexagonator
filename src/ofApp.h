@@ -148,11 +148,18 @@ class ofApp : public ofBaseApp{
     // ofParameter<ofColor> --->    colorPicker element;
     // especial case: to use a dropdown you need a ofParameter<int> that will hold the selected index. For creating a dropdown you can use the static function addDropdownToParameterGroupFromParameters, from parametersControl;
     
+    // DEMO GUI
     ofParameterGroup    parameters;
     ofParameter<int>    dropdownTest;
     ofParameter<string> labelTest;
     ofParameter<string> saveFilename;
     ofParameter<ofColor>    colorPicker;
     
+    // GRAPHICS & OPTIONS
+    ofParameterGroup    parametersTexCoord;
+    ofParameter<int>    param_whichTexCoord;
+
+    int                 whichTexCoord;
+    void                changedTexCoord(int &i);
     
 };

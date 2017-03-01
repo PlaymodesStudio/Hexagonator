@@ -116,7 +116,7 @@ void ofApp::setup(){
     
 
     // VIDEO
-    videoFilename = "./videos/indexsh264.mov";
+    videoFilename = "./videos/indexs.mov";
     videoPlayer.load(videoFilename);
     videoPlayer.setLoopState(OF_LOOP_NORMAL);
     if(textureSource==1) videoPlayer.play();
@@ -274,9 +274,25 @@ void ofApp::setup(){
     parametersControl::addDropdownToParameterGroupFromParameters(parameters, "dropdownTest", {"video", "syphon", "image", "svg Sequence"}, dropdownTest);
     parameters.add(saveFilename.set("Save name", "test.mov"));
     parameters.add(colorPicker.set("color", ofColor::white, ofColor::white, ofColor::black));
-    parametersControl::getInstance().createGuiFromParams(parameters, ofColor::orange);
     
+    
+    whichTexCoord = 0;
+    parametersTexCoord.setName("Options");
+    parametersTexCoord.add(param_whichTexCoord.set("Tex.Coords", whichTexCoord,0,1));
+    param_whichTexCoord.addListener(this,&ofApp::changedTexCoord);
+    
+    parametersControl::getInstance().createGuiFromParams(parameters, ofColor::orange);
+    parametersControl::getInstance().createGuiFromParams(parametersTexCoord, ofColor::orange);
     parametersControl::getInstance().setup();
+    
+
+}
+
+
+//--------------------------------------------------------------
+void ofApp::changedTexCoord(int &i)
+{
+    pmVbo1.setTexCoordsIndex(i);
 }
 
 //--------------------------------------------------------------
