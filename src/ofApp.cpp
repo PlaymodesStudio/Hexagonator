@@ -271,7 +271,7 @@ void ofApp::setup(){
     //GUI
     parameters.setName("Parameter test");
     parameters.add(labelTest.set("This is a label_label", " "));
-//    parametersControl::addDropdownToParameterGroupFromParameters(parameters, "dropdownTest", {"video", "syphon", "image", "svg Sequence"}, dropdownTest);
+    parametersControl::addDropdownToParameterGroupFromParameters(parameters, "dropdownTest", {"video", "syphon", "image", "svg Sequence"}, dropdownTest);
     parameters.add(saveFilename.set("Save name", "test.mov"));
     parameters.add(colorPicker.set("color", ofColor::white, ofColor::white, ofColor::black));
     parametersControl::getInstance().createGuiFromParams(parameters, ofColor::orange);

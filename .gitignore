@@ -113,3 +113,9 @@ Desktop.ini
 
 # Project specific
 #########################
+
+
+bin/data/captures/*
+bin/data/masks/*
+bin/data/videoCaptures/*
+
