@@ -101,8 +101,12 @@ void parametersControl::setup(){
     datGui->addSlider(fadeTime.set("Fade Time", 1, 0, 10));
 //    datGui->addSlider(presetChangeBeatsPeriod.set("Beats Period", 4, 1, 120));
     
-    ofPoint guiPos = datGuis[0]->getPosition() + ofPoint(0, datGuis[0]->getWidth());
-    datGui->setPosition(guiPos.x, guiPos.y);
+    if(datGuis.size() != 0){
+        ofPoint guiPos = datGuis[0]->getPosition() + ofPoint(0, datGuis[0]->getWidth());
+        datGui->setPosition(guiPos.x, guiPos.y);
+    }else{
+        datGui->setPosition(0, 0);
+    }
     
     //ControlGui Events
     datGui->onButtonEvent(this, &parametersControl::onGuiButtonEvent);
@@ -534,12 +538,6 @@ void parametersControl::onGuiToggleEvent(ofxDatGuiToggleEvent e){
         presetChangedTimeStamp = ofGetElapsedTimef();
         srand(time(0));
         random_shuffle(randomPresetsArrange.begin(), randomPresetsArrange.end());
-    }else if(e.target->getName() == "BPM Sync"){
-        if(e.checked)
-            ofAddListener(beatTracker->bpmChanged, this, &parametersControl::bpmChangedListener);
-        else
-            ofRemoveListener(beatTracker->bpmChanged, this, &parametersControl::bpmChangedListener);
-        
     }
 }
 
@@ -550,8 +548,6 @@ void parametersControl::onGuiDropdownEvent(ofxDatGuiDropdownEvent e){
         for (int i=0; i < datGuis.size() ; i++){
             if(datGuis[i]->getDropdown(e.target->getName()) == e.target){
                 parameterGroups[i].getGroup(e.target->getName()).getInt(1) = e.child;
-                //            if(datGuis[i]->getHeight() > ofGetHeight())
-                //                ofSetWindowShape(ofGetWidth(), datGuis[i]->getHeight());
             }
         }
     }
@@ -561,7 +557,7 @@ void parametersControl::onGuiMatrixEvent(ofxDatGuiMatrixEvent e){
     if(ofGetKeyPressed(OF_KEY_SHIFT))
         savePreset(e.child+1, bankSelect->getSelected()->getName());
     else{
-        loadPresetWithFade(e.child+1, bankSelect->getSelected()->getName());
+        loadPreset(e.child+1, bankSelect->getSelected()->getName());
         if(autoPreset)
             presetChangedTimeStamp = ofGetElapsedTimef();
     }
@@ -640,7 +636,6 @@ void parametersControl::mouseExited(ofMouseEventArgs &e){
 
 void parametersControl::listenerFunction(ofAbstractParameter& e){
     int position = 0;
-    nodeConnection* validConnection = nullptr;
     
     
     if(e.getName() == "Phasor Monitor"){
@@ -656,13 +651,6 @@ void parametersControl::listenerFunction(ofAbstractParameter& e){
             parentIndex = i;
     }
     
-    //ParameterBinding
-    for(auto &connection : connections){
-        ofAbstractParameter* possibleSource = connection.getSourceParameter();
-        if(possibleSource == &e && connection.closedLine){
-            validConnection = &connection;
-        }
-    }
     
     //Midi and to gui
     int toMidiVal = 0;
@@ -670,79 +658,20 @@ void parametersControl::listenerFunction(ofAbstractParameter& e){
     if(e.type() == typeid(ofParameter<float>).name()){
         ofParameter<float> castedParam = e.cast<float>();
         normalizedVal = ofMap(castedParam, castedParam.getMin(), castedParam.getMax(), 0, 1);
-
-        midiConnection<float>* validMidiConnection = nullptr;
-        for(auto &midiConnection : midiFloatConnections){
-            ofAbstractParameter* possibleSource = midiConnection.getParameter();
-            if(possibleSource == &e && !midiConnection.isListening()){
-                validMidiConnection = &midiConnection;
-            }
-        }
         
         if(castedParam.getName() == "BPM")
             periodTime = presetChangeBeatsPeriod / castedParam * 60.;
-        
-        if(validConnection != nullptr)
-            setFromNormalizedValue(validConnection->getSinkParameter(), normalizedVal);
-        
-        if(validMidiConnection != nullptr){
-            for(auto &mOut : midiOut){
-                if(mOut.getName() == validMidiConnection->getDevice())
-                    mOut.sendControlChange(validMidiConnection->getChannel(), validMidiConnection->getControl(), validMidiConnection->sendValue());
-            }
-        }
+
     }
     else if(e.type() == typeid(ofParameter<int>).name()){
         ofParameter<int> castedParam = e.cast<int>();
         normalizedVal = ofMap(castedParam, castedParam.getMin(), castedParam.getMax(), 0, 1);
 
-        midiConnection<int>* validMidiConnection = nullptr;
-        for(auto &midiConnection : midiIntConnections){
-            ofAbstractParameter* possibleSource = midiConnection.getParameter();
-            if(possibleSource == &e && !midiConnection.isListening()){
-                validMidiConnection = &midiConnection;
-            }
-        }
-
-        
-        if(ofStringTimesInString(castedParam.getName(), "Select") == 1){
-            datGuis[parentIndex]->getDropdown(castedParam.getName())->select(castedParam);
-        }
-        
-        if(validConnection != nullptr)
-            setFromNormalizedValue(validConnection->getSinkParameter(), normalizedVal);
-        
-        if(validMidiConnection != nullptr){
-            for(auto &mOut : midiOut){
-                if(mOut.getName() == validMidiConnection->getDevice())
-                    mOut.sendControlChange(validMidiConnection->getChannel(), validMidiConnection->getControl(), validMidiConnection->sendValue());
-            }
-        }
     }
     else if(e.type() == typeid(ofParameter<bool>).name()){
         ofParameter<bool> castedParam = e.cast<bool>();
         normalizedVal = castedParam ? 1 : 0;
         
-        midiConnection<bool>* validMidiConnection = nullptr;
-        for(auto &midiConnection : midiBoolConnections){
-            ofAbstractParameter* possibleSource = midiConnection.getParameter();
-            if(possibleSource == &e && !midiConnection.isListening()){
-                validMidiConnection = &midiConnection;
-            }
-        }
-        
-        //Update to datGuis
-        datGuis[parentIndex]->getToggle(castedParam.getName())->setChecked(normalizedVal);
-        
-        if(validConnection != nullptr)
-            setFromNormalizedValue(validConnection->getSinkParameter(), normalizedVal);
-        
-        if(validMidiConnection != nullptr){
-            for(auto &mOut : midiOut){
-                if(mOut.getName() == validMidiConnection->getDevice())
-                    mOut.sendControlChange(validMidiConnection->getChannel(), validMidiConnection->getControl(), validMidiConnection->sendValue());
-            }
-        }
     }
     else if(e.type() == typeid(ofParameter<string>).name()){
         ofParameter<string> castedParam = e.cast<string>();
@@ -750,8 +679,6 @@ void parametersControl::listenerFunction(ofAbstractParameter& e){
         
         datGuis[parentIndex]->getTextInput(castedParam.getName())->setTextWithoutEvent(castedParam);
         
-        if(validConnection != nullptr)
-            setFromNormalizedValue(validConnection->getSinkParameter(), normalizedVal);
     }
     else if(e.type() == typeid(ofParameter<ofColor>).name()){
         ofParameter<ofColor> castedParam = e.cast<ofColor>();
@@ -762,23 +689,7 @@ void parametersControl::listenerFunction(ofAbstractParameter& e){
         ofParameter<int> castedParam = parameterGroups[parentIndex].getGroup(e.getName()).getInt(1);
         datGuis[parentIndex]->getDropdown(e.getName())->select(castedParam);
         
-        midiConnection<int>* validMidiConnection = nullptr;
-        for(auto &midiConnection : midiIntConnections){
-            ofAbstractParameter* possibleSource = midiConnection.getParameter();
-            if(possibleSource == &e && !midiConnection.isListening()){
-                validMidiConnection = &midiConnection;
-            }
-        }
-        
-        if(validMidiConnection != nullptr){
-            for(auto &mOut : midiOut){
-                if(mOut.getName() == validMidiConnection->getDevice())
-                    mOut.sendControlChange(validMidiConnection->getChannel(), validMidiConnection->getControl(), validMidiConnection->sendValue());
-            }
-        }
-        
     }else{
-        if(validConnection != nullptr)
-            setFromSameTypeValue(validConnection->getSourceParameter(), validConnection->getSinkParameter());
+        
     }
 }
