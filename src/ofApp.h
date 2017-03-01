@@ -103,7 +103,6 @@ class ofApp : public ofBaseApp{
     vector<ofPoint>         hexagonCentroids;
     
     vector<vector<hexagonPixel>>    hexaPix;
-    int                     textureSource; // 0 : image 1 : video 2 : syphon 
 
     // SHADER
     ofShader                shader;
@@ -156,10 +155,12 @@ class ofApp : public ofBaseApp{
     ofParameter<ofColor>    colorPicker;
     
     // GRAPHICS & OPTIONS
-    ofParameterGroup    parametersTexCoord;
-    ofParameter<int>    param_whichTexCoord;
-
-    int                 whichTexCoord;
+    ofParameterGroup    parametersGraphics;
+    //ofParameter<int>    param_whichTexCoord;
+    ofParameter<int>    dropdown_whichTexCoord;
+    ofParameter<int>    dropdown_whichTextureSource; // 0 : image 1 : video 2 : syphon
+    ofParameter<bool>   toggle_showLayout;
+    // LISTENERS FUNCTIONS
     void                changedTexCoord(int &i);
     
 };

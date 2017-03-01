@@ -26,10 +26,41 @@ void ofApp::setup(){
     numVertexsOneHexagonWithCenter = 7;
     numVertexsOneHexagon = 6;
     drawPrimitive = GL_TRIANGLES;
-    textureSource = 1; // image as initial texture source
     recordedFrame = 0;
     lastTimeWeReceivedOsc = 0.0;
     usingOsc = false;
+    
+    /////////////////////////////
+    /// GUI
+    /////////////////////////////
+
+    //
+//    parameters.setName("Parameter test");
+//    parameters.add(labelTest.set("This is a label_label", " "));
+//    parametersControl::addDropdownToParameterGroupFromParameters(parameters, "dropdownTest", {"video", "syphon", "image", "svg Sequence"}, dropdownTest);
+//    parameters.add(saveFilename.set("Save name", "test.mov"));
+//    parameters.add(colorPicker.set("color", ofColor::white, ofColor::white, ofColor::black));
+    
+    
+    parametersGraphics.setName("Hexagonator");
+    parametersGraphics.add(toggle_showLayout.set("Show Layout",true));
+    parametersControl::addDropdownToParameterGroupFromParameters(parametersGraphics,"Texture Coordinates",{"64x35","1200x1200"},dropdown_whichTexCoord);
+    dropdown_whichTexCoord.addListener(this,&ofApp::changedTexCoord);
+    parametersControl::addDropdownToParameterGroupFromParameters(parametersGraphics,"Source",{"Image","Video","Syphon"},dropdown_whichTextureSource);
+    
+    // LISTENERS
+    dropdown_whichTexCoord.addListener(this,&ofApp::changedTexCoord);
+
+    // CREATE
+    parametersControl::getInstance().createGuiFromParams(parametersGraphics, ofColor::orange);
+    //parametersControl::getInstance().createGuiFromParams(parameters, ofColor::orange);
+    parametersControl::getInstance().setup();
+    
+    // GUI VARS !! TODO :: hi ha algun problema ... jo vull inicialitzar a 1 ... si poso la =1 abans de crear el dropdown ... no ho respecta .. ?À
+    dropdown_whichTextureSource = 1; // image as initial texture source
+    dropdown_whichTexCoord = 0 ;
+
+    
     
     /////////////////////////////
     /// VIDEO RECORDING
@@ -104,7 +135,7 @@ void ofApp::setup(){
     /////////////////////////////
     // IMAGE AS TEXTRE
     /////////////////////////////
-    imageFilename = "./tex/64x35RGB.png";
+    imageFilename = "./tex/mapaPixels64x35.png";
     image.load(imageFilename);
     //image.load("./tex/eye.jpg");
     image.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
@@ -119,7 +150,7 @@ void ofApp::setup(){
     videoFilename = "./videos/indexs.mov";
     videoPlayer.load(videoFilename);
     videoPlayer.setLoopState(OF_LOOP_NORMAL);
-    if(textureSource==1) videoPlayer.play();
+    if(dropdown_whichTextureSource==1) videoPlayer.play();
     
     
     while(!videoPlayer.isLoaded())
@@ -129,23 +160,6 @@ void ofApp::setup(){
     videoPlayer.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
     
     
-    // !!!
-    switch (textureSource)
-    {
-        case 0:
-            pmVbo1.setTextureReference(image.getTexture());
-            break;
-        case 1:
-            pmVbo1.setTextureReference(videoPlayer.getTexture());
-            break;
-        case 2:
-            pmVbo1.setTextureReference(syphon.getTexture());
-            break;
-            
-        default:
-            break;
-    }
-    // !!!
     
     
     ////////////
@@ -268,22 +282,7 @@ void ofApp::setup(){
     updateMatrices();
     
     
-    //GUI
-    parameters.setName("Parameter test");
-    parameters.add(labelTest.set("This is a label_label", " "));
-    parametersControl::addDropdownToParameterGroupFromParameters(parameters, "dropdownTest", {"video", "syphon", "image", "svg Sequence"}, dropdownTest);
-    parameters.add(saveFilename.set("Save name", "test.mov"));
-    parameters.add(colorPicker.set("color", ofColor::white, ofColor::white, ofColor::black));
-    
-    
-    whichTexCoord = 0;
-    parametersTexCoord.setName("Options");
-    parametersTexCoord.add(param_whichTexCoord.set("Tex.Coords", whichTexCoord,0,1));
-    param_whichTexCoord.addListener(this,&ofApp::changedTexCoord);
-    
-    parametersControl::getInstance().createGuiFromParams(parameters, ofColor::orange);
-    parametersControl::getInstance().createGuiFromParams(parametersTexCoord, ofColor::orange);
-    parametersControl::getInstance().setup();
+ 
     
 
 }
@@ -294,6 +293,7 @@ void ofApp::changedTexCoord(int &i)
 {
     pmVbo1.setTexCoordsIndex(i);
 }
+
 
 //--------------------------------------------------------------
 void ofApp::updateOsc()
@@ -474,11 +474,12 @@ void ofApp::updateVertexsForQuad()
 //--------------------------------------------------------------
 void ofApp::update()
 {
+    cout << dropdown_whichTextureSource << endl;
     //updateVertexsForQuad();
     updateOsc();
     updateMatrices();
 
-    if(textureSource==1 && videoPlayer.isLoaded()) videoPlayer.update();
+    if(dropdown_whichTextureSource==1 && videoPlayer.isLoaded()) videoPlayer.update();
 
    
 }
@@ -490,7 +491,7 @@ void ofApp::draw()
     //vbo.updateVertexData(vecVboVerts[currentVboVerts].data(), vecVboVerts[currentVboVerts].size());
     
     /// DRAW SYPHON INTO FBO TO LATER RETRIEVE IT's TEXTURE
-    if(textureSource==2)
+    if(dropdown_whichTextureSource==2)
     {
         fboSyphon.begin();
         syphon.draw(0,0,fboResolution.x,fboResolution.y);
@@ -512,7 +513,7 @@ void ofApp::draw()
         {
             shader.begin();
             // choose which texture to feed into the shader (image or syphon)
-                switch (textureSource)
+                switch (dropdown_whichTextureSource)
                 {
                     case 0:
                         shader.setUniformTexture("uTexture", image, 2);
@@ -574,8 +575,11 @@ void ofApp::draw()
     }
     
     /// DRAW THE MASK
-    ofSetColor(128,128,128,128);
-    maskWireframe.draw(0,0,1200,1200);
+    if(toggle_showLayout)
+    {
+        ofSetColor(128,128,128,128);
+        maskWireframe.draw(0,0,1200,1200);
+    }
     ofSetColor(255);
     mask.draw(0,0,1200,1200);
 
@@ -583,7 +587,7 @@ void ofApp::draw()
     if(isRecording) ofSetColor(255,0,0);
     else ofSetColor(128);
     
-    switch (textureSource)
+    switch (dropdown_whichTextureSource)
     {
         case 0:
             ofDrawBitmapString(imageFilename + " : " + ofToString(videoPlayer.getCurrentFrame()),550,30);
@@ -662,7 +666,7 @@ void ofApp::draw()
 
     
     
-    if(isRecording && (textureSource==1))
+    if(isRecording && (dropdown_whichTextureSource==1))
     {
         //currentFolderName
         
@@ -735,13 +739,6 @@ void ofApp::keyPressed(int key){
     {
         saveNow = true;
     }
-    else if(key=='t')
-    {
-        
-        // cout change tex coord test
-        pmVbo1.setTexCoordsIndex(1);
-        
-    }
     else if(key=='u')
     {
         pmVbo1.setUseTexture(true);
@@ -780,18 +777,6 @@ void ofApp::keyPressed(int key){
     {
         useShader = !useShader;
     }
-    else if(key=='1')
-    {
-        textureSource=0;
-    }
-    else if(key=='2')
-    {
-        textureSource=1;
-    }
-    else if(key=='3')
-    {
-        textureSource=2;
-    }
     else if(key=='i')
     {
         showVertices = !showVertices;
@@ -810,7 +795,7 @@ void ofApp::keyPressed(int key){
         
         if(isRecording)
         {
-            if(textureSource==1) // video
+            if(dropdown_whichTextureSource==1) // video
             {
                 // extract video filename
                 string videoName;
@@ -841,11 +826,11 @@ void ofApp::keyPressed(int key){
         }
         else  // NOT RECORDING
         {
-            if(textureSource!=1)
+            if(dropdown_whichTextureSource!=1)
             {
                 capture.stopRecording();
             }
-            else if (textureSource==1)
+            else if (dropdown_whichTextureSource==1)
             {
                 videoPlayer.play();
             }
@@ -923,7 +908,7 @@ void ofApp::dragEvent(ofDragInfo info)
         cout << ">> Dragged File ... \n" << info.files[0] << " : ext: " << dragFileExtension << endl;
         if(dragFileExtension=="png" || dragFileExtension == "jpg")
         {
-            textureSource = 0;
+            dropdown_whichTextureSource = 0;
             cout << "Loading new texture ... " << endl;
             imageFilename = info.files[0];
             image.load(imageFilename);
@@ -935,7 +920,7 @@ void ofApp::dragEvent(ofDragInfo info)
         }
         else if (dragFileExtension=="mov")
         {
-            textureSource = 1;
+            dropdown_whichTextureSource = 1;
             cout << "Loading new video ... " << endl;
             videoFilename=ofToString("./videos/" + ofSplitString(dragFileName[dragFileName.size()-1],".")[0] +"." +dragFileExtension);
             videoPlayer.load(videoFilename);

@@ -76,7 +76,7 @@ public:
     
     static void addDropdownToParameterGroupFromParameters(ofParameterGroup &parameterGroup, string name, vector<string> options, ofParameter<int> &dropdownSelector){
         ofParameterGroup tempDropdown;
-        tempDropdown.setName(name + " Select");
+        tempDropdown.setName(name + " ::");
         string  tempStr;
         ofParameter<string> tempStrParam("Options");
         for(auto opt : options)
@@ -88,6 +88,7 @@ public:
         tempDropdown.add(tempStrParam);
         tempDropdown.add(dropdownSelector.set(name +" Select", 0, 0, options.size()));
         parameterGroup.add(tempDropdown);
+        
     }
     
 private:
