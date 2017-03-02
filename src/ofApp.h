@@ -10,6 +10,13 @@
 #include "ofxAVScreenCapture.h"
 #include "parametersControl.h"
 
+enum sourceType{
+    HEX_SOURCE_IMAGE = 0,
+    HEX_SOURCE_VIDEO = 1,
+    HEX_SOURCE_SYPHON = 2
+};
+
+
 typedef struct
 {
     int _ring;

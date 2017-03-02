@@ -136,19 +136,19 @@ void ofApp::setup(){
     /////////////////////////////
     // IMAGE AS TEXTRE
     /////////////////////////////
-    imageFilename = "./tex/mapaPixels64x35.png";
+    imageFilename = "./debugMedia/mapaPixels64x35.png";
     image.load(imageFilename);
     //image.load("./tex/eye.jpg");
     image.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
     //pmVbo1.setTextureReference(image.getTexture());
     
     // MASK
-    mask.load("./masks/maskAll.png");
-    maskWireframe.load("./masks/wireYellow.png");
+    mask.load("./debugMedia/masks/maskAll.png");
+    maskWireframe.load("./debugMedia/masks/wireYellow.png");
     
 
     // VIDEO
-    videoFilename = "./videos/indexs.mov";
+    videoFilename = "./debugMedia/indexs.mov";
     videoPlayer.load(videoFilename);
     videoPlayer.setLoopState(OF_LOOP_NORMAL);
     if(dropdown_whichTextureSource==1) videoPlayer.play();
@@ -492,7 +492,7 @@ void ofApp::draw()
     //vbo.updateVertexData(vecVboVerts[currentVboVerts].data(), vecVboVerts[currentVboVerts].size());
     
     /// DRAW SYPHON INTO FBO TO LATER RETRIEVE IT's TEXTURE
-    if(dropdown_whichTextureSource==2)
+    if(dropdown_whichTextureSource == HEX_SOURCE_SYPHON)
     {
         fboSyphon.begin();
         syphon.draw(0,0,fboResolution.x,fboResolution.y);
@@ -516,13 +516,13 @@ void ofApp::draw()
             // choose which texture to feed into the shader (image or syphon)
                 switch (dropdown_whichTextureSource)
                 {
-                    case 0:
+                    case HEX_SOURCE_IMAGE:
                         shader.setUniformTexture("uTexture", image, 2);
                         break;
-                    case 1:
+                    case HEX_SOURCE_VIDEO:
                         shader.setUniformTexture("uTexture", videoPlayer, 2);
                         break;
-                    case 2:
+                    case HEX_SOURCE_SYPHON:
                         shader.setUniformTexture("uTexture", fboSyphon.getTexture(), 2);
                         break;
                         
@@ -590,18 +590,18 @@ void ofApp::draw()
     
     switch (dropdown_whichTextureSource)
     {
-        case 0:
+        case HEX_SOURCE_IMAGE:
             ofDrawBitmapString(imageFilename + " : " + ofToString(videoPlayer.getCurrentFrame()),550,30);
             ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), 550,45);
             break;
-        case 1:
+        case HEX_SOURCE_VIDEO:
             if(videoPlayer.isLoaded())
             {
                 ofDrawBitmapString(videoFilename + " // Current Frame :  " + ofToString(videoPlayer.getCurrentFrame()),550,30);
             }
             ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), 550,45);
             break;
-        case 2:
+        case HEX_SOURCE_SYPHON:
             ofDrawBitmapString("Syhpon",550,30);
             ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), 550,45);
             break;
