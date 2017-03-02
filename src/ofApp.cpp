@@ -41,6 +41,9 @@ void ofApp::setup(){
 //    parameters.add(saveFilename.set("Save name", "test.mov"));
 //    parameters.add(colorPicker.set("color", ofColor::white, ofColor::white, ofColor::black));
     
+    // GUI VARS
+    dropdown_whichTextureSource = 1; // image as initial texture source
+    dropdown_whichTexCoord = 0 ;
     
     parametersGraphics.setName("Hexagonator");
     parametersGraphics.add(toggle_showLayout.set("Show Layout",true));
@@ -56,9 +59,7 @@ void ofApp::setup(){
     //parametersControl::getInstance().createGuiFromParams(parameters, ofColor::orange);
     parametersControl::getInstance().setup();
     
-    // GUI VARS !! TODO :: hi ha algun problema ... jo vull inicialitzar a 1 ... si poso la =1 abans de crear el dropdown ... no ho respecta .. ?À
-    dropdown_whichTextureSource = 1; // image as initial texture source
-    dropdown_whichTexCoord = 0 ;
+    
 
     
     

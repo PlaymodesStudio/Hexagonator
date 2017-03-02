@@ -86,7 +86,7 @@ public:
         tempStrParam.set(tempStr);
         
         tempDropdown.add(tempStrParam);
-        tempDropdown.add(dropdownSelector.set(name +" Select", 0, 0, options.size()));
+        tempDropdown.add(dropdownSelector.set(name +" Select", dropdownSelector, 0, options.size()));
         parameterGroup.add(tempDropdown);
         
     }
