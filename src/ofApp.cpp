@@ -136,19 +136,19 @@ void ofApp::setup(){
     /////////////////////////////
     // IMAGE AS TEXTRE
     /////////////////////////////
-    imageFilename = "./debugMedia/mapaPixels64x35.png";
+    imageFilename = "./testMedia/mapaPixels64x35.png";
     image.load(imageFilename);
     //image.load("./tex/eye.jpg");
     image.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
     //pmVbo1.setTextureReference(image.getTexture());
     
     // MASK
-    mask.load("./debugMedia/masks/maskAll.png");
-    maskWireframe.load("./debugMedia/masks/wireYellow.png");
+    mask.load("./testMedia/masks/maskAll.png");
+    maskWireframe.load("./testMedia/masks/wireYellow.png");
     
 
     // VIDEO
-    videoFilename = "./debugMedia/indexs.mov";
+    videoFilename = "./testMedia/indexs.mov";
     videoPlayer.load(videoFilename);
     videoPlayer.setLoopState(OF_LOOP_NORMAL);
     if(dropdown_whichTextureSource==1) videoPlayer.play();
