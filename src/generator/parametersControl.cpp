@@ -41,10 +41,14 @@ void parametersControl::createGuiFromParams(ofParameterGroup paramGroup, ofColor
             tempDatGui->addSlider(paramGroup.getInt(i));
         else if(absParam.type() == typeid(ofParameter<bool>).name())
         {
-            // TODO : no va el canvi de color ?? "" 
+            // TODO : no va el canvi de color ?? ""
             ofxDatGuiToggle* t = (ofxDatGuiToggle*) tempDatGui->addToggle(paramGroup.getName(i));
             t->setChecked(paramGroup.getBool(i).get());
             t->setBackgroundColor(ofColor::red);
+            t->setLabelColor(ofColor::blue);
+            t->setStripeVisible(true);
+            t->setStripeColor(ofColor::green);
+            /// ????? no reacciona ?? 
         }
         else if(absParam.type() == typeid(ofParameter<string>).name()){
             if(ofSplitString(absParam.getName(), "_").size() > 1)

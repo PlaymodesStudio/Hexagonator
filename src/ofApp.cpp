@@ -134,7 +134,7 @@ void ofApp::setup(){
     syphon.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
     syphon.unbind();
 
-    syphonMax.set("notes","Max");
+    syphonMax.set("midihex","Max");
     syphonMax.bind();
     syphonMax.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
     syphonMax.unbind();
