@@ -49,7 +49,7 @@ void ofApp::setup(){
     parametersGraphics.add(toggle_showLayout.set("Show Layout",true));
     parametersControl::addDropdownToParameterGroupFromParameters(parametersGraphics,"Texture Coordinates",{"64x35","1200x1200"},dropdown_whichTexCoord);
     dropdown_whichTexCoord.addListener(this,&ofApp::changedTexCoord);
-    parametersControl::addDropdownToParameterGroupFromParameters(parametersGraphics,"Source",{"Image","Video","Syphon"},dropdown_whichTextureSource);
+    parametersControl::addDropdownToParameterGroupFromParameters(parametersGraphics,"Source",{"Image","Video","Syphon","Syph.Max"},dropdown_whichTextureSource);
     
     // LISTENERS
     dropdown_whichTexCoord.addListener(this,&ofApp::changedTexCoord);
@@ -123,6 +123,7 @@ void ofApp::setup(){
     /// SYPHON
     /////////////////////////////
     syphon.setup();
+    syphonMax.setup();
     
     //using Syphon app Simple Server, found at http://syphon.v002.info/
 //    syphon.setApplicationName("Simple Server");
@@ -133,6 +134,12 @@ void ofApp::setup(){
     syphon.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
     syphon.unbind();
 
+    syphonMax.set("notes","Max");
+    syphonMax.bind();
+    syphonMax.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
+    syphonMax.unbind();
+
+    
     /////////////////////////////
     // IMAGE AS TEXTRE
     /////////////////////////////
@@ -492,10 +499,11 @@ void ofApp::draw()
     //vbo.updateVertexData(vecVboVerts[currentVboVerts].data(), vecVboVerts[currentVboVerts].size());
     
     /// DRAW SYPHON INTO FBO TO LATER RETRIEVE IT's TEXTURE
-    if(dropdown_whichTextureSource == HEX_SOURCE_SYPHON)
+    if((dropdown_whichTextureSource == HEX_SOURCE_SYPHON)||((dropdown_whichTextureSource == HEX_SOURCE_SYPHON)))
     {
         fboSyphon.begin();
-        syphon.draw(0,0,fboResolution.x,fboResolution.y);
+        if(dropdown_whichTextureSource == HEX_SOURCE_SYPHON) syphon.draw(0,0,fboResolution.x,fboResolution.y);
+        else if(dropdown_whichTextureSource == HEX_SOURCE_SYPHON_MAX) syphonMax.draw(0,0,fboResolution.x,fboResolution.y);
         fboSyphon.end();
     }
     
@@ -523,6 +531,9 @@ void ofApp::draw()
                         shader.setUniformTexture("uTexture", videoPlayer, 2);
                         break;
                     case HEX_SOURCE_SYPHON:
+                        shader.setUniformTexture("uTexture", fboSyphon.getTexture(), 2);
+                        break;
+                    case HEX_SOURCE_SYPHON_MAX:
                         shader.setUniformTexture("uTexture", fboSyphon.getTexture(), 2);
                         break;
                         
@@ -603,6 +614,10 @@ void ofApp::draw()
             break;
         case HEX_SOURCE_SYPHON:
             ofDrawBitmapString("Syhpon",550,30);
+            ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), 550,45);
+            break;
+        case HEX_SOURCE_SYPHON_MAX:
+            ofDrawBitmapString("Syhpon Max",550,30);
             ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), 550,45);
             break;
             

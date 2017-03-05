@@ -13,7 +13,8 @@
 enum sourceType{
     HEX_SOURCE_IMAGE = 0,
     HEX_SOURCE_VIDEO = 1,
-    HEX_SOURCE_SYPHON = 2
+    HEX_SOURCE_SYPHON = 2,
+    HEX_SOURCE_SYPHON_MAX = 3
 };
 
 
@@ -72,6 +73,7 @@ class ofApp : public ofBaseApp{
     
     // SYPHON TEXTURE
     ofxSyphonClient         syphon;
+    ofxSyphonClient         syphonMax;
     bool                    useSyphon;
     bool                    showVertices;
     bool                    useTransformMatrix;
