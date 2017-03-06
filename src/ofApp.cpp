@@ -20,9 +20,8 @@ void ofApp::setup(){
     numRings = 35;
     numHexasPerRing = 64;
     useShader = true;
-    useTransformMatrix = true;
+    toggle_useTBOMatrix = true;
     useCubeColors = false;
-    showVertices = false;
     numVertexsOneHexagonWithCenter = 7;
     numVertexsOneHexagon = 6;
     drawPrimitive = GL_TRIANGLES;
@@ -33,13 +32,6 @@ void ofApp::setup(){
     /////////////////////////////
     /// GUI
     /////////////////////////////
-
-    //
-//    parameters.setName("Parameter test");
-//    parameters.add(labelTest.set("This is a label_label", " "));
-//    parametersControl::addDropdownToParameterGroupFromParameters(parameters, "dropdownTest", {"video", "syphon", "image", "svg Sequence"}, dropdownTest);
-//    parameters.add(saveFilename.set("Save name", "test.mov"));
-//    parameters.add(colorPicker.set("color", ofColor::white, ofColor::white, ofColor::black));
     
     // GUI VARS
     dropdown_whichTextureSource = 1; // image as initial texture source
@@ -47,6 +39,12 @@ void ofApp::setup(){
     
     parametersGraphics.setName("Hexagonator");
     parametersGraphics.add(toggle_showLayout.set("Show Layout",true));
+    parametersGraphics.add(toggle_showVertices.set("Show Vertices",false));
+    parametersGraphics.add(toggle_drawMask.set("Draw Mask",true));
+    
+    
+    parametersGraphics.add(toggle_useTBOMatrix.set("Use Matrix",true));
+    
     parametersControl::addDropdownToParameterGroupFromParameters(parametersGraphics,"Source",{"Texture","Quads"},dropdown_whichSource);
     parametersControl::addDropdownToParameterGroupFromParameters(parametersGraphics,"Texture Coordinates",{"64x35","1200x1200"},dropdown_whichTexCoord);
     dropdown_whichTexCoord.addListener(this,&ofApp::changedTexCoord);
@@ -127,9 +125,9 @@ void ofApp::setup(){
     syphonMax.setup();
     
     //using Syphon app Simple Server, found at http://syphon.v002.info/
-//    syphon.setApplicationName("Simple Server");
-//    syphon.setServerName("");
-//    syphon.set("","Simple Server");
+    //    syphon.setApplicationName("Simple Server");
+    //    syphon.setServerName("");
+    //    syphon.set("","Simple Server");
     syphon.set("Gen_Grayscale","MIRABCN_Generator");
     syphon.bind();
     syphon.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
@@ -142,18 +140,16 @@ void ofApp::setup(){
 
     
     /////////////////////////////
-    // IMAGE AS TEXTRE
+    // IMAGES AND VIDEOS
     /////////////////////////////
+    
     imageFilename = "./testMedia/mapaPixels64x35.png";
     image.load(imageFilename);
-    //image.load("./tex/eye.jpg");
     image.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
-    //pmVbo1.setTextureReference(image.getTexture());
     
     // MASK
     mask.load("./testMedia/masks/maskAll.png");
     maskWireframe.load("./testMedia/masks/wireYellow.png");
-    
 
     // VIDEO
     videoFilename = "./testMedia/indexs.mov";
@@ -177,20 +173,21 @@ void ofApp::setup(){
     oscReceiver.setup(1234);
     resetVecOscVector();
     
+    
+    /////////////////////////////
     // HEXAGONS DATA AND CANVAS
     /////////////////////////////
     
-    
-    svgFilename = "./svg/test_svg_part.svg";
-  svgFilename = "./svg/santi2.svg";
-//        svgFilename = "./svg/testSVG3Hexagons.svg";
+    //svgFilename = "./svg/test_svg_part.svg";
+    svgFilename = "./svg/santi2.svg";
+    //svgFilename = "./svg/testSVG3Hexagons.svg";
+    //        svgFilename = "./svg/testSVG3Hexagons.svg";
     //    svgFilename = "./svg/test_svg_part_nomes2.svg";
     //    svgFilename = "./svg/testOrdreRadial.svg";
     //    svgFilename = "./svg/polarExampleAngle.svg";
     //    svgFilename = "./svg/test_svg_partCENTRAT.svg";
     //    svgFilename = "./svg/vector_complet_v1.svg";
     //    svgFilename = "./svg/vector_complet_v2_flat.svg";
-
     
     hexagonCanvas.setup(svgFilename);
     
@@ -199,23 +196,18 @@ void ofApp::setup(){
     /////////////////////////////
     
     pmVbo1.setup(hexagonCanvas.getNumHexagons(),7);
-
-    
-//    // SET VBO DATA
-//    /////////////////////////////
-//
     pmVbo1.setVertData(hexagonCanvas.getVertexData(), 0);
-
-    //////
+    
     //////
     // vector<ofVec2f> vecTexCoord
     // try to get centroid data to convert it to texCoord of centroids (we need 2 way of texCoord ... based on Rings and based on Centroids)
     // we got 1 centroid per path = 2735 paths
     vector<ofPoint> vCentroidPoints = hexagonCanvas.getCentroidData();
-    cout << "Getting texCoord Data ... size " << hexagonCanvas.getTextureCoords().size() << endl;
-    cout << "Getting Centroid Data ... size " << vCentroidPoints.size() << endl;
     vector<ofVec2f> vecCentroidTexCoord;
     vecCentroidTexCoord.resize(hexagonCanvas.getNumHexagons()*7);
+    
+    cout << "Getting texCoord Data ... size " << hexagonCanvas.getTextureCoords().size() << endl;
+    cout << "Getting Centroid Data ... size " << vCentroidPoints.size() << endl;
     cout << "MY Centroid Data ... size " << vecCentroidTexCoord.size() << endl;
     
     for(int i=0;i<hexagonCanvas.getNumHexagons();i++)
@@ -227,16 +219,64 @@ void ofApp::setup(){
     }
     // index 1 we store the texcoords "normal" ... flat texture mapping
     pmVbo1.setTexCoordsData(vecCentroidTexCoord,1);
-    // index 0 we store the texcoords "ring and id" mode 
+    // index 0 we store the texcoords "ring and id" mode
     pmVbo1.setTexCoordsData(hexagonCanvas.getTextureCoords(),0);
-
-    //pmVbo1.setTexCoordsData(, 1);
-    //////
-    //////
-
+    
+    
     pmVbo1.setColorData(hexagonCanvas.getColorData(),0);
     pmVbo1.setFacesData(hexagonCanvas.getFaceData(),0);
     pmVbo1.setDrawMode(TRIANGLES);
+
+    
+    ///////////////////
+    // PM VBO RIBBON
+    ///////////////////
+    pmVboRibbon.setup(hexagonCanvas.getNumHexagons(),4);
+    
+    ///////////////////
+    // PM VBO RIBBON
+    ///////////////////
+    
+    int numRibbons = hexagonCanvas.getNumHexagons();
+    int numRibbonVertexs = hexagonCanvas.getNumHexagons()*4;
+    
+    cout << "Num Ribbons = " << numRibbons << endl;
+    cout << "Num Ribbon Vertexs = " << numRibbonVertexs << endl;
+    
+    vertexsRibbon.resize(numRibbonVertexs);
+    pmVboRibbon.setVertData(vertexsRibbon,0);
+    
+    vector<ofVec2f> ribbonTexCoords;
+    ribbonTexCoords.resize(numRibbons*4);
+    for(int i=0;i<numRibbons;i++)
+    {
+        for(int j=0;j<4;j++)
+        {
+            ribbonTexCoords[(i*4)+j] = vCentroidPoints[i] / 1200.0 ;
+        }
+    }
+
+    pmVboRibbon.setTexCoordsData(vecCentroidTexCoord,1);
+    
+    
+    vector<ofFloatColor> ribbonColors;
+    ribbonColors.resize(numRibbons*4,ofFloatColor(1.0,0.0,0.0,1.0));
+    pmVboRibbon.setColorData(hexagonCanvas.getColorData(),0);
+
+    vector<ofIndexType> ribbonFacesIndex;
+    ribbonFacesIndex.resize(numRibbons*4);
+    for(int i=0;i<numRibbons;i++)
+    {
+        for(int j=0;j<4;j++)
+        {
+            ribbonFacesIndex[(i*4)+j] = (i*4)+j;
+        }
+
+    }
+    pmVboRibbon.setFacesData(hexagonCanvas.getFaceData(),0);
+    
+    pmVboRibbon.setDrawMode(QUADS);
+
     
     /// TRANSFORM TBO STUFF (Texture Buffer Object)
     //////////////////////////////////////
@@ -285,7 +325,7 @@ void ofApp::setup(){
     shader.setUniformTexture("texCubeColors",texCubeColors,1);
     shader.setUniform1i("u_numHexags",hexagonCanvas.getNumHexagons());
     shader.setUniform4f("u_color", ofFloatColor(1.0,0.5,0.0,1.0));
-    shader.setUniform1i("u_useMatrix", 1);
+    shader.setUniform1i("u_useMatrix", 0);
     shader.end();
 
     updateMatrices();
@@ -391,6 +431,8 @@ void ofApp::updateMatrices()
 //--------------------------------------------------------------
 void ofApp::updateVertexsForQuad()
 {
+    vector<ofPoint> vertexsOriginal = hexagonCanvas.getVertexData();
+    
     float ribbonWidth = 1.0 * (sin(ofGetElapsedTimef()) + 1.0)/8.0 ;
     //ribbonWidth = ofRandomuf();
 
@@ -399,7 +441,11 @@ void ofApp::updateVertexsForQuad()
     {
         for(int j=0;j<numRings;j++)
         {
-            if(hexaPix[j][i]._pathId != -1 )
+            int actualHexagon = (j*numRings) + j;
+            ofVec2f idRing = hexagonCanvas.getHexagonIdAndRing(actualHexagon);
+//            if(hexaPix[j][i]._pathId != -1 )
+//            {
+            if(idRing[0] != -1 )
             {
                 vector<ofPoint>     vertOfHexagon;
                 ofPoint p1,p2,p3,p4;
@@ -410,12 +456,17 @@ void ofApp::updateVertexsForQuad()
                 // first get the 7 original vertices of the array
                 for(int k=0;k<7;k++)
                 {
-                    int w = hexaPix[j][i]._pathId;
+//                    int w = hexaPix[j][i]._pathId;
+                    int w = idRing[0];
+//                    vertOfHexagon[k] = vertexsOriginal[(w*numVertexsOneHexagonWithCenter)+1 + k ];
                     vertOfHexagon[k] = vertexsOriginal[(w*numVertexsOneHexagonWithCenter)+1 + k ];
                 }
 //                cout << " HEXA " << hexaPix[j][i]._ring << " , " << hexaPix[j][i]._num << " :: " << (float(hexaPix[j][i]._ring + 1)) / float(numRings) << endl;
 
-                ribbonWidthDivider = 4.0 * (float(hexaPix[j][i]._ring + 0)) / float(numRings);
+                //!!!!!!!!!! !!!
+                //ribbonWidthDivider = 4.0 * (float(hexaPix[j][i]._ring + 0)) / float(numRings);
+                // !!!!!!!!
+                ribbonWidthDivider = 2.0;
                 
                 // VERTS RIBBON [2] : 4v for each hexagon -> to draw the ribbon
                 ////////////////////////////////////////////////////////
@@ -483,10 +534,18 @@ void ofApp::updateVertexsForQuad()
 //--------------------------------------------------------------
 void ofApp::update()
 {
-    //updateVertexsForQuad();
-    updateOsc();
-    updateMatrices();
-
+    if(dropdown_whichSource == HEX_SOURCE_RIBBON )
+    {
+        // HEX_SOURCE_RIBBON
+        updateVertexsForQuad();
+    }
+    else
+    {
+        // HEX_SOURCE_TEXTURE
+        updateOsc();
+        updateMatrices();
+    }
+    
     if(dropdown_whichSource==HEX_SOURCE_TEXTURE && dropdown_whichTextureSource==HEX_TEXTURE_VIDEO && videoPlayer.isLoaded())
     {
         videoPlayer.update();
@@ -502,13 +561,12 @@ void ofApp::draw()
     //vbo.updateVertexData(vecVboVerts[currentVboVerts].data(), vecVboVerts[currentVboVerts].size());
     
     /// DRAW SYPHON INTO FBO TO LATER RETRIEVE IT's TEXTURE
-    if((dropdown_whichTextureSource == HEX_TEXTURE_SYPHON || dropdown_whichTextureSource == HEX_TEXTURE_SYPHON_MAX) || dropdown_whichSource==HEX_SOURCE_TEXTURE)
+    if( dropdown_whichSource==HEX_SOURCE_TEXTURE && (dropdown_whichTextureSource == HEX_TEXTURE_SYPHON || dropdown_whichTextureSource == HEX_TEXTURE_SYPHON_MAX))
     {
         fboSyphon.begin();
         if(dropdown_whichTextureSource == HEX_TEXTURE_SYPHON) syphon.draw(0,0,fboResolution.x,fboResolution.y);
         else if(dropdown_whichTextureSource == HEX_TEXTURE_SYPHON_MAX) syphonMax.draw(0,0,fboResolution.x,fboResolution.y);
         fboSyphon.end();
-        
     }
     
     //////////////////////
@@ -561,7 +619,7 @@ void ofApp::draw()
             ofSetColor(255);
             shader.setUniform4f("u_color", ofFloatColor(1.0,0.5,0.0,1.0));
             
-            if(useTransformMatrix) shader.setUniform1i("u_useMatrix", 1);
+            if(toggle_useTBOMatrix) shader.setUniform1i("u_useMatrix", 1);
             else shader.setUniform1i("u_useMatrix", 0);
 
             if(useCubeColors)
@@ -570,17 +628,25 @@ void ofApp::draw()
             }
             else shader.setUniform1i("u_useCubeColors", 0);
 
-            pmVbo1.draw(drawPrimitive);
+            switch(dropdown_whichSource)
+            {
+                case HEX_SOURCE_TEXTURE :
+                    pmVbo1.draw(drawPrimitive);
+                    break;
+                case HEX_SOURCE_RIBBON :
+                    pmVboRibbon.draw(GL_QUADS);
+                    break;
+            }
 
         }
 
         // ... END SHADING
         if(useShader) shader.end();
 
-        if(showVertices)
+        if(toggle_showVertices)
         {
             // DRAW VERTEX COORDINATES
-            ofSetColor(255,255,0);
+            ofSetColor(255,0,0);
             vector<ofVec3f> v= pmVbo1.getCurrentVertices();
             int whichHexagon = 0;
             for(int i=0;i<v.size();i++)
@@ -600,8 +666,11 @@ void ofApp::draw()
         ofSetColor(128,128,128,128);
         maskWireframe.draw(0,0,1200,1200);
     }
-    ofSetColor(255);
-    mask.draw(0,0,1200,1200);
+    if(toggle_drawMask)
+    {
+        ofSetColor(255);
+        mask.draw(0,0,1200,1200);
+    }
 
     /// DRAW VIDEO FILE INFO
     if(isRecording) ofSetColor(255,0,0);
@@ -804,13 +873,9 @@ void ofApp::keyPressed(int key){
     {
         useShader = !useShader;
     }
-    else if(key=='i')
-    {
-        showVertices = !showVertices;
-    }
     else if(key=='r')
     {
-        useTransformMatrix = !useTransformMatrix;
+        toggle_useTBOMatrix = !toggle_useTBOMatrix;
     }
     else if(key=='c')
     {

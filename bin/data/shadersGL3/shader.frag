@@ -18,5 +18,6 @@ void main()
 //    out_color = texelFetch(uTexture, ivec2(0.3,0.3),0);
 //    out_color = texture(uTexture, ivec2(0.3,0.3));
     //    out_color = texture2D(uTexture, vTexCoord) + 0.25;
-    
+  
+    //out_color = vec4(1.0,1.0,1.0,1.0);
 }
