@@ -47,9 +47,10 @@ void ofApp::setup(){
     
     parametersGraphics.setName("Hexagonator");
     parametersGraphics.add(toggle_showLayout.set("Show Layout",true));
+    parametersControl::addDropdownToParameterGroupFromParameters(parametersGraphics,"Source",{"Texture","Quads"},dropdown_whichSource);
     parametersControl::addDropdownToParameterGroupFromParameters(parametersGraphics,"Texture Coordinates",{"64x35","1200x1200"},dropdown_whichTexCoord);
     dropdown_whichTexCoord.addListener(this,&ofApp::changedTexCoord);
-    parametersControl::addDropdownToParameterGroupFromParameters(parametersGraphics,"Source",{"Image","Video","Syphon","Syph.Max"},dropdown_whichTextureSource);
+    parametersControl::addDropdownToParameterGroupFromParameters(parametersGraphics,"Texture Source",{"Image","Video","Syphon","Syph.Max"},dropdown_whichTextureSource);
     
     // LISTENERS
     dropdown_whichTexCoord.addListener(this,&ofApp::changedTexCoord);
@@ -482,12 +483,14 @@ void ofApp::updateVertexsForQuad()
 //--------------------------------------------------------------
 void ofApp::update()
 {
-    cout << dropdown_whichTextureSource << endl;
     //updateVertexsForQuad();
     updateOsc();
     updateMatrices();
 
-    if(dropdown_whichTextureSource==1 && videoPlayer.isLoaded()) videoPlayer.update();
+    if(dropdown_whichSource==HEX_SOURCE_TEXTURE && dropdown_whichTextureSource==HEX_TEXTURE_VIDEO && videoPlayer.isLoaded())
+    {
+        videoPlayer.update();
+    }
 
    
 }
@@ -499,12 +502,13 @@ void ofApp::draw()
     //vbo.updateVertexData(vecVboVerts[currentVboVerts].data(), vecVboVerts[currentVboVerts].size());
     
     /// DRAW SYPHON INTO FBO TO LATER RETRIEVE IT's TEXTURE
-    if((dropdown_whichTextureSource == HEX_SOURCE_SYPHON)||((dropdown_whichTextureSource == HEX_SOURCE_SYPHON)))
+    if((dropdown_whichTextureSource == HEX_TEXTURE_SYPHON || dropdown_whichTextureSource == HEX_TEXTURE_SYPHON_MAX) || dropdown_whichSource==HEX_SOURCE_TEXTURE)
     {
         fboSyphon.begin();
-        if(dropdown_whichTextureSource == HEX_SOURCE_SYPHON) syphon.draw(0,0,fboResolution.x,fboResolution.y);
-        else if(dropdown_whichTextureSource == HEX_SOURCE_SYPHON_MAX) syphonMax.draw(0,0,fboResolution.x,fboResolution.y);
+        if(dropdown_whichTextureSource == HEX_TEXTURE_SYPHON) syphon.draw(0,0,fboResolution.x,fboResolution.y);
+        else if(dropdown_whichTextureSource == HEX_TEXTURE_SYPHON_MAX) syphonMax.draw(0,0,fboResolution.x,fboResolution.y);
         fboSyphon.end();
+        
     }
     
     //////////////////////
@@ -521,25 +525,29 @@ void ofApp::draw()
         if(useShader)
         {
             shader.begin();
+            
             // choose which texture to feed into the shader (image or syphon)
+            if(dropdown_whichSource == HEX_SOURCE_TEXTURE)
+            {
                 switch (dropdown_whichTextureSource)
                 {
-                    case HEX_SOURCE_IMAGE:
+                    case HEX_TEXTURE_IMAGE:
                         shader.setUniformTexture("uTexture", image, 2);
                         break;
-                    case HEX_SOURCE_VIDEO:
+                    case HEX_TEXTURE_VIDEO:
                         shader.setUniformTexture("uTexture", videoPlayer, 2);
                         break;
-                    case HEX_SOURCE_SYPHON:
+                    case HEX_TEXTURE_SYPHON:
                         shader.setUniformTexture("uTexture", fboSyphon.getTexture(), 2);
                         break;
-                    case HEX_SOURCE_SYPHON_MAX:
+                    case HEX_TEXTURE_SYPHON_MAX:
                         shader.setUniformTexture("uTexture", fboSyphon.getTexture(), 2);
                         break;
                         
                     default:
                         break;
                 }
+            }
 //                shader.setUniformTexture("uTexture", videoPlayer, 2);
 //                shader.setUniformTexture("uTexture", image, 2);
 //                image.bind();
@@ -599,30 +607,33 @@ void ofApp::draw()
     if(isRecording) ofSetColor(255,0,0);
     else ofSetColor(128);
     
-    switch (dropdown_whichTextureSource)
+    if(dropdown_whichSource==HEX_SOURCE_TEXTURE)
     {
-        case HEX_SOURCE_IMAGE:
-            ofDrawBitmapString(imageFilename + " : " + ofToString(videoPlayer.getCurrentFrame()),550,30);
-            ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), 550,45);
-            break;
-        case HEX_SOURCE_VIDEO:
-            if(videoPlayer.isLoaded())
-            {
-                ofDrawBitmapString(videoFilename + " // Current Frame :  " + ofToString(videoPlayer.getCurrentFrame()),550,30);
-            }
-            ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), 550,45);
-            break;
-        case HEX_SOURCE_SYPHON:
-            ofDrawBitmapString("Syhpon",550,30);
-            ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), 550,45);
-            break;
-        case HEX_SOURCE_SYPHON_MAX:
-            ofDrawBitmapString("Syhpon Max",550,30);
-            ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), 550,45);
-            break;
-            
-        default:
-            break;
+        switch (dropdown_whichTextureSource)
+        {
+            case HEX_TEXTURE_IMAGE:
+                ofDrawBitmapString(imageFilename + " : " + ofToString(videoPlayer.getCurrentFrame()),550,30);
+                ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), 550,45);
+                break;
+            case HEX_TEXTURE_VIDEO:
+                if(videoPlayer.isLoaded())
+                {
+                    ofDrawBitmapString(videoFilename + " // Current Frame :  " + ofToString(videoPlayer.getCurrentFrame()),550,30);
+                }
+                ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), 550,45);
+                break;
+            case HEX_TEXTURE_SYPHON:
+                ofDrawBitmapString("Syhpon",550,30);
+                ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), 550,45);
+                break;
+            case HEX_TEXTURE_SYPHON_MAX:
+                ofDrawBitmapString("Syhpon Max",550,30);
+                ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), 550,45);
+                break;
+                
+            default:
+                break;
+        }
     }
     if(isRecording)
     {
@@ -916,6 +927,7 @@ void ofApp::gotMessage(ofMessage msg){
 //--------------------------------------------------------------
 void ofApp::dragEvent(ofDragInfo info)
 {
+    dropdown_whichSource = HEX_SOURCE_TEXTURE;
     
     if( info.files.size() > 0 )
     {
