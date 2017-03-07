@@ -31,6 +31,7 @@ class pmHexagonCanvas
     
         int                         getNumHexagons(){return numHexagons;};
         vector<ofVec3f>             getVertexData();
+        vector<ofVec3f>             getOriginalVertexData();
         vector<ofVec2f>             getTextureCoords();
         vector<ofFloatColor>        getColorData();
         vector<ofIndexType>         getFaceData();

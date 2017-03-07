@@ -95,6 +95,7 @@ void main()
     }
     else
     {
+        // TODO : Doesn't work !! 
         gl_Position = modelViewProjectionMatrix * position;
     }
     

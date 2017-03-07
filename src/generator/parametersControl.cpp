@@ -40,7 +40,16 @@ void parametersControl::createGuiFromParams(ofParameterGroup paramGroup, ofColor
         else if(absParam.type() == typeid(ofParameter<int>).name())
             tempDatGui->addSlider(paramGroup.getInt(i));
         else if(absParam.type() == typeid(ofParameter<bool>).name())
-            tempDatGui->addToggle(paramGroup.getName(i))->setChecked(paramGroup.getBool(i).get());
+        {
+            // TODO : no va el canvi de color ?? ""
+            ofxDatGuiToggle* t = (ofxDatGuiToggle*) tempDatGui->addToggle(paramGroup.getName(i));
+            t->setChecked(paramGroup.getBool(i).get());
+            t->setBackgroundColor(ofColor::red);
+            t->setLabelColor(ofColor::blue);
+            t->setStripeVisible(true);
+            t->setStripeColor(ofColor::green);
+            /// ????? no reacciona ?? 
+        }
         else if(absParam.type() == typeid(ofParameter<string>).name()){
             if(ofSplitString(absParam.getName(), "_").size() > 1)
                 tempDatGui->addLabel(ofSplitString(absParam.getName(), "_")[0]);
@@ -50,7 +59,7 @@ void parametersControl::createGuiFromParams(ofParameterGroup paramGroup, ofColor
         else if(absParam.type() == typeid(ofParameter<ofColor>).name())
             tempDatGui->addColorPicker(paramGroup.getName(i), ofColor::white);
         else if(absParam.type() == typeid(ofParameterGroup).name()){
-            tempDatGui->addLabel(paramGroup.getGroup(i).getName());
+            tempDatGui->addLabel(paramGroup.getGroup(i).getName())->setBackgroundColor(ofColor::red);
             tempDatGui->addDropdown(paramGroup.getGroup(i).getName(), ofSplitString(paramGroup.getGroup(i).getString(0), "-|-"))->select(paramGroup.getGroup(i).getInt(1));
         }else{
             tempDatGui->addLabel(absParam.getName());

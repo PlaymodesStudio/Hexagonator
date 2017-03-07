@@ -10,10 +10,17 @@
 #include "ofxAVScreenCapture.h"
 #include "parametersControl.h"
 
-enum sourceType{
-    HEX_SOURCE_IMAGE = 0,
-    HEX_SOURCE_VIDEO = 1,
-    HEX_SOURCE_SYPHON = 2
+enum sourceTextureType
+{
+    HEX_TEXTURE_IMAGE = 0,
+    HEX_TEXTURE_VIDEO = 1,
+    HEX_TEXTURE_SYPHON = 2,
+    HEX_TEXTURE_SYPHON_MAX = 3
+};
+enum sourceType
+{
+    HEX_SOURCE_TEXTURE = 0,
+    HEX_SOURCE_RIBBON = 1
 };
 
 
@@ -72,8 +79,8 @@ class ofApp : public ofBaseApp{
     
     // SYPHON TEXTURE
     ofxSyphonClient         syphon;
+    ofxSyphonClient         syphonMax;
     bool                    useSyphon;
-    bool                    showVertices;
     bool                    useTransformMatrix;
     bool                    useCubeColors;
 
@@ -102,10 +109,11 @@ class ofApp : public ofBaseApp{
 
     /// VBO
     pmVbo pmVbo1;
+    pmVbo pmVboRibbon;
 
     // DATA VECTORS
     vector<ofVec3f>         vertexsTransformed;
-    vector<ofVec3f>         vertexsOriginal;
+    //vector<ofVec3f>         vertexsOriginal;
     vector<ofVec3f>         vertexsRibbon;
     vector<ofPoint>         hexagonCentroids;
     
@@ -164,9 +172,14 @@ class ofApp : public ofBaseApp{
     // GRAPHICS & OPTIONS
     ofParameterGroup    parametersGraphics;
     //ofParameter<int>    param_whichTexCoord;
+    ofParameter<int>    dropdown_whichSource;
     ofParameter<int>    dropdown_whichTexCoord;
     ofParameter<int>    dropdown_whichTextureSource; // 0 : image 1 : video 2 : syphon
+    ofParameter<bool>   toggle_drawMask;
+    ofParameter<bool>   toggle_showVertices;
     ofParameter<bool>   toggle_showLayout;
+    ofParameter<bool>   toggle_useTBOMatrix;
+    
     // LISTENERS FUNCTIONS
     void                changedTexCoord(int &i);
     
