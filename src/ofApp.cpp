@@ -24,7 +24,6 @@ void ofApp::setup(){
     useCubeColors = false;
     numVertexsOneHexagonWithCenter = 7;
     numVertexsOneHexagon = 6;
-    drawPrimitive = GL_TRIANGLES;
     recordedFrame = 0;
     lastTimeWeReceivedOsc = 0.0;
     usingOsc = false;
@@ -265,7 +264,7 @@ void ofApp::setup(){
     ///////////////////
     // PM VBO RIBBON
     ///////////////////
-    pmVboRibbon.setup(hexagonCanvas.getNumHexagons(),4);
+    //pmVboRibbon.setup(hexagonCanvas.getNumHexagons(),4);
     
     ///////////////////
     // PM VBO RIBBON
@@ -274,73 +273,48 @@ void ofApp::setup(){
     int numRibbons = hexagonCanvas.getNumHexagons();
     int numRibbonVertexs = hexagonCanvas.getNumHexagons()*4;
     
-    cout << "Num Ribbons = " << numRibbons << endl;
-    cout << "Num Ribbon Vertexs = " << numRibbonVertexs << endl;
-    
     // VERTEXS
-    vertexsRibbon.resize(numRibbonVertexs);
-    pmVboRibbon.setVertData(vertexsRibbon,0);
+    vecVboQuads_Verts.resize(numRibbonVertexs);
+    vboQuads.setVertexData(vecVboQuads_Verts.data(),vecVboQuads_Verts.size(),GL_DYNAMIC_DRAW);
+    //pmVboRibbon.setVertData(vecVboQuads_Verts,0);
     
     // TEXTURE COORDS
-    vector<ofVec2f> ribbonTexCoords;
-    ribbonTexCoords.resize(numRibbons*4);
-    for(int i=0;i<numRibbons;i++)
-    {
-        for(int j=0;j<4;j++)
-        {
-            ribbonTexCoords[(i*4)+j] = vCentroidPoints[i] / 1200.0 ;
-        }
-    }
-    pmVboRibbon.setTexCoordsData(vecCentroidTexCoord,1);
+//    vector<ofVec2f> ribbonTexCoords;
+//    ribbonTexCoords.resize(numRibbons*4);
+//    for(int i=0;i<numRibbons;i++)
+//    {
+//        for(int j=0;j<4;j++)
+//        {
+//            ribbonTexCoords[(i*4)+j] = vCentroidPoints[i] / 1200.0 ;
+//        }
+//    }
+//    pmVboRibbon.setTexCoordsData(vecCentroidTexCoord,1);
     
     // COLORS
-    vector<ofFloatColor> ribbonColors;
-    ribbonColors.resize(numRibbons*4,ofFloatColor(1.0,0.0,0.0,1.0));
-    pmVboRibbon.setColorData(hexagonCanvas.getColorData(),0);
+    vecVboQuads_Colors.resize(numRibbonVertexs);
+    for(int i=0;i<vecVboQuads_Colors.size();i++)
+    {
+        vecVboQuads_Colors[i] = ofFloatColor(1.0,0.0,1.0,1.0);
+    }
+    vboQuads.setColorData(vecVboQuads_Colors.data(), vecVboQuads_Colors.size(), GL_DYNAMIC_DRAW);
 
-    // FACES INDEX
-    vector<ofIndexType> ribbonFacesIndex;
-    ribbonFacesIndex.resize(numRibbons*2*3);
+    // INDEXS
+    vecVboQuads_Indexs.resize(numRibbons*6);
     for(int i=0;i<numRibbons;i++)
     {
-//        for(int j=0;j<3;j++)
-//        {
-//            
-//            ribbonFacesIndex[(i*4)+j] = (i*4)+j;
-//            cout << "Ribon faces [" << i << "] = " << (i*4)+j << endl;
-//        }
-        
-        for(int j=0;j<2;j++)
-        {
-            if(j==0)
-            {
-                // first face
-                ribbonFacesIndex[(i*6) + 0] = (i*4) + 0;
-                ribbonFacesIndex[(i*6) + 1] = (i*4) + 1;
-                ribbonFacesIndex[(i*6) + 2] = (i*4) + 2;
-            }
-            else
-            {
-                // second face
-                ribbonFacesIndex[(i*6) + 3] = (i*4) + 0;
-                ribbonFacesIndex[(i*6) + 4] = (i*4) + 2;
-                ribbonFacesIndex[(i*6) + 5] = (i*4) + 3;
-            }
-        }
-        
-        
-//        ribbonFacesIndex[0] = 0;
-//        ribbonFacesIndex[1] = 1;
-//        ribbonFacesIndex[2] = 2;
-//        ribbonFacesIndex[3] = 0;
-//        ribbonFacesIndex[4] = 2;
-//        ribbonFacesIndex[5] = 3;
-        
-        
+        vecVboQuads_Indexs[(i*6)+0] = (i*4)+0;
+        vecVboQuads_Indexs[(i*6)+1] = (i*4)+1;
+        vecVboQuads_Indexs[(i*6)+2] = (i*4)+2;
+        vecVboQuads_Indexs[(i*6)+3] = (i*4)+0;
+        vecVboQuads_Indexs[(i*6)+4] = (i*4)+2;
+        vecVboQuads_Indexs[(i*6)+5] = (i*4)+3;
     }
-    pmVboRibbon.setFacesData(ribbonFacesIndex,0);
-    pmVboRibbon.setDrawMode(QUADS);
-
+    vboQuads.setIndexData(vecVboQuads_Indexs.data(), vecVboQuads_Indexs.size(), GL_DYNAMIC_DRAW);
+    for(int i=0;i<vecVboQuads_Indexs.size();i++)
+    {
+        cout << " Index : " << i << " : " << vecVboQuads_Indexs[i] << endl;
+    }
+    
     
     /// TRANSFORM TBO STUFF (Texture Buffer Object)
     //////////////////////////////////////
@@ -562,10 +536,10 @@ void ofApp::updateVertexsForQuad()
             //        //            p3 = vecOrdered[3] + (v34 * 0.33);
             //        //            p4 = vecOrdered[3] + (v34 * 0.66);
             //
-            //        vertexsRibbon[(i*4)+0] = p1;
-            //        vertexsRibbon[(i*4)+1] = p2;
-            //        vertexsRibbon[(i*4)+2] = p3;
-            //        vertexsRibbon[(i*4)+3] = p4;
+            //        vecVboQuads_Verts[(i*4)+0] = p1;
+            //        vecVboQuads_Verts[(i*4)+1] = p2;
+            //        vecVboQuads_Verts[(i*4)+2] = p3;
+            //        vecVboQuads_Verts[(i*4)+3] = p4;
             
             
             
@@ -585,16 +559,12 @@ void ofApp::updateVertexsForQuad()
             //            p3 = vecOrdered[3] + (v34 * 0.33);
             //            p4 = vecOrdered[3] + (v34 * 0.66);
             
-            vertexsRibbon[(howManyHexagonsWeVisited*4)+0] = p1;
-            vertexsRibbon[(howManyHexagonsWeVisited*4)+1] = p2;
-            vertexsRibbon[(howManyHexagonsWeVisited*4)+2] = p3;
-            vertexsRibbon[(howManyHexagonsWeVisited*4)+3] = p4;
+            vecVboQuads_Verts[(howManyHexagonsWeVisited*4)+0] = p1;
+            vecVboQuads_Verts[(howManyHexagonsWeVisited*4)+1] = p2;
+            vecVboQuads_Verts[(howManyHexagonsWeVisited*4)+2] = p3;
+            vecVboQuads_Verts[(howManyHexagonsWeVisited*4)+3] = p4;
             //
             
-            cout << "vertRibbon 0 : "<< vertexsRibbon[(howManyHexagonsWeVisited*4)+0] << endl;
-            cout << "vertRibbon 1 : "<< vertexsRibbon[(howManyHexagonsWeVisited*4)+1] << endl;
-            cout << "vertRibbon 2 : "<< vertexsRibbon[(howManyHexagonsWeVisited*4)+2] << endl;
-            cout << "vertRibbon 3 : "<< vertexsRibbon[(howManyHexagonsWeVisited*4)+3] << endl;
             
             
             howManyHexagonsWeVisited = howManyHexagonsWeVisited + 1 ;
@@ -603,10 +573,12 @@ void ofApp::updateVertexsForQuad()
 
     }
     
-    pmVboRibbon.setVertData(vertexsRibbon,hexagonCanvas.getNumHexagons());
+//    pmVboRibbon.setVertData(vecVboQuads_Verts,hexagonCanvas.getNumHexagons());
+    //vboQuads.setVertexData(vecVboQuads_Verts.data(), vecVboQuads_Verts.size(),GL_DYNAMIC_DRAW);
+    vboQuads.updateVertexData(vecVboQuads_Verts.data(), vecVboQuads_Verts.size());
     
 //    cout << "ribbon width : " << ribbonWidth << " HowMany Visited : " << howManyHexagonsWeVisited <<  endl;
-//    cout << vertexsRibbon[0][0] << endl;
+//    cout << vecVboQuads_Verts[0][0] << endl;
 
 }
 
@@ -614,9 +586,10 @@ void ofApp::updateVertexsForQuad()
 void ofApp::update()
 {
     
-    if(dropdown_whichSource == HEX_SOURCE_RIBBON )
+    if(dropdown_whichSource == HEX_SOURCE_QUADS )
     {
-        // HEX_SOURCE_RIBBON
+        // HEX_SOURCE_QUADS
+        updateMatrices();
         updateVertexsForQuad();
     }
     else
@@ -636,7 +609,7 @@ void ofApp::update()
 //--------------------------------------------------------------
 void ofApp::draw()
 {
-    pmVboRibbon.updateVertData(vertexsRibbon,0);
+    //pmVboRibbon.updateVertData(vecVboQuads_Verts,0);
     //vbo.updateVertexData(vecVboVerts[currentVboVerts].data(), vecVboVerts[currentVboVerts].size());
     
     /// DRAW SYPHON INTO FBO TO LATER RETRIEVE IT's TEXTURE
@@ -666,6 +639,8 @@ void ofApp::draw()
             // choose which texture to feed into the shader (image or syphon)
             if(dropdown_whichSource == HEX_SOURCE_TEXTURE)
             {
+                shader.setUniform1i("u_modulo",7);
+
                 switch (dropdown_whichTextureSource)
                 {
                     case HEX_TEXTURE_IMAGE:
@@ -684,6 +659,10 @@ void ofApp::draw()
                     default:
                         break;
                 }
+            }
+            else if(dropdown_whichSource == HEX_SOURCE_QUADS)
+            {
+                shader.setUniform1i("u_modulo",4);
             }
 //                shader.setUniformTexture("uTexture", videoPlayer, 2);
 //                shader.setUniformTexture("uTexture", image, 2);
@@ -711,21 +690,29 @@ void ofApp::draw()
             {
                 case HEX_SOURCE_TEXTURE :
                 {
-                    //pmVbo1.draw(drawPrimitive);
-                    
                     vboTex.bind();
                     int numVertexsPerOneFace = 18;
                     vboTex.drawElements(GL_TRIANGLES,hexagonCanvas.getNumHexagons()*numVertexsPerOneFace );
                     vboTex.unbind();
                     break;
                 }
-                case HEX_SOURCE_RIBBON :
+                case HEX_SOURCE_QUADS :
                 {
-                    pmVboRibbon.draw(drawPrimitive);
+                    //vboQuads.bind();
+
+                    vboQuads.drawElements(GL_TRIANGLES,vecVboQuads_Indexs.size());
+                    
+                    //vboQuads.unbind();
                     break;
                 }
             }
 
+        }
+        else
+        {
+            if(useShader) shader.end();
+            ofSetColor(255,255,0);
+            vboQuads.draw(GL_QUADS,0,vecVboQuads_Verts.size());
         }
 
         // ... END SHADING
@@ -744,20 +731,18 @@ void ofApp::draw()
                 v = vecVboTex_Verts;
                 elementSize = 7;
             }
-            else  if (dropdown_whichSource==HEX_SOURCE_RIBBON)
+            else  if (dropdown_whichSource==HEX_SOURCE_QUADS)
             {
                 // DRAW VERTEX COORDINATES
                 ofSetColor(255,0,0);
-                v = vertexsRibbon; //pmVboRibbon.getCurrentVertices();
+                v = vecVboQuads_Verts;
                 elementSize = 4;
             }
                 
             int whichHexagon = 0;
             for(int i=0;i<v.size();i++)
             {
-                cout << "v Ribbon size " << v.size() << endl;
                 whichHexagon = float(i)/float(elementSize);
-                
                 if(toggle_useTBOMatrix)
                 {
                     ofDrawBitmapString(ofToString(i)+ " : " +ofToString(v[i])   ,v[i].x + hexagonCanvas.getCentroidData()[whichHexagon].x, v[i].y + hexagonCanvas.getCentroidData()[whichHexagon].y) ; //+" : " + ofToString(v[i]),v[i].x, v[i].y);
@@ -777,7 +762,7 @@ void ofApp::draw()
 //            {
 //                v = pmVbo1.getCurrentVertices();
 //            }
-//            else  if (dropdown_whichSource=HEX_SOURCE_RIBBON)
+//            else  if (dropdown_whichSource=HEX_SOURCE_QUADS)
 //            {
 //                v = pmVboRibbon.getCurrentVertices();
 //            }
@@ -792,7 +777,7 @@ void ofApp::draw()
 //                    {
 //                        ofDrawBitmapString(ofToString(i)  ,v[i].x + hexagonCanvas.getCentroidData()[whichHexagon].x, v[i].y + hexagonCanvas.getCentroidData()[whichHexagon].y) ; //+" : " + ofToString(v[i]),v[i].x, v[i].y);
 //                    }
-//                    else  if (dropdown_whichSource=HEX_SOURCE_RIBBON)
+//                    else  if (dropdown_whichSource=HEX_SOURCE_QUADS)
 //                    {
 //                        ofDrawBitmapString(ofToString(i)  ,v[i].x , v[i].y)  ; //+" : " + ofToString(v[i]),v[i].x, v[i].y);
 //                    }
@@ -982,17 +967,14 @@ void ofApp::keyPressed(int key){
         else videoPlayer.setPaused(true);
         //videoPlayer.stop();
         cout << " pausing " << endl;
-//        drawPrimitive=GL_LINE_LOOP;
     }
     else if(key=='-')
     {
         videoPlayer.nextFrame();
-        //        drawPrimitive=GL_TRIANGLES;
     }
     else if(key=='.')
     {
         videoPlayer.previousFrame();
-        //        drawPrimitive=GL_TRIANGLES;
     }
     else if(key=='h')
     {

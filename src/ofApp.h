@@ -2,7 +2,7 @@
 
 #include "ofMain.h"
 #include "ofxSVG.h"
-#include "pmVbo.hpp"
+//#include "pmVbo.hpp"
 #include "ofxSyphon.h"
 #include "pmHexagonCanvas.hpp"
 #include "ofxOsc.h"
@@ -20,7 +20,7 @@ enum sourceTextureType
 enum sourceType
 {
     HEX_SOURCE_TEXTURE = 0,
-    HEX_SOURCE_RIBBON = 1
+    HEX_SOURCE_QUADS = 1
 };
 
 
@@ -103,7 +103,6 @@ class ofApp : public ofBaseApp{
     int                     numModes;
     string                  modeString;
     bool                    saveNow;
-    int                     drawPrimitive;
 
     /// HEXAGON CANVAS
     pmHexagonCanvas         hexagonCanvas;
@@ -117,9 +116,12 @@ class ofApp : public ofBaseApp{
     vector<ofFloatColor>            vecVboTex_Colors;
     vector<vector<ofVec2f>>         vecVboTex_TexCoords;
 
+    vector<ofVec3f>                 vecVboQuads_Verts;
+    vector<ofFloatColor>            vecVboQuads_Colors;
+    vector<ofIndexType>             vecVboQuads_Indexs;
     
     //pmVbo pmVbo1;
-    pmVbo pmVboRibbon;
+    //pmVbo pmVboRibbon;
 
     // DATA VECTORS
     vector<ofVec3f>         vertexsRibbon;
