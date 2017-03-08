@@ -97,12 +97,12 @@ private:
     ofxDatGuiMatrix* presetMatrix;
     ofxDatGuiDropdown* bankSelect;
     
+    ofParameter<int>    framesToRecord;
+    
     vector<ofxDatGui*> datGuis;
     vector<ofParameterGroup> parameterGroups;
+
     
-    ofParameter<bool> autoPreset;
-    ofParameter<float> presetChangeBeatsPeriod;
-    ofParameter<float>  fadeTime;
     
     ofxOscReceiver oscReceiver;
     ofxOscSender oscSender;

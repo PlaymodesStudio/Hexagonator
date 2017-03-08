@@ -6,10 +6,12 @@
 uniform samplerBuffer texTransform;
 uniform samplerBuffer texCubeColors;
 uniform int u_numHexags;
+uniform int u_modulo;
 uniform vec4 u_color;
 uniform int u_useMatrix;
 uniform int u_useCubeColors;
 flat out vec4 hexColor;
+
 
 //in vec2         texcoord;
 // outputs
@@ -23,10 +25,10 @@ void main()
     
 
     
-    int numVertsXHexa = 7;
-    int numVerts = numVertsXHexa * u_numHexags;
+    //int numVertsXHexa = 4;
+    int numVerts = u_modulo * u_numHexags;
     
-    int hexagonId = ((gl_VertexID) / numVertsXHexa);
+    int hexagonId = ((gl_VertexID) / u_modulo);
     int faceOnHexa = int(gl_VertexID)%7;
   
     hexColor = u_color;
@@ -95,6 +97,7 @@ void main()
     }
     else
     {
+        // TODO : Doesn't work !! 
         gl_Position = modelViewProjectionMatrix * position;
     }
     

@@ -2,7 +2,7 @@
 
 #include "ofMain.h"
 #include "ofxSVG.h"
-#include "pmVbo.hpp"
+//#include "pmVbo.hpp"
 #include "ofxSyphon.h"
 #include "pmHexagonCanvas.hpp"
 #include "ofxOsc.h"
@@ -10,11 +10,17 @@
 #include "ofxAVScreenCapture.h"
 #include "parametersControl.h"
 
-enum sourceType{
-    HEX_SOURCE_IMAGE = 0,
-    HEX_SOURCE_VIDEO = 1,
-    HEX_SOURCE_SYPHON = 2,
-    HEX_SOURCE_SYPHON_MAX = 3
+enum sourceTextureType
+{
+    HEX_TEXTURE_IMAGE = 0,
+    HEX_TEXTURE_VIDEO = 1,
+    HEX_TEXTURE_SYPHON = 2,
+    HEX_TEXTURE_SYPHON_MAX = 3
+};
+enum sourceType
+{
+    HEX_SOURCE_TEXTURE = 0,
+    HEX_SOURCE_QUADS = 1
 };
 
 
@@ -75,12 +81,9 @@ class ofApp : public ofBaseApp{
     ofxSyphonClient         syphon;
     ofxSyphonClient         syphonMax;
     bool                    useSyphon;
-    bool                    showVertices;
     bool                    useTransformMatrix;
     bool                    useCubeColors;
 
-    /// HEXAGON CANVAS
-    pmHexagonCanvas         hexagonCanvas;
     
     /// OSC
     ofxOscReceiver          oscReceiver;
@@ -100,18 +103,28 @@ class ofApp : public ofBaseApp{
     int                     numModes;
     string                  modeString;
     bool                    saveNow;
-    int                     drawPrimitive;
 
-    /// VBO
-    pmVbo pmVbo1;
+    /// HEXAGON CANVAS
+    pmHexagonCanvas         hexagonCanvas;
+
+    /// VBO    
+    ofVbo vboTex;
+    ofVbo vboQuads;
+    
+    vector<ofVec3f>                 vecVboTex_Verts;
+    vector<ofIndexType>             vecVboTex_Faces;
+    vector<ofFloatColor>            vecVboTex_Colors;
+    vector<vector<ofVec2f>>         vecVboTex_TexCoords;
+
+    vector<ofVec3f>                 vecVboQuads_Verts;
+    vector<ofFloatColor>            vecVboQuads_Colors;
+    vector<ofIndexType>             vecVboQuads_Indexs;
+    
+    //pmVbo pmVbo1;
+    //pmVbo pmVboRibbon;
 
     // DATA VECTORS
-    vector<ofVec3f>         vertexsTransformed;
-    vector<ofVec3f>         vertexsOriginal;
     vector<ofVec3f>         vertexsRibbon;
-    vector<ofPoint>         hexagonCentroids;
-    
-    vector<vector<hexagonPixel>>    hexaPix;
 
     // SHADER
     ofShader                shader;
@@ -119,6 +132,7 @@ class ofApp : public ofBaseApp{
     
     // MATRIX DATA UPDATE
     void                    updateMatrices();
+    void                    updateCubeColors();
     // TBO : Texture Buffer Object used to give encoded data to Shader as a texture
     ofTexture               texTransform;
     ofBufferObject          bufferTransform;
@@ -166,10 +180,22 @@ class ofApp : public ofBaseApp{
     // GRAPHICS & OPTIONS
     ofParameterGroup    parametersGraphics;
     //ofParameter<int>    param_whichTexCoord;
+    ofParameter<int>    dropdown_whichSource;
     ofParameter<int>    dropdown_whichTexCoord;
     ofParameter<int>    dropdown_whichTextureSource; // 0 : image 1 : video 2 : syphon
+    ofParameter<bool>   toggle_drawMask;
+    ofParameter<bool>   toggle_showVertices;
     ofParameter<bool>   toggle_showLayout;
+    ofParameter<bool>   toggle_useTBOMatrix;
+    
     // LISTENERS FUNCTIONS
     void                changedTexCoord(int &i);
+    
+    
+    // RECORDING GUI
+    ofParameterGroup    parametersRecording;
+    ofParameter<bool>   startStopRecording;
+    ofParameter<int>    framesToRecord;
+    ofParameter<string> recFilename;
     
 };

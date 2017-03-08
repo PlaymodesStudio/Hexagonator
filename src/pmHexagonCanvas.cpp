@@ -67,6 +67,8 @@ void pmHexagonCanvas::setup(string _filename)
     
 }
 
+
+
 //----------------------------------------------------------
 vector<ofVec3f> pmHexagonCanvas::getVertexData()
 {
@@ -77,7 +79,28 @@ vector<ofVec3f> pmHexagonCanvas::getVertexData()
     {
         vector<ofVec3f> points;
         points = hexagonsData[i].hexagon.getVertexs();
-
+        
+        
+        for(int j=0;j<7;j++)
+        {
+            vec[(i*7)+j] = points[j];
+            
+        }
+    }
+    
+    return vec;
+}
+//----------------------------------------------------------
+vector<ofVec3f> pmHexagonCanvas::getOriginalVertexData()
+{
+    vector<ofVec3f> vec;
+    vec.resize(numHexagons*7);
+    
+    for(int i=0;i<numHexagons;i++)
+    {
+        vector<ofVec3f> points;
+        points = hexagonsData[i].hexagon.getOriginalVertexs();
+        
         
         for(int j=0;j<7;j++)
         {

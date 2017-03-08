@@ -24,6 +24,7 @@ class pmHexagonGuell
 
     ofPoint                 getCentroid(){return centroid;};
     vector<ofPoint>         getVertexs(){return vertexs;};
+    vector<ofPoint>         getOriginalVertexs(){return vertexsOriginals;};
     vector<ofFloatColor>    getColors(){return colors;};
     vector<ofVec2f>         getTexCoordinates(){return texCoordinates;};
     vector<ofIndexType>     getFaces(){return faces;};

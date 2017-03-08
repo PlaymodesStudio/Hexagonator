@@ -131,12 +131,15 @@ void pmVbo::draw(int _primitive)
         {
             int numVertexsPerOneFace = 18;
             vbo.drawElements(_primitive,(vecVboVerts[currentVboVerts].size()/vertModulo)*numVertexsPerOneFace );
+            break;
         }
         case QUADS :
         {
             int numVertexPerQuad = 4;
 //            vbo.drawElements(_primitive,(vecVboVerts[currentVboVerts].size() * numVertexPerQuad) );
             vbo.drawElements(_primitive,4 * numVertexPerQuad );
+            cout << "pmVbo drawing Quads : " << _primitive <<  endl;
+            break;
         }
 
     }
