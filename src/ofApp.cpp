@@ -613,17 +613,7 @@ void ofApp::updateVertexsForQuad()
 //--------------------------------------------------------------
 void ofApp::update()
 {
-<<<<<<< HEAD
     
-    
-=======
-    cout << dropdown_whichTextureSource << endl;
-    //updateVertexsForQuad();
-    updateOsc();
-    updateMatrices();
-
-    if(dropdown_whichTextureSource == HEX_TEXTURE_VIDEO && videoPlayer.isLoaded()) videoPlayer.update();
->>>>>>> 4f27581f1d757e5d31a6220c514f10d764a17c17
     if(dropdown_whichSource == HEX_SOURCE_RIBBON )
     {
         // HEX_SOURCE_RIBBON
@@ -1135,13 +1125,8 @@ void ofApp::dragEvent(ofDragInfo info)
         cout << ">> Dragged File ... \n" << info.files[0] << " : ext: " << dragFileExtension << endl;
         if(dragFileExtension=="png" || dragFileExtension == "jpg")
         {
-<<<<<<< HEAD
             dropdown_whichSource = HEX_SOURCE_TEXTURE;
-
-            dropdown_whichTextureSource = 0;
-=======
             dropdown_whichTextureSource = HEX_TEXTURE_IMAGE;
->>>>>>> 4f27581f1d757e5d31a6220c514f10d764a17c17
             cout << "Loading new texture ... " << endl;
             imageFilename = info.files[0];
             image.load(imageFilename);
@@ -1153,13 +1138,9 @@ void ofApp::dragEvent(ofDragInfo info)
         }
         else if (dragFileExtension=="mov")
         {
-<<<<<<< HEAD
             dropdown_whichSource = HEX_SOURCE_TEXTURE;
-
-            dropdown_whichTextureSource = 1;
-=======
             dropdown_whichTextureSource = HEX_TEXTURE_VIDEO;
->>>>>>> 4f27581f1d757e5d31a6220c514f10d764a17c17
+
             cout << "Loading new video ... " << endl;
             videoFilename=ofToString("./videos/" + ofSplitString(dragFileName[dragFileName.size()-1],".")[0] +"." +dragFileExtension);
             videoPlayer.load(videoFilename);
