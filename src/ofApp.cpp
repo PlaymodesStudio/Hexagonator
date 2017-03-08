@@ -310,10 +310,6 @@ void ofApp::setup(){
         vecVboQuads_Indexs[(i*6)+5] = (i*4)+3;
     }
     vboQuads.setIndexData(vecVboQuads_Indexs.data(), vecVboQuads_Indexs.size(), GL_DYNAMIC_DRAW);
-    for(int i=0;i<vecVboQuads_Indexs.size();i++)
-    {
-        cout << " Index : " << i << " : " << vecVboQuads_Indexs[i] << endl;
-    }
     
     
     /// TRANSFORM TBO STUFF (Texture Buffer Object)
@@ -482,13 +478,16 @@ void ofApp::updateVertexsForQuad()
     
     for(int i=0;i<hexagonCanvas.getNumHexagons();i++)
     {
+        // get id and ring of each hexagon processed ...
         ofVec2f hexaIdRing = hexagonCanvas.getHexagonIdAndRing(i);
     
+        // if id != -1 then it's a valid hexagon ...
         if(hexaIdRing[0] != -1 )
         {
             vector<ofPoint>     vertOfHexagon;
             ofPoint p1,p2,p3,p4;
-            ofVec2f v01,v34;
+            ofVec2f v01,v34,v23,v50;
+            ofVec2f vA,vB;
             vertOfHexagon.resize(numVertexsOneHexagonWithCenter);
             float ribbonWidthDivider = 1.0;
             
@@ -500,18 +499,25 @@ void ofApp::updateVertexsForQuad()
                 //                    vertOfHexagon[k] = vertexsOriginal[(w*numVertexsOneHexagonWithCenter)+1 + k ];
                 vertOfHexagon[k] = vertexsOriginal[(i*numVertexsOneHexagonWithCenter)+1 + k ];
             }
-            //                cout << " HEXA " << hexaPix[j][i]._ring << " , " << hexaPix[j][i]._num << " :: " << (float(hexaPix[j][i]._ring + 1)) / float(numRings) << endl;
-            
+
+        
             //!!!!!!!!!! !!!
             //ribbonWidthDivider = 4.0 * (float(hexaPix[j][i]._ring + 0)) / float(numRings);
             // !!!!!!!!
             ribbonWidthDivider = 2.0;
             
-            // VERTS RIBBON [2] : 4v for each hexagon -> to draw the ribbon
+            /// VERTS RIBBON [2] : 4v for each hexagon -> to draw the ribbon
             ////////////////////////////////////////////////////////
             
+            // A
             v01 = ofVec2f(vertOfHexagon[1] - vertOfHexagon[0]);
             v34 = ofVec2f(vertOfHexagon[4] - vertOfHexagon[3]);
+            
+            // B
+            v23 = ofVec2f(vertOfHexagon[3] - vertOfHexagon[2]);
+            v50 = ofVec2f(vertOfHexagon[0] - vertOfHexagon[5]);
+            
+            
             
             //
             //        // VERTS RIBBON [2] : 4v for each hexagon -> to draw the ribbon
@@ -545,10 +551,10 @@ void ofApp::updateVertexsForQuad()
             //        } hexagonPixel;
             
             
-            p1 = vertOfHexagon[0] + (v01/2.) - (v01 * (ribbonWidth*ribbonWidthDivider));
-            p2 = vertOfHexagon[0] + (v01/2.) + (v01 * (ribbonWidth*ribbonWidthDivider));
-            p3 = vertOfHexagon[3] + (v34/2.) - (v34 * (ribbonWidth*ribbonWidthDivider));
-            p4 = vertOfHexagon[3] + (v34/2.) + (v34 * (ribbonWidth*ribbonWidthDivider));
+            p1 = vertOfHexagon[2] + (v23/2.) - (v23 * (ribbonWidth*ribbonWidthDivider));
+            p2 = vertOfHexagon[2] + (v23/2.) + (v23 * (ribbonWidth*ribbonWidthDivider));
+            p3 = vertOfHexagon[5] + (v50/2.) - (v50 * (ribbonWidth*ribbonWidthDivider));
+            p4 = vertOfHexagon[5] + (v50/2.) + (v50 * (ribbonWidth*ribbonWidthDivider));
             //p2 = vecOrdered[0] + (v01 * 0.66);
             //            p3 = vecOrdered[3] + (v34 * 0.33);
             //            p4 = vecOrdered[3] + (v34 * 0.66);
