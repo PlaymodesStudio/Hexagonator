@@ -84,8 +84,6 @@ class ofApp : public ofBaseApp{
     bool                    useTransformMatrix;
     bool                    useCubeColors;
 
-    /// HEXAGON CANVAS
-    pmHexagonCanvas         hexagonCanvas;
     
     /// OSC
     ofxOscReceiver          oscReceiver;
@@ -107,17 +105,24 @@ class ofApp : public ofBaseApp{
     bool                    saveNow;
     int                     drawPrimitive;
 
-    /// VBO
-    pmVbo pmVbo1;
+    /// HEXAGON CANVAS
+    pmHexagonCanvas         hexagonCanvas;
+
+    /// VBO    
+    ofVbo vboTex;
+    ofVbo vboQuads;
+    
+    vector<ofVec3f>                 vecVboTex_Verts;
+    vector<ofIndexType>             vecVboTex_Faces;
+    vector<ofFloatColor>            vecVboTex_Colors;
+    vector<vector<ofVec2f>>         vecVboTex_TexCoords;
+
+    
+    //pmVbo pmVbo1;
     pmVbo pmVboRibbon;
 
     // DATA VECTORS
-    vector<ofVec3f>         vertexsTransformed;
-    //vector<ofVec3f>         vertexsOriginal;
     vector<ofVec3f>         vertexsRibbon;
-    vector<ofPoint>         hexagonCentroids;
-    
-    vector<vector<hexagonPixel>>    hexaPix;
 
     // SHADER
     ofShader                shader;
@@ -125,6 +130,7 @@ class ofApp : public ofBaseApp{
     
     // MATRIX DATA UPDATE
     void                    updateMatrices();
+    void                    updateCubeColors();
     // TBO : Texture Buffer Object used to give encoded data to Shader as a texture
     ofTexture               texTransform;
     ofBufferObject          bufferTransform;
