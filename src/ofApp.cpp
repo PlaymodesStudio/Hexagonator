@@ -34,7 +34,7 @@ void ofApp::setup(){
     /////////////////////////////
     
     // GUI VARS
-    dropdown_whichTextureSource = 1; // image as initial texture source
+    dropdown_whichTextureSource = HEX_TEXTURE_VIDEO; // image as initial texture source
     dropdown_whichTexCoord = 0 ;
     
     parametersGraphics.setName("Hexagonator");
@@ -55,6 +55,15 @@ void ofApp::setup(){
 
     // CREATE
     parametersControl::getInstance().createGuiFromParams(parametersGraphics, ofColor::orange);
+    
+    // RECORDING GUI
+    parametersRecording.setName("Recording");
+    parametersRecording.add(startStopRecording.set("Recording", false));
+    parametersRecording.add(framesToRecord.set("frames to Rec", 100, 1, 99999));
+    parametersRecording.add(recFilename.set("Filename", ofGetTimestampString()+".mov"));
+    
+    
+    parametersControl::getInstance().createGuiFromParams(parametersRecording, ofColor::white);
     //parametersControl::getInstance().createGuiFromParams(parameters, ofColor::orange);
     parametersControl::getInstance().setup();
     
@@ -133,7 +142,7 @@ void ofApp::setup(){
     syphon.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
     syphon.unbind();
 
-    syphonMax.set("midihex","Max");
+    syphonMax.set("MIDIFICATOR","midiToHexagonoDebug");
     syphonMax.bind();
     syphonMax.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
     syphonMax.unbind();
@@ -155,7 +164,7 @@ void ofApp::setup(){
     videoFilename = "./testMedia/indexs.mov";
     videoPlayer.load(videoFilename);
     videoPlayer.setLoopState(OF_LOOP_NORMAL);
-    if(dropdown_whichTextureSource==1) videoPlayer.play();
+    if(dropdown_whichTextureSource == HEX_TEXTURE_VIDEO) videoPlayer.play();
     
     
     while(!videoPlayer.isLoaded())
@@ -604,8 +613,17 @@ void ofApp::updateVertexsForQuad()
 //--------------------------------------------------------------
 void ofApp::update()
 {
+<<<<<<< HEAD
     
     
+=======
+    cout << dropdown_whichTextureSource << endl;
+    //updateVertexsForQuad();
+    updateOsc();
+    updateMatrices();
+
+    if(dropdown_whichTextureSource == HEX_TEXTURE_VIDEO && videoPlayer.isLoaded()) videoPlayer.update();
+>>>>>>> 4f27581f1d757e5d31a6220c514f10d764a17c17
     if(dropdown_whichSource == HEX_SOURCE_RIBBON )
     {
         // HEX_SOURCE_RIBBON
@@ -623,8 +641,6 @@ void ofApp::update()
     {
         videoPlayer.update();
     }
-
-   
 }
 
 //--------------------------------------------------------------
@@ -897,7 +913,7 @@ void ofApp::draw()
 
     
     
-    if(isRecording && (dropdown_whichTextureSource==1))
+    if(isRecording && (dropdown_whichTextureSource == HEX_TEXTURE_VIDEO))
     {
         //currentFolderName
         
@@ -1006,7 +1022,7 @@ void ofApp::keyPressed(int key){
         
         if(isRecording)
         {
-            if(dropdown_whichTextureSource==1) // video
+            if(dropdown_whichTextureSource == HEX_TEXTURE_VIDEO) // video
             {
                 // extract video filename
                 string videoName;
@@ -1037,11 +1053,11 @@ void ofApp::keyPressed(int key){
         }
         else  // NOT RECORDING
         {
-            if(dropdown_whichTextureSource!=1)
+            if(dropdown_whichTextureSource != HEX_TEXTURE_VIDEO)
             {
                 capture.stopRecording();
             }
-            else if (dropdown_whichTextureSource==1)
+            else if (dropdown_whichTextureSource == HEX_TEXTURE_VIDEO)
             {
                 videoPlayer.play();
             }
@@ -1119,9 +1135,13 @@ void ofApp::dragEvent(ofDragInfo info)
         cout << ">> Dragged File ... \n" << info.files[0] << " : ext: " << dragFileExtension << endl;
         if(dragFileExtension=="png" || dragFileExtension == "jpg")
         {
+<<<<<<< HEAD
             dropdown_whichSource = HEX_SOURCE_TEXTURE;
 
             dropdown_whichTextureSource = 0;
+=======
+            dropdown_whichTextureSource = HEX_TEXTURE_IMAGE;
+>>>>>>> 4f27581f1d757e5d31a6220c514f10d764a17c17
             cout << "Loading new texture ... " << endl;
             imageFilename = info.files[0];
             image.load(imageFilename);
@@ -1133,9 +1153,13 @@ void ofApp::dragEvent(ofDragInfo info)
         }
         else if (dragFileExtension=="mov")
         {
+<<<<<<< HEAD
             dropdown_whichSource = HEX_SOURCE_TEXTURE;
 
             dropdown_whichTextureSource = 1;
+=======
+            dropdown_whichTextureSource = HEX_TEXTURE_VIDEO;
+>>>>>>> 4f27581f1d757e5d31a6220c514f10d764a17c17
             cout << "Loading new video ... " << endl;
             videoFilename=ofToString("./videos/" + ofSplitString(dragFileName[dragFileName.size()-1],".")[0] +"." +dragFileExtension);
             videoPlayer.load(videoFilename);

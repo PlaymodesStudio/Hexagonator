@@ -93,7 +93,6 @@ void parametersControl::setup(){
     datGui->addHeader("Presets Control");
     datGui->addFooter();
 
-    datGui->addButton("Global Reset Phase");
     datGui->addSlider("Global BPM", 0, 999, 120);
     
     //Preset Control
@@ -104,11 +103,6 @@ void parametersControl::setup(){
     
     presetMatrix->onMatrixEvent(this, &parametersControl::onGuiMatrixEvent);
     
-    datGui->addToggle("BPM Sync")->setChecked(false);
-    datGui->addToggle("Automatic Preset");
-    datGui->addButton("Reload Sequence");
-    datGui->addSlider(fadeTime.set("Fade Time", 1, 0, 10));
-//    datGui->addSlider(presetChangeBeatsPeriod.set("Beats Period", 4, 1, 120));
     
     if(datGuis.size() != 0){
         ofPoint guiPos = datGuis[0]->getPosition() + ofPoint(0, datGuis[0]->getWidth());
@@ -152,8 +146,6 @@ void parametersControl::setup(){
         }else
             ofLog() << "NO OSC";
     }
-
-    autoPreset = false;
     
     datGui->getButton("Reload Sequence")->setBackgroundColor(loadPresetsSequence() ? ofColor::green : ofColor::red);
 }
@@ -195,21 +187,6 @@ void parametersControl::update(){
                     }
                 }
             }
-        }
-    }
-    
-
-    //Auto preset
-    if(randomPresetsArrange.size()>0 && autoPreset && (ofGetElapsedTimef()-presetChangedTimeStamp) > periodTime){
-        presetChangedTimeStamp = presetChangedTimeStamp+periodTime;
-        int index = randomPresetsArrange[presetChangeCounter];
-        loadPreset(presetNumbersAndBanks.at(index).first, presetNumbersAndBanks.at(index).second);
-        periodTime = presetsTime[index];
-        presetChangeCounter++;
-        if(presetChangeCounter >= randomPresetsArrange.size()){
-            presetChangeCounter = 0;
-            mt19937 g(static_cast<uint32_t>(time(0)));
-            shuffle(randomPresetsArrange.begin(), randomPresetsArrange.end(), g);
         }
     }
 }
@@ -542,12 +519,6 @@ void parametersControl::onGuiToggleEvent(ofxDatGuiToggleEvent e){
         if(datGuis[i]->getToggle(e.target->getName()) == e.target)
             parameterGroups[i].getBool(e.target->getName()) = e.target->getChecked();
     }
-    if(e.target->getName() == "Automatic Preset"){
-        autoPreset = e.checked;
-        presetChangedTimeStamp = ofGetElapsedTimef();
-        srand(time(0));
-        random_shuffle(randomPresetsArrange.begin(), randomPresetsArrange.end());
-    }
 }
 
 void parametersControl::onGuiDropdownEvent(ofxDatGuiDropdownEvent e){
@@ -567,8 +538,6 @@ void parametersControl::onGuiMatrixEvent(ofxDatGuiMatrixEvent e){
         savePreset(e.child+1, bankSelect->getSelected()->getName());
     else{
         loadPreset(e.child+1, bankSelect->getSelected()->getName());
-        if(autoPreset)
-            presetChangedTimeStamp = ofGetElapsedTimef();
     }
 }
 
@@ -667,10 +636,6 @@ void parametersControl::listenerFunction(ofAbstractParameter& e){
     if(e.type() == typeid(ofParameter<float>).name()){
         ofParameter<float> castedParam = e.cast<float>();
         normalizedVal = ofMap(castedParam, castedParam.getMin(), castedParam.getMax(), 0, 1);
-        
-        if(castedParam.getName() == "BPM")
-            periodTime = presetChangeBeatsPeriod / castedParam * 60.;
-
     }
     else if(e.type() == typeid(ofParameter<int>).name()){
         ofParameter<int> castedParam = e.cast<int>();

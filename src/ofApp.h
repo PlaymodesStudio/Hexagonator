@@ -189,4 +189,11 @@ class ofApp : public ofBaseApp{
     // LISTENERS FUNCTIONS
     void                changedTexCoord(int &i);
     
+    
+    // RECORDING GUI
+    ofParameterGroup    parametersRecording;
+    ofParameter<bool>   startStopRecording;
+    ofParameter<int>    framesToRecord;
+    ofParameter<string> recFilename;
+    
 };
