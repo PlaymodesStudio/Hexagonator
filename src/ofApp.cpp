@@ -46,11 +46,11 @@ void ofApp::setup(){
     
     parametersControl::addDropdownToParameterGroupFromParameters(parametersGraphics,"Source",{"Texture","Quads"},dropdown_whichSource);
     parametersControl::addDropdownToParameterGroupFromParameters(parametersGraphics,"Texture Coordinates",{"64x35","1200x1200"},dropdown_whichTexCoord);
-    dropdown_whichTexCoord.addListener(this,&ofApp::changedTexCoord);
     parametersControl::addDropdownToParameterGroupFromParameters(parametersGraphics,"Texture Source",{"Image","Video","Syphon","Syph.Max"},dropdown_whichTextureSource);
     
     // LISTENERS
     dropdown_whichTexCoord.addListener(this,&ofApp::changedTexCoord);
+    dropdown_whichTextureSource.addListener(this,&ofApp::changedTexSource);
 
     // CREATE
     parametersControl::getInstance().createGuiFromParams(parametersGraphics, ofColor::orange);
@@ -148,10 +148,10 @@ void ofApp::setup(){
 
     
     /////////////////////////////
-    // IMAGES AND VIDEOS
+    /// IMAGES AND VIDEOS
     /////////////////////////////
     
-    imageFilename = "./testMedia/mapaPixels64x35.png";
+    imageFilename = "./testMedia/mapaPixels64x35_White.png";
     image.load(imageFilename);
     image.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
     
@@ -160,7 +160,7 @@ void ofApp::setup(){
     maskWireframe.load("./testMedia/masks/wireYellow.png");
 
     // VIDEO
-    videoFilename = "./testMedia/indexs.mov";
+    videoFilename = "./testMedia/rings.mov";
     videoPlayer.load(videoFilename);
     videoPlayer.setLoopState(OF_LOOP_NORMAL);
     if(dropdown_whichTextureSource == HEX_TEXTURE_VIDEO) videoPlayer.play();
@@ -176,7 +176,7 @@ void ofApp::setup(){
     
     
     ////////////
-    // OSC
+    /// OSC
     ////////////
     oscReceiver.setup(1234);
     resetVecOscVector();
@@ -187,7 +187,7 @@ void ofApp::setup(){
     /////////////////////////////
     
     //svgFilename = "./svg/test_svg_part.svg";
-    svgFilename = "./svg/santi2.svg";
+    svgFilename = "./svg/santi3_App.svg";
     //svgFilename = "./svg/testSVG3Hexagons.svg";
     //        svgFilename = "./svg/testSVG3Hexagons.svg";
     //    svgFilename = "./svg/test_svg_part_nomes2.svg";
@@ -220,7 +220,7 @@ void ofApp::setup(){
     vboTex.setVertexData(vecVboTex_Verts.data(),vecVboTex_Verts.size(),GL_DYNAMIC_DRAW);
     
     ////////////////////////////////////////
-    // GENERATE TEXTURE COORDINATES DATA !!
+    /// GENERATE TEXTURE COORDINATES DATA !!
     ////////////////////////////////////////
 
     // vector<ofVec2f> vecTexCoord
@@ -254,7 +254,7 @@ void ofApp::setup(){
 //*     pmVbo1.setFacesData(hexagonCanvas.getFaceData(),0);
 //    pmVbo1.setDrawMode(TRIANGLES);
 
-    // FILL VBO TEX DATA
+    /// FILL VBO TEX DATA
     //////////////////////
     vboTex.setTexCoordData(vecVboTex_TexCoords[0].data(), vecVboTex_TexCoords[0].size(), GL_DYNAMIC_DRAW);
     vboTex.setColorData(vecVboTex_Colors.data(), vecVboTex_Colors.size(), GL_DYNAMIC_DRAW);
@@ -262,12 +262,12 @@ void ofApp::setup(){
 
     
     ///////////////////
-    // PM VBO RIBBON
+    /// PM VBO RIBBON
     ///////////////////
     //pmVboRibbon.setup(hexagonCanvas.getNumHexagons(),4);
     
     ///////////////////
-    // PM VBO RIBBON
+    /// PM VBO RIBBON
     ///////////////////
     
     int numRibbons = hexagonCanvas.getNumHexagons();
@@ -294,7 +294,7 @@ void ofApp::setup(){
     vecVboQuads_Colors.resize(numRibbonVertexs);
     for(int i=0;i<vecVboQuads_Colors.size();i++)
     {
-        vecVboQuads_Colors[i] = ofFloatColor(1.0,0.0,1.0,1.0);
+        vecVboQuads_Colors[i] = ofFloatColor(1.0,1.0,1.0,1.0);
     }
     vboQuads.setColorData(vecVboQuads_Colors.data(), vecVboQuads_Colors.size(), GL_DYNAMIC_DRAW);
 
@@ -317,7 +317,7 @@ void ofApp::setup(){
     
     
     /// TRANSFORM TBO STUFF (Texture Buffer Object)
-    //////////////////////////////////////
+    ///////////////////////////////////////////////
     
     matricesTransform.resize(hexagonCanvas.getNumHexagons());
     
@@ -336,7 +336,7 @@ void ofApp::setup(){
     texTransform.allocateAsBufferTexture(bufferTransform,GL_RGBA32F);
 
     /// CUBIC COLORS TBO STUFF (Texture Buffer Object)
-    //////////////////////////////////////
+    //////////////////////////////////////////////////
     
     matricesCubeColors.resize(hexagonCanvas.getNumHexagons() * 3);
     
@@ -355,7 +355,7 @@ void ofApp::setup(){
     texCubeColors.allocateAsBufferTexture(bufferCubeColors,GL_RGBA32F);
     
      
-    // SHADER INITS
+    /// SHADER INITS
     ////////////////
     
     shader.begin();
@@ -375,12 +375,6 @@ void ofApp::setup(){
 }
 
 
-//--------------------------------------------------------------
-void ofApp::changedTexCoord(int &i)
-{
-//    pmVbo1.setTexCoordsIndex(i);
-    vboTex.setTexCoordData(vecVboTex_TexCoords[i].data(),vecVboTex_TexCoords[i].size() , GL_DYNAMIC_DRAW);
-}
 
 
 //--------------------------------------------------------------
@@ -1123,8 +1117,8 @@ void ofApp::dragEvent(ofDragInfo info)
             dropdown_whichSource = HEX_SOURCE_TEXTURE;
             dropdown_whichTextureSource = HEX_TEXTURE_VIDEO;
 
-            cout << "Loading new video ... " << endl;
-            videoFilename=ofToString("./videos/" + ofSplitString(dragFileName[dragFileName.size()-1],".")[0] +"." +dragFileExtension);
+            cout << "Loading new video ... " << "./testMedia/" + ofSplitString(dragFileName[dragFileName.size()-1],".")[0] +"." +dragFileExtension <<endl;
+            videoFilename=ofToString("./testMedia/" + ofSplitString(dragFileName[dragFileName.size()-1],".")[0] +"." +dragFileExtension);
             videoPlayer.load(videoFilename);
             videoPlayer.setLoopState(OF_LOOP_NORMAL);
             videoPlayer.play();
@@ -1208,3 +1202,14 @@ void ofApp::resetVecOscVector()
   
 }
                       
+//--------------------------------------------------------------
+void ofApp::changedTexCoord(int &i)
+{
+    //    pmVbo1.setTexCoordsIndex(i);
+    vboTex.setTexCoordData(vecVboTex_TexCoords[i].data(),vecVboTex_TexCoords[i].size() , GL_DYNAMIC_DRAW);
+}
+//--------------------------------------------------------------
+void ofApp::changedTexSource(int &i)
+{
+    if(i==HEX_TEXTURE_VIDEO) videoPlayer.play();
+}

@@ -190,7 +190,7 @@ class ofApp : public ofBaseApp{
     
     // LISTENERS FUNCTIONS
     void                changedTexCoord(int &i);
-    
+    void                changedTexSource(int &i);
     
     // RECORDING GUI
     ofParameterGroup    parametersRecording;
