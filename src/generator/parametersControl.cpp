@@ -640,11 +640,19 @@ void parametersControl::listenerFunction(ofAbstractParameter& e){
     else if(e.type() == typeid(ofParameter<int>).name()){
         ofParameter<int> castedParam = e.cast<int>();
         normalizedVal = ofMap(castedParam, castedParam.getMin(), castedParam.getMax(), 0, 1);
+        
+        if(ofStringTimesInString(castedParam.getName(), "Select") == 1){
+            string changedNameForDropdown = castedParam.getName();
+            ofStringReplace(changedNameForDropdown, "Select", "::");
+            datGuis[parentIndex]->getDropdown(changedNameForDropdown)->select(castedParam);
+        }
 
     }
     else if(e.type() == typeid(ofParameter<bool>).name()){
         ofParameter<bool> castedParam = e.cast<bool>();
         normalizedVal = castedParam ? 1 : 0;
+        
+        datGuis[parentIndex]->getToggle(castedParam.getName())->setChecked(castedParam);
         
     }
     else if(e.type() == typeid(ofParameter<string>).name()){
