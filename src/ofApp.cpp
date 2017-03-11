@@ -40,11 +40,8 @@ void ofApp::setup(){
     parametersGraphics.add(toggle_showLayout.set("Show Layout",true));
     parametersGraphics.add(toggle_showVertices.set("Show Vertices",false));
     parametersGraphics.add(toggle_drawMask.set("Draw Mask",true));
-    
-    
     parametersGraphics.add(toggle_useTBOMatrix.set("Use Matrix",true));
-    
-    parametersControl::addDropdownToParameterGroupFromParameters(parametersGraphics,"Source",{"Texture","Quads"},dropdown_whichSource);
+    parametersControl::addDropdownToParameterGroupFromParameters(parametersGraphics,"Source",{"Texture","Quads","Cucs"},dropdown_whichSource);
     parametersControl::addDropdownToParameterGroupFromParameters(parametersGraphics,"Texture Coordinates",{"64x35","1200x1200"},dropdown_whichTexCoord);
     parametersControl::addDropdownToParameterGroupFromParameters(parametersGraphics,"Texture Source",{"Image","Video","Syphon","Syph.Max"},dropdown_whichTextureSource);
     
@@ -93,94 +90,99 @@ void ofApp::setup(){
     /////////////////////////////
     /// SHADER
     /////////////////////////////
-
-    #ifdef TARGET_OPENGLES
-        shader.load("shadersES2/shader");
-    #else
-        if(ofIsGLProgrammableRenderer()){
-            cout << "Working on GL Programable Render mode" << endl;
-            shader.load("shadersGL3/shader");
-        }else
-        {
-            cout << "Working on a NOT GL Programable Render mode" << endl;
-            shader.load("shadersGL2/shader");
-        }
-    #endif
+    {
+        #ifdef TARGET_OPENGLES
+                shader.load("shadersES2/shader");
+        #else
+                if(ofIsGLProgrammableRenderer())
+                {
+                    cout << "Working on GL Programable Render mode" << endl;
+                    shader.load("shadersGL3/shader");
+                }else
+                {
+                    cout << "Working on a NOT GL Programable Render mode" << endl;
+                    shader.load("shadersGL2/shader");
+                }
+        #endif
+    }
 
     /////////////////////////////
     /// FBO
     /////////////////////////////
 
-    fboResolution = ofVec2f(1200,1200);
-    
-    fboOut.allocate(fboResolution.x, fboResolution.y,GL_RGB,8);
-    //fboOut.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
-    fboOut.begin();
-    ofClear(255,0,255, 0);
-    fboOut.end();
-    
-    fboSyphon.allocate(fboResolution.x, fboResolution.y,GL_RGB,8);
-    //fboOut.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
-    fboSyphon.begin();
-    ofClear(255,0,255, 0);
-    fboSyphon.end();
-
+    {
+        fboResolution = ofVec2f(1200,1200);
+        
+        fboOut.allocate(fboResolution.x, fboResolution.y,GL_RGB,8);
+        //fboOut.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
+        fboOut.begin();
+        ofClear(255,0,255, 0);
+        fboOut.end();
+        
+        fboSyphon.allocate(fboResolution.x, fboResolution.y,GL_RGB,8);
+        //fboOut.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
+        fboSyphon.begin();
+        ofClear(255,0,255, 0);
+        fboSyphon.end();
+    }
 
     /////////////////////////////
     /// SYPHON
     /////////////////////////////
-    syphon.setup();
-    syphonMax.setup();
-    
-    //using Syphon app Simple Server, found at http://syphon.v002.info/
-    //    syphon.setApplicationName("Simple Server");
-    //    syphon.setServerName("");
-    //    syphon.set("","Simple Server");
-    syphon.set("Gen_Grayscale","MIRABCN_Generator");
-    syphon.bind();
-    syphon.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
-    syphon.unbind();
-
-    syphonMax.set("MIDIFICATOR","midiToHexagonoDebug");
-    syphonMax.bind();
-    syphonMax.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
-    syphonMax.unbind();
-
+    {
+        syphon.setup();
+        syphonMax.setup();
+        
+        //using Syphon app Simple Server, found at http://syphon.v002.info/
+        //    syphon.setApplicationName("Simple Server");
+        //    syphon.setServerName("");
+        //    syphon.set("","Simple Server");
+        syphon.set("Gen_Grayscale","MIRABCN_Generator");
+        syphon.bind();
+        syphon.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
+        syphon.unbind();
+        
+        syphonMax.set("MIDIFICATOR","midiToHexagonoDebug");
+        syphonMax.bind();
+        syphonMax.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
+        syphonMax.unbind();
+        
+    }
     
     /////////////////////////////
     /// IMAGES AND VIDEOS
     /////////////////////////////
-    
-    imageFilename = "./testMedia/mapaPixels64x35_White.png";
-    image.load(imageFilename);
-    image.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
-    
-    // MASK
-    mask.load("./testMedia/masks/maskAll.png");
-    maskWireframe.load("./testMedia/masks/wireYellow.png");
-
-    // VIDEO
-    videoFilename = "./testMedia/rings.mov";
-    videoPlayer.load(videoFilename);
-    videoPlayer.setLoopState(OF_LOOP_NORMAL);
-    if(dropdown_whichTextureSource == HEX_TEXTURE_VIDEO) videoPlayer.play();
-    
-    
-    while(!videoPlayer.isLoaded())
     {
-      cout << " ... loading video " << endl;
+        imageFilename = "./testMedia/mapaPixels64x35_White.png";
+        image.load(imageFilename);
+        image.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
+        
+        // MASK
+        mask.load("./testMedia/masks/maskAll.png");
+        maskWireframe.load("./testMedia/masks/wireYellow.png");
+        
+        // VIDEO
+        videoFilename = "./testMedia/rings.mov";
+        videoPlayer.load(videoFilename);
+        videoPlayer.setLoopState(OF_LOOP_NORMAL);
+        if(dropdown_whichTextureSource == HEX_TEXTURE_VIDEO) videoPlayer.play();
+        
+        
+        while(!videoPlayer.isLoaded())
+        {
+            cout << " ... loading video " << endl;
+        }
+        videoPlayer.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
+        
     }
-    videoPlayer.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
-    
-    
-    
     
     ////////////
     /// OSC
     ////////////
-    oscReceiver.setup(1234);
-    resetVecOscVector();
-    
+    {
+        oscReceiver.setup(1234);
+        resetVecOscVector();
+    }
     
     /////////////////////////////
     // HEXAGONS DATA AND CANVAS
@@ -188,7 +190,7 @@ void ofApp::setup(){
     
     //svgFilename = "./svg/test_svg_part.svg";
     svgFilename = "./svg/santi3_App.svg";
-    //svgFilename = "./svg/testSVG3Hexagons.svg";
+    //svgFilename = "./svg/testSVG9Hexagons.svg";
     //        svgFilename = "./svg/testSVG3Hexagons.svg";
     //    svgFilename = "./svg/test_svg_part_nomes2.svg";
     //    svgFilename = "./svg/testOrdreRadial.svg";
@@ -248,12 +250,6 @@ void ofApp::setup(){
     vecVboTex_Colors = hexagonCanvas.getColorData();
     vecVboTex_Faces = hexagonCanvas.getFaceData();
 
-//*     pmVbo1.setTexCoordsData(vecCentroidTexCoord,1);
-//*     pmVbo1.setTexCoordsData(hexagonCanvas.getTextureCoords(),0);
-//*     pmVbo1.setColorData(hexagonCanvas.getColorData(),0);
-//*     pmVbo1.setFacesData(hexagonCanvas.getFaceData(),0);
-//    pmVbo1.setDrawMode(TRIANGLES);
-
     /// FILL VBO TEX DATA
     //////////////////////
     vboTex.setTexCoordData(vecVboTex_TexCoords[0].data(), vecVboTex_TexCoords[0].size(), GL_DYNAMIC_DRAW);
@@ -262,106 +258,205 @@ void ofApp::setup(){
 
     
     ///////////////////
-    /// PM VBO RIBBON
+    /// PM VBO QUADS
     ///////////////////
-    //pmVboRibbon.setup(hexagonCanvas.getNumHexagons(),4);
-    
-    ///////////////////
-    /// PM VBO RIBBON
-    ///////////////////
-    
-    int numRibbons = hexagonCanvas.getNumHexagons();
-    int numRibbonVertexs = hexagonCanvas.getNumHexagons()*4;
-    
-    // VERTEXS
-    vecVboQuads_Verts.resize(numRibbonVertexs);
-    vboQuads.setVertexData(vecVboQuads_Verts.data(),vecVboQuads_Verts.size(),GL_DYNAMIC_DRAW);
-    //pmVboRibbon.setVertData(vecVboQuads_Verts,0);
-    
-    // TEXTURE COORDS
-//    vector<ofVec2f> ribbonTexCoords;
-//    ribbonTexCoords.resize(numRibbons*4);
-//    for(int i=0;i<numRibbons;i++)
-//    {
-//        for(int j=0;j<4;j++)
-//        {
-//            ribbonTexCoords[(i*4)+j] = vCentroidPoints[i] / 1200.0 ;
-//        }
-//    }
-//    pmVboRibbon.setTexCoordsData(vecCentroidTexCoord,1);
-    
-    // COLORS
-    vecVboQuads_Colors.resize(numRibbonVertexs);
-    for(int i=0;i<vecVboQuads_Colors.size();i++)
     {
-        vecVboQuads_Colors[i] = ofFloatColor(1.0,1.0,1.0,1.0);
-    }
-    vboQuads.setColorData(vecVboQuads_Colors.data(), vecVboQuads_Colors.size(), GL_DYNAMIC_DRAW);
+        
+        int numRibbons = hexagonCanvas.getNumHexagons();
+        int numRibbonVertexs = hexagonCanvas.getNumHexagons()*4;
+        
+        // VERTEXS
+        vecVboQuads_Verts.resize(numRibbonVertexs);
+        vboQuads.setVertexData(vecVboQuads_Verts.data(),vecVboQuads_Verts.size(),GL_DYNAMIC_DRAW);
+        
+        // TEXTURE COORDS
+        //    vector<ofVec2f> ribbonTexCoords;
+        //    ribbonTexCoords.resize(numRibbons*4);
+        //    for(int i=0;i<numRibbons;i++)
+        //    {
+        //        for(int j=0;j<4;j++)
+        //        {
+        //            ribbonTexCoords[(i*4)+j] = vCentroidPoints[i] / 1200.0 ;
+        //        }
+        //    }
+        //    pmVboRibbon.setTexCoordsData(vecCentroidTexCoord,1);
+        
+        // COLORS
+        vecVboQuads_Colors.resize(numRibbonVertexs);
+        for(int i=0;i<vecVboQuads_Colors.size();i++)
+        {
+            vecVboQuads_Colors[i] = ofFloatColor(1.0,1.0,1.0,1.0);
+        }
+        vboQuads.setColorData(vecVboQuads_Colors.data(), vecVboQuads_Colors.size(), GL_DYNAMIC_DRAW);
+        
+        // INDEXS
+        vecVboQuads_Indexs.resize(numRibbons*6);
+        for(int i=0;i<numRibbons;i++)
+        {
+            vecVboQuads_Indexs[(i*6)+0] = (i*4)+0;
+            vecVboQuads_Indexs[(i*6)+1] = (i*4)+1;
+            vecVboQuads_Indexs[(i*6)+2] = (i*4)+2;
+            vecVboQuads_Indexs[(i*6)+3] = (i*4)+0;
+            vecVboQuads_Indexs[(i*6)+4] = (i*4)+2;
+            vecVboQuads_Indexs[(i*6)+5] = (i*4)+3;
+        }
+        vboQuads.setIndexData(vecVboQuads_Indexs.data(), vecVboQuads_Indexs.size(), GL_DYNAMIC_DRAW);
 
-    // INDEXS
-    vecVboQuads_Indexs.resize(numRibbons*6);
-    for(int i=0;i<numRibbons;i++)
-    {
-        vecVboQuads_Indexs[(i*6)+0] = (i*4)+0;
-        vecVboQuads_Indexs[(i*6)+1] = (i*4)+1;
-        vecVboQuads_Indexs[(i*6)+2] = (i*4)+2;
-        vecVboQuads_Indexs[(i*6)+3] = (i*4)+0;
-        vecVboQuads_Indexs[(i*6)+4] = (i*4)+2;
-        vecVboQuads_Indexs[(i*6)+5] = (i*4)+3;
     }
-    vboQuads.setIndexData(vecVboQuads_Indexs.data(), vecVboQuads_Indexs.size(), GL_DYNAMIC_DRAW);
+
+    // VBO CUCS STUFF
+    ///////////////////
+    
+    // inits
+    int numCucs = hexagonCanvas.getNumHexagons();
+    startSide = 0;
+    endSide = 3;
+    numSteps = 8;
+    widthPct = 0.25;
+    lastFaceAddedToCucs=0;
+
+//    vecVboCucs_Verts.resize(numSteps*2*numCucs);
+//    vecVboCucs_Colors.resize(vecVboCucs_Verts.size());
+//    vecVboCucs_TexCoords.resize(vecVboCucs_Verts.size());
+//    vecVboCucs_Faces.resize((numSteps-1)*2*3*numCucs);
+
+    vecTempVbo_Verts.resize(numSteps*2);
+    vecTempVbo_Colors.resize(vecTempVbo_Verts.size());
+    vecTempVbo_TexCoords.resize(vecTempVbo_Verts.size());
+    vecTempVbo_Faces.resize((numSteps-1)*2*3);
+
+    hexaPoints.clear();
+    hexaPoints.resize(6);
+    for(int i=0;i<numCucs;i++)
+    {
+        // define HEXAGON POINTS
+        //add them to the hexagon
+        cout << ">> Processing CUC : " << i << endl;
+        for(int j=0;j<6;j++)
+        {
+            hexaPoints[j] = vecVboTex_Verts[(i*7)+j+1]; //+1 because vecVbo[0s] are centroids?
+            cout << ">> Putting in hexaPoints[" << i << "] : " << hexaPoints[j] << " Index of VecVboVert : " << (i*7)+j +1 << endl;
+        }
+        
+        // HEXAGON SIDES VECTORS represent the vectors of each "side". From V01, V12, ... to V50 total = 6
+        hexaSides.resize(6);
+        for(int i=0;i<6;i++)
+        {
+            if(i!=5)
+            {
+                // from 0 to 4th vertex it's i+1 - i
+                hexaSides[i] = hexaPoints[i+1] - hexaPoints[i];
+            }
+            else if(i==5)
+            {
+                // last vertex, special case 5 - 0
+                hexaSides[i] = hexaPoints[0] - hexaPoints[i];
+            }
+        }
+        
+        // SAMPLED POINTS OF BEZIER CURVE
+        sampledPoints.resize(numSteps);
+        
+        // RIBS
+        // init ribs vector
+        // each "rib" is 2 x ofVec2f with the coordinates of the segment of each rib [Vert.Left , Vert.Right]
+        
+        ribs.resize(numSteps);
+        for(int i=0;i<numSteps;i++)
+        {
+            ribs[i].resize(2);
+        }
+        
+        
+        // INITIAL CALCULATION OF START AND END
+        calculateStartEndPointsAndCurve();
+        calculateRibs();
+        calculateVboData();
+
+        // print vecVboTemp ...
+        cout << "-----------" << endl;
+        for(int i =0;i<vecTempVbo_Verts.size();i++)
+        {
+            cout << "VecTmpVboVerts[" << i <<"] :: " << vecTempVbo_Verts[i] << endl;
+        }
+        cout << "-----------" << endl;
+        for(int i =0;i<vecTempVbo_Faces.size();i++)
+        {
+            cout << "VecTmpVboFaces[" << i <<"] :: " << vecTempVbo_Faces[i] << endl;
+        }
+        
+        
+        vecVboCucs_Verts.insert(vecVboCucs_Verts.end(), vecTempVbo_Verts.begin(), vecTempVbo_Verts.end());
+        vecVboCucs_Faces.insert(vecVboCucs_Faces.end(), vecTempVbo_Faces.begin(), vecTempVbo_Faces.end());
+        vecVboCucs_Colors.insert(vecVboCucs_Colors.end(), vecTempVbo_Colors.begin(), vecTempVbo_Colors.end());
+        vecVboCucs_TexCoords.insert(vecVboCucs_TexCoords.end(), vecTempVbo_TexCoords.begin(), vecTempVbo_TexCoords.end());
+        
+    }
+    cout << endl;
+    // FILL VBO DATA
+    vboCucs.setVertexData(vecVboCucs_Verts.data(), vecVboCucs_Verts.size(),GL_DYNAMIC_DRAW);
+    vboCucs.setIndexData(vecVboCucs_Faces.data(), vecVboCucs_Faces.size(),GL_DYNAMIC_DRAW);
+    vboCucs.setColorData(vecVboCucs_Colors.data(), vecVboCucs_Colors.size(),GL_DYNAMIC_DRAW);
+    vboCucs.setTexCoordData(vecVboCucs_TexCoords.data(), vecVboCucs_TexCoords.size(),GL_DYNAMIC_DRAW);
+
+    cout << "vboCucs sizes _ Verts = " << vecVboCucs_Verts.size() << " Faces = " << vecVboTex_Faces.size() << endl;
     
     
     /// TRANSFORM TBO STUFF (Texture Buffer Object)
     ///////////////////////////////////////////////
-    
-    matricesTransform.resize(hexagonCanvas.getNumHexagons());
-    
-    // upload the transformation for each box using a
-    // texture buffer.
-    // for that we need to upload the matrices to the buffer
-    // and allocate the texture using it
-    bufferTransform.allocate();
-    bufferTransform.bind(GL_TEXTURE_BUFFER);
-    bufferTransform.setData(matricesTransform,GL_STREAM_DRAW);
 
-    // using GL_RGBA32F allows to read each row of each matrix
-    // as a float vec4 from the shader.
-    // Note that we're allocating the texture as a Buffer Texture:
-    // https://www.opengl.org/wiki/Buffer_Texture
-    texTransform.allocateAsBufferTexture(bufferTransform,GL_RGBA32F);
-
-    /// CUBIC COLORS TBO STUFF (Texture Buffer Object)
-    //////////////////////////////////////////////////
-    
-    matricesCubeColors.resize(hexagonCanvas.getNumHexagons() * 3);
-    
-    // upload the
-    // texture buffer.
-    // for that we need to upload the matrices to the buffer
-    // and allocate the texture using it
-    bufferCubeColors.allocate();
-    bufferCubeColors.bind(GL_TEXTURE_BUFFER);
-    bufferCubeColors.setData(matricesCubeColors,GL_STREAM_DRAW);
-    
-    // using GL_RGBA32F allows to read each row of each matrix
-    // as a float vec4 from the shader.
-    // Note that we're allocating the texture as a Buffer Texture:
-    // https://www.opengl.org/wiki/Buffer_Texture
-    texCubeColors.allocateAsBufferTexture(bufferCubeColors,GL_RGBA32F);
-    
+    {
+        
+        matricesTransform.resize(hexagonCanvas.getNumHexagons());
+        
+        // upload the transformation for each box using a
+        // texture buffer.
+        // for that we need to upload the matrices to the buffer
+        // and allocate the texture using it
+        bufferTransform.allocate();
+        bufferTransform.bind(GL_TEXTURE_BUFFER);
+        bufferTransform.setData(matricesTransform,GL_STREAM_DRAW);
+        
+        // using GL_RGBA32F allows to read each row of each matrix
+        // as a float vec4 from the shader.
+        // Note that we're allocating the texture as a Buffer Texture:
+        // https://www.opengl.org/wiki/Buffer_Texture
+        texTransform.allocateAsBufferTexture(bufferTransform,GL_RGBA32F);
+        
+        /// CUBIC COLORS TBO STUFF (Texture Buffer Object)
+        //////////////////////////////////////////////////
+        
+        matricesCubeColors.resize(hexagonCanvas.getNumHexagons() * 3);
+        
+        // upload the
+        // texture buffer.
+        // for that we need to upload the matrices to the buffer
+        // and allocate the texture using it
+        bufferCubeColors.allocate();
+        bufferCubeColors.bind(GL_TEXTURE_BUFFER);
+        bufferCubeColors.setData(matricesCubeColors,GL_STREAM_DRAW);
+        
+        // using GL_RGBA32F allows to read each row of each matrix
+        // as a float vec4 from the shader.
+        // Note that we're allocating the texture as a Buffer Texture:
+        // https://www.opengl.org/wiki/Buffer_Texture
+        texCubeColors.allocateAsBufferTexture(bufferCubeColors,GL_RGBA32F);
+        
+    }
      
     /// SHADER INITS
     ////////////////
-    
-    shader.begin();
-    shader.setUniformTexture("texTransform",texTransform,0);
-    shader.setUniformTexture("texCubeColors",texCubeColors,1);
-    shader.setUniform1i("u_numHexags",hexagonCanvas.getNumHexagons());
-    shader.setUniform4f("u_color", ofFloatColor(1.0,0.5,0.0,1.0));
-    shader.setUniform1i("u_useMatrix", 0);
-    shader.end();
 
+    {
+        shader.begin();
+        shader.setUniformTexture("texTransform",texTransform,0);
+        shader.setUniformTexture("texCubeColors",texCubeColors,1);
+        shader.setUniform1i("u_numHexags",hexagonCanvas.getNumHexagons());
+        shader.setUniform4f("u_color", ofFloatColor(1.0,0.5,0.0,1.0));
+        shader.setUniform1i("u_useMatrix", 0);
+        shader.end();
+    }
+    
     updateMatrices();
     
     
@@ -589,6 +684,7 @@ void ofApp::update()
     if(dropdown_whichSource == HEX_SOURCE_QUADS )
     {
         // HEX_SOURCE_QUADS
+        updateOsc();
         updateMatrices();
         updateVertexsForQuad();
     }
@@ -664,6 +760,10 @@ void ofApp::draw()
             {
                 shader.setUniform1i("u_modulo",4);
             }
+            else if(dropdown_whichSource == HEX_SOURCE_CUCS)
+            {
+                shader.setUniform1i("u_modulo",numSteps*2);
+            }
 //                shader.setUniformTexture("uTexture", videoPlayer, 2);
 //                shader.setUniformTexture("uTexture", image, 2);
 //                image.bind();
@@ -705,6 +805,10 @@ void ofApp::draw()
                     //vboQuads.unbind();
                     break;
                 }
+                case HEX_SOURCE_CUCS :
+                    vboCucs.drawElements(GL_TRIANGLES, vecVboCucs_Faces.size());
+
+                    break;
             }
 
         }
@@ -738,7 +842,15 @@ void ofApp::draw()
                 v = vecVboQuads_Verts;
                 elementSize = 4;
             }
+            else  if (dropdown_whichSource==HEX_SOURCE_CUCS)
+            {
+                // DRAW VERTEX COORDINATES
+                ofSetColor(255,0,0);
+                v = vecVboCucs_Verts;
+                elementSize = vecTempVbo_Verts.size();
                 
+            }
+            
             int whichHexagon = 0;
             for(int i=0;i<v.size();i++)
             {
@@ -1218,4 +1330,138 @@ void ofApp::changedTexCoord(int &i)
 void ofApp::changedTexSource(int &i)
 {
     if(i==HEX_TEXTURE_VIDEO) videoPlayer.play();
+}
+
+//--------------------------------------------------------------
+void ofApp::calculateStartEndPointsAndCurve()
+{
+    // START AND END POINTS
+    startPoint = (hexaSides[startSide]/2.0)+hexaPoints[startSide];
+    endPoint = (hexaSides[endSide]/2.0)+hexaPoints[endSide];
+    
+    // BEZIER CURVE BASED ON START AND END POINTS
+    // try to calculate the bezier control points automatically ...
+    ofVec2f controlStart = ofVec2f(startPoint.x + hexaSides[startSide].y/2, startPoint.y -hexaSides[startSide].x/2 );
+    ofVec2f controlEnd = ofVec2f(endPoint.x + hexaSides[endSide].y/2    , endPoint.y - hexaSides[endSide].x/2 );
+    
+    bezierLine.clear();
+    bezierLine.addVertex(startPoint);
+    bezierLine.bezierTo(controlStart.x, controlStart.y, controlEnd.x, controlEnd.y, endPoint.x, endPoint.y);
+    
+    // calculate sampled line
+    for(int i=0;i<numSteps;i++)
+    {
+        sampledPoints[i] = bezierLine.getPointAtPercent((1.0/float(numSteps-1))*i);
+    }
+    
+    
+}
+
+//--------------------------------------------------------------
+void ofApp::calculateRibs()
+{
+    
+    widthStart = hexaSides[startSide].length();
+    widthEnd = hexaSides[endSide].length();
+    
+    ofSetColor(0,255,255);
+    for(int i=0;i<numSteps;i++)
+    {
+        if(i==0)
+        {
+            // first rib
+            ofVec3f v = startPoint + (hexaSides[startSide] * widthPct);
+            ofVec3f w = startPoint - (hexaSides[startSide] * widthPct);
+            ribs[i][0] = v;
+            ribs[i][1] = w;
+        }
+        else if(i==numSteps-1)
+        {
+            // last rib
+            ofVec3f v = endPoint + (hexaSides[endSide] * widthPct);
+            ofVec3f w = endPoint - (hexaSides[endSide] * widthPct);
+            ribs[i][0] = w;
+            ribs[i][1] = v;
+            
+        }
+        else
+        {
+            // middle ribs
+            float middleWidth = ofMap(i,0,numSteps-1,widthStart,widthEnd);
+            
+            ofVec3f vMiddle = sampledPoints[i-1]-sampledPoints[i+1];
+            vMiddle = ofVec3f(vMiddle.y,-vMiddle.x,0);
+            ofVec3f v = sampledPoints[i] + (vMiddle.normalize() * middleWidth/4.0);
+            ofVec3f w = sampledPoints[i] - (vMiddle.normalize() * middleWidth/4.0);
+            
+            ribs[i][0] = v;
+            ribs[i][1] = w;
+            
+        }
+        //ofDrawLine(ribs[i][0],ribs[i][1]);
+        //        cout << i << " _ Drawing from : " << ribs[i][0] << " to : " << ribs[i][1] << endl;
+    }
+    
+}
+
+//--------------------------------------------------------------
+void ofApp::calculateVboData()
+{
+
+    // DEFINE VBO DATA
+    
+    // VERTEXS
+    for(int i=0;i<vecTempVbo_Verts.size();i++)
+    {
+        int half = (vecTempVbo_Verts.size()/2)-1;
+        if(i<=half)
+        {
+            vecTempVbo_Verts[i] = ribs[i][0];
+        }
+        else
+        {
+            vecTempVbo_Verts[i] = ribs[7-(i-8)][1];
+        }
+    }
+    // FACES
+    int totalVertexs = numSteps*2;
+    for(int i=0;i<(numSteps-1);i++)
+    {
+        vecTempVbo_Faces[(i*6)+0] = i + lastFaceAddedToCucs;
+        vecTempVbo_Faces[(i*6)+1] = i+1 + lastFaceAddedToCucs;
+        vecTempVbo_Faces[(i*6)+2] = (totalVertexs-1)-i + lastFaceAddedToCucs;
+        
+        vecTempVbo_Faces[(i*6)+3] = i+1 + lastFaceAddedToCucs;
+        vecTempVbo_Faces[(i*6)+4] = (totalVertexs-1)-i-1 + lastFaceAddedToCucs;
+        vecTempVbo_Faces[(i*6)+5] = (totalVertexs-1)-i + lastFaceAddedToCucs;
+        
+    }
+    lastFaceAddedToCucs=lastFaceAddedToCucs + (numSteps*2);
+    
+    
+    
+    for(int i=0;i<vecTempVbo_Faces.size();i++)
+    {
+//                cout << "Face : " << i << " :: " << vecVboCucs_faces[(i*3)] << " , " << vecVboCucs_faces[(i*3)+1] << " , " << vecVboCucs_faces[(i*3)+2] << endl;
+        cout << "FaceTemp " << i << ": " << vecTempVbo_Faces[i] << endl;
+    }
+    
+    // COLORS and TEXCOORDS
+    float factor;
+    for(int i=0;i<vecTempVbo_Verts.size();i++)
+    {
+        factor = ofMap(i,0,numSteps*2,0.0,1.0);
+        //            if(i<8)
+        //            {
+        //                vecVboCucs_colors[i] = ofFloatColor(1.0,1.0,1.0,1.0);
+        //            }
+        //            else
+        //            {
+        //                vecVboCucs_colors[i] = ofFloatColor(1.0,1.0,1.0,1.0);
+        //            }
+        
+        vecTempVbo_Colors[i] = ofFloatColor(1.0,1.0*factor,0.0,1.0);
+        vecTempVbo_TexCoords[i] = ofVec2f(0.5,0.5);
+    }
+    
 }

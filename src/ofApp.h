@@ -20,7 +20,8 @@ enum sourceTextureType
 enum sourceType
 {
     HEX_SOURCE_TEXTURE = 0,
-    HEX_SOURCE_QUADS = 1
+    HEX_SOURCE_QUADS = 1,
+    HEX_SOURCE_CUCS = 2
 };
 
 
@@ -110,7 +111,9 @@ class ofApp : public ofBaseApp{
     /// VBO    
     ofVbo vboTex;
     ofVbo vboQuads;
+    ofVbo vboCucs;
     
+    // VBO DATA
     vector<ofVec3f>                 vecVboTex_Verts;
     vector<ofIndexType>             vecVboTex_Faces;
     vector<ofFloatColor>            vecVboTex_Colors;
@@ -120,9 +123,44 @@ class ofApp : public ofBaseApp{
     vector<ofFloatColor>            vecVboQuads_Colors;
     vector<ofIndexType>             vecVboQuads_Indexs;
     
-    //pmVbo pmVbo1;
-    //pmVbo pmVboRibbon;
+    vector<ofVec3f>                 vecVboCucs_Verts;
+    vector<ofIndexType>             vecVboCucs_Faces;
+    vector<ofFloatColor>            vecVboCucs_Colors;
+    vector<ofVec2f>                 vecVboCucs_TexCoords;
 
+    
+    // VBO CUCS STUFF
+    //////////////////////
+    ofPolyline hexagon;
+    vector<ofVec3f> hexaPoints;
+    vector<ofVec3f> hexaSides;
+    
+    int startSide;
+    int endSide;
+    
+    ofVec3f startPoint;
+    ofVec3f endPoint;
+    
+    float   widthPct;
+    float   widthStart;
+    float   widthEnd;
+    ofPolyline bezierLine;
+    vector<ofVec3f> sampledPoints;
+    vector<vector<ofVec3f>> ribs;
+    int numSteps;
+    int lastFaceAddedToCucs;
+    
+    vector<ofVec3f>         vecTempVbo_Verts;
+    vector<ofFloatColor>    vecTempVbo_Colors;
+    vector<ofIndexType>     vecTempVbo_Faces;
+    vector<ofVec2f>         vecTempVbo_TexCoords;
+    
+
+    
+    void                    calculateStartEndPointsAndCurve();
+    void                    calculateRibs();
+    void                    calculateVboData();
+    
     // DATA VECTORS
     vector<ofVec3f>         vertexsRibbon;
 
