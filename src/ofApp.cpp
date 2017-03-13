@@ -2,11 +2,11 @@
 #include "ofApp.h"
 //--------------------------------------------------------------
 void ofApp::setup(){
-
-
+    
+    
     // Use GL_TEXTURE_2D Textures (normalized texture coordinates 0..1)
     ofDisableArbTex();
-
+    
     ofSetVerticalSync(true);
     ofSetFrameRate(60);
     ofBackground(32);
@@ -14,7 +14,7 @@ void ofApp::setup(){
     /////////////////////////////
     /// VARS
     /////////////////////////////
-
+    
     mode = 0;
     numModes = 1;
     numRings = 35;
@@ -48,7 +48,7 @@ void ofApp::setup(){
     // LISTENERS
     dropdown_whichTexCoord.addListener(this,&ofApp::changedTexCoord);
     dropdown_whichTextureSource.addListener(this,&ofApp::changedTexSource);
-
+    
     // CREATE
     parametersControl::getInstance().createGuiFromParams(parametersGraphics, ofColor::orange);
     
@@ -64,52 +64,52 @@ void ofApp::setup(){
     parametersControl::getInstance().setup();
     
     
-
+    
     
     
     /////////////////////////////
     /// VIDEO RECORDING
     /////////////////////////////
-
+    
     isRecording = false;
     
-//    fileExt = ".mov"; // ffmpeg uses the extension to determine the container type. run 'ffmpeg -formats' to see supported formats
-//    desiredFramerate = 60;
-//    
-//    // override the default codecs if you like
-//    // run 'ffmpeg -codecs' to find out what your implementation supports (or -formats on some older versions)
-//    // prores codecs info !! https://trac.ffmpeg.org/wiki/Encode/VFX
-//    
-////    videoRecorder.setVideoCodec("prores");
-//    videoRecorder.setVideoCodec("png");
-//    //videoRecorder.setVideoBitrate("800k");
-//    //videoRecorder.setAudioCodec("mp3");
-//    //videoRecorder.setAudioBitrate("192k");
-//    ofAddListener(videoRecorder.outputFileCompleteEvent, this, &ofApp::recordingComplete);
-
+    //    fileExt = ".mov"; // ffmpeg uses the extension to determine the container type. run 'ffmpeg -formats' to see supported formats
+    //    desiredFramerate = 60;
+    //
+    //    // override the default codecs if you like
+    //    // run 'ffmpeg -codecs' to find out what your implementation supports (or -formats on some older versions)
+    //    // prores codecs info !! https://trac.ffmpeg.org/wiki/Encode/VFX
+    //
+    ////    videoRecorder.setVideoCodec("prores");
+    //    videoRecorder.setVideoCodec("png");
+    //    //videoRecorder.setVideoBitrate("800k");
+    //    //videoRecorder.setAudioCodec("mp3");
+    //    //videoRecorder.setAudioBitrate("192k");
+    //    ofAddListener(videoRecorder.outputFileCompleteEvent, this, &ofApp::recordingComplete);
+    
     /////////////////////////////
     /// SHADER
     /////////////////////////////
     {
-        #ifdef TARGET_OPENGLES
-                shader.load("shadersES2/shader");
-        #else
-                if(ofIsGLProgrammableRenderer())
-                {
-                    cout << "Working on GL Programable Render mode" << endl;
-                    shader.load("shadersGL3/shader");
-                }else
-                {
-                    cout << "Working on a NOT GL Programable Render mode" << endl;
-                    shader.load("shadersGL2/shader");
-                }
-        #endif
+#ifdef TARGET_OPENGLES
+        shader.load("shadersES2/shader");
+#else
+        if(ofIsGLProgrammableRenderer())
+        {
+            cout << "Working on GL Programable Render mode" << endl;
+            shader.load("shadersGL3/shader");
+        }else
+        {
+            cout << "Working on a NOT GL Programable Render mode" << endl;
+            shader.load("shadersGL2/shader");
+        }
+#endif
     }
-
+    
     /////////////////////////////
     /// FBO
     /////////////////////////////
-
+    
     {
         fboResolution = ofVec2f(1200,1200);
         
@@ -125,7 +125,7 @@ void ofApp::setup(){
         ofClear(255,0,255, 0);
         fboSyphon.end();
     }
-
+    
     /////////////////////////////
     /// SYPHON
     /////////////////////////////
@@ -190,7 +190,7 @@ void ofApp::setup(){
     
     //svgFilename = "./svg/test_svg_part.svg";
     svgFilename = "./svg/santi3_App.svg";
-    //svgFilename = "./svg/testSVG3Hexagons.svg";
+    //svgFilename = "./svg/testSVG1Hexagons.svg";
     //        svgFilename = "./svg/testSVG3Hexagons.svg";
     //    svgFilename = "./svg/test_svg_part_nomes2.svg";
     //    svgFilename = "./svg/testOrdreRadial.svg";
@@ -215,13 +215,13 @@ void ofApp::setup(){
     {
         vecVboTex_TexCoords[i].resize(nVerts);
     }
-
+    
     vecVboTex_Verts = hexagonCanvas.getVertexData();
     
     ////////////////////////////////////////
     /// GENERATE TEXTURE COORDINATES DATA !!
     ////////////////////////////////////////
-
+    
     // vector<ofVec2f> vecTexCoord
     // try to get centroid data to convert it to texCoord of centroids (we need 2 way of texCoord ... based on Rings and based on Centroids)
     // we got 1 centroid per path = 2735 paths
@@ -246,14 +246,14 @@ void ofApp::setup(){
     vecVboTex_TexCoords[0] = hexagonCanvas.getTextureCoords();
     vecVboTex_Colors = hexagonCanvas.getColorData();
     vecVboTex_Faces = hexagonCanvas.getFaceData();
-
+    
     /// FILL VBO TEX DATA
     //////////////////////
     vboTex.setVertexData(vecVboTex_Verts.data(),vecVboTex_Verts.size(),GL_DYNAMIC_DRAW);
     vboTex.setTexCoordData(vecVboTex_TexCoords[0].data(), vecVboTex_TexCoords[0].size(), GL_DYNAMIC_DRAW);
     vboTex.setColorData(vecVboTex_Colors.data(), vecVboTex_Colors.size(), GL_DYNAMIC_DRAW);
     vboTex.setIndexData(vecVboTex_Faces.data(), vecVboTex_Faces.size(), GL_DYNAMIC_DRAW);
-
+    
     
     ///////////////////
     /// PM VBO QUADS
@@ -299,9 +299,9 @@ void ofApp::setup(){
             vecVboQuads_Indexs[(i*6)+5] = (i*4)+3;
         }
         vboQuads.setIndexData(vecVboQuads_Indexs.data(), vecVboQuads_Indexs.size(), GL_DYNAMIC_DRAW);
-
+        
     }
-
+    
     // VBO CUCS STUFF
     ///////////////////
     
@@ -312,9 +312,20 @@ void ofApp::setup(){
     numSteps = 8;
     widthPct = 0.10;
     lastFaceAddedToCucs=0;
-
-    // we put the vbo data of each hexagon cuc into a temp vector that will be inserted(appended) on the vecVboCucs_Verts
     
+    
+    // TILES
+    hexagonTiles.resize(hexagonCanvas.getNumHexagons());
+    for(int i=0;i<hexagonTiles.size();i++)
+    {
+        hexagonTiles[i].resetConnections();
+        for(int j=0;j<6;j++)
+        {
+            hexagonTiles[i].addConnection(0,j);
+        }
+    }
+    
+    // we put the vbo data of each hexagon cuc into a temp vector that will be inserted(appended) on the vecVboCucs_Verts
     // resize temp vectors that are recalculated for each hexaogn cuc
     vecTempVbo_Verts.resize(numSteps*2);
     vecTempVbo_Colors.resize(vecTempVbo_Verts.size());
@@ -323,179 +334,102 @@ void ofApp::setup(){
     
     
     
-    hexaPoints.clear();
-    hexaPoints.resize(6);
-    hexaSides.resize(6);
-    sampledPoints.resize(numSteps);
-    ribs.resize(numSteps);
-    for(int i=0;i<numSteps;i++)
+    for(int i=0;i<hexagonCanvas.getNumHexagons();i++)
     {
-        ribs[i].resize(2);
-    }
-    
-    for(int i=0;i<numCucs;i++)
-    {
-        ofVec2f idRing = hexagonCanvas.getHexagonIdAndRing(i);
+        
+        // clear and resizing data
+        hexaPoints.clear();
+        hexaSides.clear();
+        sampledPoints.clear();
+        ribs.clear();
+        hexaPoints.resize(6);
+        hexaSides.resize(6);
+        sampledPoints.resize(numSteps);
+        ribs.resize(numSteps);
+        for(int i=0;i<numSteps;i++)
+        {
+            ribs[i].resize(2);
+        }
         
         // define HEXAGON POINTS
-        //add them to the hexagon
+        // add them to the hexagon
         for(int j=0;j<6;j++)
         {
             hexaPoints[j] = vecVboTex_Verts[(i*7)+j+1]; //+1 because vecVbo[0s] are centroids?
         }
-        cout << "Hexagon " << i <<" has Id Ring : "<< idRing <<endl;
-        
-        // DEFINE PATTERNS
-        
-        //
-//        if(int(idRing.y)%2)
-//        {
-//            startSide = 0;
-//            endSide =2;
-//        }
-//        else
-//        {
-//            startSide = 1;
-//            endSide =4;
-//            
-//        }
-        //
-        if(int(idRing.y)%2==0)
-        {
-            if(int(idRing.x)%3==0)
-            {
-                startSide = 0;
-                endSide =1;
-            }
-            else if(int(idRing.x)%3==1)
-            {
-                startSide = 4;
-                endSide =5;
-            }
-            else if(int(idRing.x)%3==2)
-            {
-                startSide = 5;
-                endSide = 3;
-            }
-            
-        }
-        else if(int(idRing.y)%2==1)
-        {
-            if(int(idRing.x)%3==0)
-            {
-                startSide = 1;
-                endSide =4;
-            }
-            else if(int(idRing.x)%3==1)
-            {
-                startSide = 2;
-                endSide =3;
-            }
-            else if(int(idRing.x)%3==2)
-            {
-                startSide = 0;
-                endSide = 2;
-            }
-            
-        }
- 
-//
-        
-//        if(int(idRing.y)%3==0)
-//        {
-//            if(int(idRing.x)%3==0)
-//            {
-//                startSide = 1;
-//                endSide =3;
-//            }
-//            else if(int(idRing.x)%3==1)
-//            {
-//                startSide = 4;
-//                endSide =2;
-//            }
-//            else if(int(idRing.x)%3==2)
-//            {
-//                startSide = 1;
-//                endSide = 4;
-//            }
-//            
-//        }
-//        else if(int(idRing.y)%3==1)
-//        {
-//            if(int(idRing.x)%3==0)
-//            {
-//                startSide = 1;
-//                endSide =4;
-//            }
-//            else if(int(idRing.x)%3==1)
-//            {
-//                startSide = 5;
-//                endSide =3;
-//            }
-//            else if(int(idRing.x)%3==2)
-//            {
-//                startSide = 0;
-//                endSide = 2;
-//            }
-//            
-//        }
-//        else if(int(idRing.y)%3==2)
-//        {
-//            if(int(idRing.x)%3==0)
-//            {
-//                startSide = 5;
-//                endSide =1;
-//            }
-//            else if(int(idRing.x)%3==1)
-//            {
-//                startSide = 4;
-//                endSide =0;
-//            }
-//            else if(int(idRing.x)%3==2)
-//            {
-//                startSide = 1;
-//                endSide = 4;
-//            }
-//            
-//        }
-
-        // STEPS
+        // CALCULATE SIDES (SAME FOR EVERY HEXAGON)
         calculateSides();
-        calculateStartEndPointsAndCurve();
-        calculateRibs();
-        calculateVboData();
-
-        // print vecVboTemp ...
-//        cout << "-----------" << endl;
-//        for(int i =0;i<vecTempVbo_Verts.size();i++)
-//        {
-//            cout << "VecTmpVboVerts[" << i <<"] :: " << vecTempVbo_Verts[i] << endl;
-//        }
-//        cout << "-----------" << endl;
-//        for(int i =0;i<vecTempVbo_Faces.size();i++)
-//        {
-//            cout << "VecTmpVboFaces[" << i <<"] :: " << vecTempVbo_Faces[i] << endl;
-//        }
         
-        // inserting calculated hexagon cuc into vectors that will feed the vboCucs
-        vecVboCucs_Verts.insert(vecVboCucs_Verts.end(), vecTempVbo_Verts.begin(), vecTempVbo_Verts.end());
-        vecVboCucs_Faces.insert(vecVboCucs_Faces.end(), vecTempVbo_Faces.begin(), vecTempVbo_Faces.end());
-        vecVboCucs_Colors.insert(vecVboCucs_Colors.end(), vecTempVbo_Colors.begin(), vecTempVbo_Colors.end());
-        vecVboCucs_TexCoords.insert(vecVboCucs_TexCoords.end(), vecTempVbo_TexCoords.begin(), vecTempVbo_TexCoords.end());
+        ofVec2f idRing = hexagonCanvas.getHexagonIdAndRing(i);
         
+        int numCucsThisHexagon = 6;
+        
+        for(int k=0;k<numCucsThisHexagon;k++)
+        {
+            switch(k)
+            {
+                case 0 :
+                    startSide=0;
+                    endSide=1;
+                    break;
+                case 1 :
+                    startSide=1;
+                    endSide=2;
+                    break;
+                case 2 :
+                    startSide=2;
+                    endSide=3;
+                    break;
+                case 3 :
+                    startSide=3;
+                    endSide=4;
+                    break;
+                case 4 :
+                    startSide=4;
+                    endSide=5;
+                    break;
+                case 5 :
+                    startSide=5;
+                    endSide=0;
+                    break;
+            }
+            
+            // STEPS
+            calculateStartEndPointsAndCurve();
+            calculateRibs();
+            calculateVboData();
+            
+            // print vecVboTemp ...
+            //        cout << "-----------" << endl;
+            //        for(int i =0;i<vecTempVbo_Verts.size();i++)
+            //        {
+            //            cout << "VecTmpVboVerts[" << i <<"] :: " << vecTempVbo_Verts[i] << endl;
+            //        }
+            //        cout << "-----------" << endl;
+            //        for(int i =0;i<vecTempVbo_Faces.size();i++)
+            //        {
+            //            cout << "VecTmpVboFaces[" << i <<"] :: " << vecTempVbo_Faces[i] << endl;
+            //        }
+            
+            // inserting calculated hexagon cuc into vectors that will feed the vboCucs
+            vecVboCucs_Verts.insert(vecVboCucs_Verts.end(), vecTempVbo_Verts.begin(), vecTempVbo_Verts.end());
+            vecVboCucs_Faces.insert(vecVboCucs_Faces.end(), vecTempVbo_Faces.begin(), vecTempVbo_Faces.end());
+            vecVboCucs_Colors.insert(vecVboCucs_Colors.end(), vecTempVbo_Colors.begin(), vecTempVbo_Colors.end());
+            vecVboCucs_TexCoords.insert(vecVboCucs_TexCoords.end(), vecTempVbo_TexCoords.begin(), vecTempVbo_TexCoords.end());
+        }
     }
     // FILL DATA INTO VBO CUCS
     vboCucs.setVertexData(vecVboCucs_Verts.data(), vecVboCucs_Verts.size(),GL_DYNAMIC_DRAW);
     vboCucs.setIndexData(vecVboCucs_Faces.data(), vecVboCucs_Faces.size(),GL_DYNAMIC_DRAW);
     vboCucs.setColorData(vecVboCucs_Colors.data(), vecVboCucs_Colors.size(),GL_DYNAMIC_DRAW);
     vboCucs.setTexCoordData(vecVboCucs_TexCoords.data(), vecVboCucs_TexCoords.size(),GL_DYNAMIC_DRAW);
-
-    cout << "vboCucs sizes _ Verts = " << vecVboCucs_Verts.size() << " Faces = " << vecVboTex_Faces.size() << endl;
+    
+    cout << "vboCucs sizes _ Verts = " << vecVboCucs_Verts.size() << " Faces = " << vecVboCucs_Verts.size() << endl;
     
     
     /// TRANSFORM TBO STUFF (Texture Buffer Object)
     ///////////////////////////////////////////////
-
+    
     {
         
         matricesTransform.resize(hexagonCanvas.getNumHexagons());
@@ -534,10 +468,10 @@ void ofApp::setup(){
         texCubeColors.allocateAsBufferTexture(bufferCubeColors,GL_RGBA32F);
         
     }
-     
+    
     /// SHADER INITS
     ////////////////
-
+    
     {
         shader.begin();
         shader.setUniformTexture("texTransform",texTransform,0);
@@ -551,9 +485,9 @@ void ofApp::setup(){
     updateMatrices();
     
     
- 
     
-
+    
+    
 }
 
 
@@ -586,7 +520,7 @@ void ofApp::updateOsc()
             // save the osc value in the vector<vector<>>
             vecOsc[whichId][whichRing] = m.getArgAsFloat(i);
         }
-
+        
     }
     
     if( ((now - lastTimeWeReceivedOsc) > 3.0) && usingOsc )
@@ -602,7 +536,7 @@ void ofApp::updateOsc()
 void ofApp::updateMatrices()
 {
     vector<ofPoint> centr = hexagonCanvas.getCentroidData();
-
+    
     // TRANSFORM MATRIX
     for(size_t i=0;i<matricesTransform.size();i++)
     {
@@ -618,13 +552,13 @@ void ofApp::updateMatrices()
         
         node.setPosition(ofVec3f(centr[i]));
         node.setScale((ofMap(factor,0.0,1.0,0.0,1.0)/1.0));
-
+        
         matricesTransform[i] = node.getLocalTransformMatrix();
     }
     // and upload them to the texture buffer
     bufferTransform.updateData(0,matricesTransform);
-
-
+    
+    
 }
 //--------------------------------------------------------------
 void ofApp::updateCubeColors()
@@ -653,11 +587,11 @@ void ofApp::updateCubeColors()
 void ofApp::updateVertexsForQuad()
 {
     vector<ofPoint> vertexsOriginal = hexagonCanvas.getVertexData();
-//    vector<ofPoint> vertexsOriginal = hexagonCanvas.getOriginalVertexData();
+    //    vector<ofPoint> vertexsOriginal = hexagonCanvas.getOriginalVertexData();
     
     float ribbonWidth = 1.0 * (sin(ofGetElapsedTimef()) + 1.0)/8.0 ;
     //ribbonWidth = ofRandomuf();
-
+    
     //ribbonWidth = 1.0;
     
     int howManyHexagonsWeVisited = 0;
@@ -666,7 +600,7 @@ void ofApp::updateVertexsForQuad()
     {
         // get id and ring of each hexagon processed ...
         ofVec2f hexaIdRing = hexagonCanvas.getHexagonIdAndRing(i);
-    
+        
         // if id != -1 then it's a valid hexagon ...
         if(hexaIdRing[0] != -1 )
         {
@@ -685,8 +619,8 @@ void ofApp::updateVertexsForQuad()
                 //                    vertOfHexagon[k] = vertexsOriginal[(w*numVertexsOneHexagonWithCenter)+1 + k ];
                 vertOfHexagon[k] = vertexsOriginal[(i*numVertexsOneHexagonWithCenter)+1 + k ];
             }
-
-        
+            
+            
             //!!!!!!!!!! !!!
             //ribbonWidthDivider = 4.0 * (float(hexaPix[j][i]._ring + 0)) / float(numRings);
             // !!!!!!!!
@@ -756,16 +690,16 @@ void ofApp::updateVertexsForQuad()
             howManyHexagonsWeVisited = howManyHexagonsWeVisited + 1 ;
             
         }
-
+        
     }
     
-//    pmVboRibbon.setVertData(vecVboQuads_Verts,hexagonCanvas.getNumHexagons());
+    //    pmVboRibbon.setVertData(vecVboQuads_Verts,hexagonCanvas.getNumHexagons());
     //vboQuads.setVertexData(vecVboQuads_Verts.data(), vecVboQuads_Verts.size(),GL_DYNAMIC_DRAW);
     vboQuads.updateVertexData(vecVboQuads_Verts.data(), vecVboQuads_Verts.size());
     
-//    cout << "ribbon width : " << ribbonWidth << " HowMany Visited : " << howManyHexagonsWeVisited <<  endl;
-//    cout << vecVboQuads_Verts[0][0] << endl;
-
+    //    cout << "ribbon width : " << ribbonWidth << " HowMany Visited : " << howManyHexagonsWeVisited <<  endl;
+    //    cout << vecVboQuads_Verts[0][0] << endl;
+    
 }
 
 //--------------------------------------------------------------
@@ -827,7 +761,7 @@ void ofApp::draw()
             if(dropdown_whichSource == HEX_SOURCE_TEXTURE)
             {
                 shader.setUniform1i("u_modulo",7);
-
+                
                 switch (dropdown_whichTextureSource)
                 {
                     case HEX_TEXTURE_IMAGE:
@@ -853,15 +787,15 @@ void ofApp::draw()
             }
             else if(dropdown_whichSource == HEX_SOURCE_CUCS)
             {
-                shader.setUniform1i("u_modulo",numSteps*2);
+                shader.setUniform1i("u_modulo",numSteps*2*6);
             }
-//                shader.setUniformTexture("uTexture", videoPlayer, 2);
-//                shader.setUniformTexture("uTexture", image, 2);
-//                image.bind();
-//                shader.setUniform1i("uTexture", 2);
-//                image.unbind();
-                
-       }
+            //                shader.setUniformTexture("uTexture", videoPlayer, 2);
+            //                shader.setUniformTexture("uTexture", image, 2);
+            //                image.bind();
+            //                shader.setUniform1i("uTexture", 2);
+            //                image.unbind();
+            
+        }
         
         if (mode == 0)
         {
@@ -870,13 +804,13 @@ void ofApp::draw()
             
             if(toggle_useTBOMatrix) shader.setUniform1i("u_useMatrix", 1);
             else shader.setUniform1i("u_useMatrix", 0);
-
+            
             if(useCubeColors)
             {
                 shader.setUniform1i("u_useCubeColors", 1);
             }
             else shader.setUniform1i("u_useCubeColors", 0);
-
+            
             switch(dropdown_whichSource)
             {
                 case HEX_SOURCE_TEXTURE :
@@ -890,7 +824,7 @@ void ofApp::draw()
                 case HEX_SOURCE_QUADS :
                 {
                     //vboQuads.bind();
-
+                    
                     vboQuads.drawElements(GL_TRIANGLES,vecVboQuads_Indexs.size());
                     
                     //vboQuads.unbind();
@@ -898,10 +832,10 @@ void ofApp::draw()
                 }
                 case HEX_SOURCE_CUCS :
                     vboCucs.drawElements(GL_TRIANGLES, vecVboCucs_Faces.size());
-
+                    
                     break;
             }
-
+            
         }
         else
         {
@@ -909,10 +843,10 @@ void ofApp::draw()
             ofSetColor(255,255,0);
             vboQuads.draw(GL_QUADS,0,vecVboQuads_Verts.size());
         }
-
+        
         // ... END SHADING
         if(useShader) shader.end();
-
+        
         if(toggle_showVertices)
         {
             vector<ofVec3f> v;
@@ -954,38 +888,38 @@ void ofApp::draw()
                 {
                     ofDrawBitmapString(ofToString(i)+ " : " +ofToString(v[i])   ,v[i].x /*+ hexagonCanvas.getCentroidData()[whichHexagon].x*/, v[i].y /*+ hexagonCanvas.getCentroidData()[whichHexagon].y*/) ; //+" : " + ofToString(v[i]),v[i].x, v[i].y);
                 }
-
+                
             }
-
             
-//            // DRAW VERTEX COORDINATES
-//            ofSetColor(255,0,0);
-//            vector<ofVec3f> v;
-//            if(dropdown_whichSource=HEX_SOURCE_TEXTURE)
-//            {
-//                v = pmVbo1.getCurrentVertices();
-//            }
-//            else  if (dropdown_whichSource=HEX_SOURCE_QUADS)
-//            {
-//                v = pmVboRibbon.getCurrentVertices();
-//            }
-//            int whichHexagon = 0;
-//            for(int i=0;i<v.size();i++)
-//            {
-//                cout << "v size " << v.size() << endl;
-//                whichHexagon = float(i)/7.0;
-//                if(true)
-//                {
-//                    if(dropdown_whichSource=HEX_SOURCE_TEXTURE)
-//                    {
-//                        ofDrawBitmapString(ofToString(i)  ,v[i].x + hexagonCanvas.getCentroidData()[whichHexagon].x, v[i].y + hexagonCanvas.getCentroidData()[whichHexagon].y) ; //+" : " + ofToString(v[i]),v[i].x, v[i].y);
-//                    }
-//                    else  if (dropdown_whichSource=HEX_SOURCE_QUADS)
-//                    {
-//                        ofDrawBitmapString(ofToString(i)  ,v[i].x , v[i].y)  ; //+" : " + ofToString(v[i]),v[i].x, v[i].y);
-//                    }
-//                }
-//            }
+            
+            //            // DRAW VERTEX COORDINATES
+            //            ofSetColor(255,0,0);
+            //            vector<ofVec3f> v;
+            //            if(dropdown_whichSource=HEX_SOURCE_TEXTURE)
+            //            {
+            //                v = pmVbo1.getCurrentVertices();
+            //            }
+            //            else  if (dropdown_whichSource=HEX_SOURCE_QUADS)
+            //            {
+            //                v = pmVboRibbon.getCurrentVertices();
+            //            }
+            //            int whichHexagon = 0;
+            //            for(int i=0;i<v.size();i++)
+            //            {
+            //                cout << "v size " << v.size() << endl;
+            //                whichHexagon = float(i)/7.0;
+            //                if(true)
+            //                {
+            //                    if(dropdown_whichSource=HEX_SOURCE_TEXTURE)
+            //                    {
+            //                        ofDrawBitmapString(ofToString(i)  ,v[i].x + hexagonCanvas.getCentroidData()[whichHexagon].x, v[i].y + hexagonCanvas.getCentroidData()[whichHexagon].y) ; //+" : " + ofToString(v[i]),v[i].x, v[i].y);
+            //                    }
+            //                    else  if (dropdown_whichSource=HEX_SOURCE_QUADS)
+            //                    {
+            //                        ofDrawBitmapString(ofToString(i)  ,v[i].x , v[i].y)  ; //+" : " + ofToString(v[i]),v[i].x, v[i].y);
+            //                    }
+            //                }
+            //            }
         }
     }
     
@@ -1000,7 +934,7 @@ void ofApp::draw()
         ofSetColor(255);
         mask.draw(0,0,1200,1200);
     }
-
+    
     /// DRAW VIDEO FILE INFO
     if(isRecording) ofSetColor(255,0,0);
     else ofSetColor(128);
@@ -1039,56 +973,56 @@ void ofApp::draw()
     }
     
     // DRAW CENTER AND CIRCLE RADIUS
-//    ofSetColor(255);
-//    ofDrawLine(0,600,1200,600);
-//    ofDrawLine(600,0,600,1200);
-//    ofNoFill();
-//    ofSetCircleResolution(128);
-//    ofDrawCircle(600,600,ofGetMouseX());
-//    ofFill();
-
-
+    //    ofSetColor(255);
+    //    ofDrawLine(0,600,1200,600);
+    //    ofDrawLine(600,0,600,1200);
+    //    ofNoFill();
+    //    ofSetCircleResolution(128);
+    //    ofDrawCircle(600,600,ofGetMouseX());
+    //    ofFill();
+    
+    
     // DRAW CIRCLE RADIUS
-//    ofNoFill();
-//    ofSetColor(127);
-//    ofSetCircleResolution(128);
-//    for(int i=0;i<hexagonCanvas.ringsRadius.size();i++)
-//    {
-//      ofDrawCircle(600,600,hexagonCanvas.ringsRadius[i]);
-//    }
-//    ofFill();
+    //    ofNoFill();
+    //    ofSetColor(127);
+    //    ofSetCircleResolution(128);
+    //    for(int i=0;i<hexagonCanvas.ringsRadius.size();i++)
+    //    {
+    //      ofDrawCircle(600,600,hexagonCanvas.ringsRadius[i]);
+    //    }
+    //    ofFill();
     
     
-    /// END FBO !! 
+    /// END FBO !!
     fboOut.end();
-
+    
     ///
     // RECORDING !!
     ///
     
     
-//    if(isRecording)
-//    { // FRAME NEW ?????????
-//        ofPixels pixels;
-//        fboOut.readToPixels(pixels);
-//        bool success = videoRecorder.addFrame(pixels);
-//        if (!success) {
-//            ofLogWarning("This frame was not added!");
-//        }
-//    }
-//    
-//    // Check if the video recorder encountered any error while writing video frame or audio smaples.
-//    if (videoRecorder.hasVideoError()) {
-//        ofLogWarning("The video recorder failed to write some frames!");
-//    }
-//    
-//    if (videoRecorder.hasAudioError()) {
-//        ofLogWarning("The video recorder failed to write some audio samples!");
-//    }
+    //    if(isRecording)
+    //    { // FRAME NEW ?????????
+    //        ofPixels pixels;
+    //        fboOut.readToPixels(pixels);
+    //        bool success = videoRecorder.addFrame(pixels);
+    //        if (!success) {
+    //            ofLogWarning("This frame was not added!");
+    //        }
+    //    }
+    //
+    //    // Check if the video recorder encountered any error while writing video frame or audio smaples.
+    //    if (videoRecorder.hasVideoError()) {
+    //        ofLogWarning("The video recorder failed to write some frames!");
+    //    }
+    //
+    //    if (videoRecorder.hasAudioError()) {
+    //        ofLogWarning("The video recorder failed to write some audio samples!");
+    //    }
     ///
     ///
     /// END RECORDING !!
-
+    
     
     
     if(isRecording && (dropdown_whichTextureSource == HEX_TEXTURE_VIDEO))
@@ -1107,7 +1041,7 @@ void ofApp::draw()
         else
         {
             cout << "Rendering video : Length " << videoPlayer.getTotalNumFrames() << " // Rec.Frames = " << recordedFrame << endl;
-
+            
             ofImage currentFrame;
             ofPixels pixels;
             fboOut.readToPixels(pixels);
@@ -1123,21 +1057,21 @@ void ofApp::draw()
         recordedFrame = recordedFrame + 1;
         
     }
-
+    
     
     
     
     /// DRAW FBO TO SCREEN
     ofPushMatrix();
-        ofSetColor(255,255,255);
-        fboOut.draw(0,0,ofGetWidth(),ofGetWidth());
+    ofSetColor(255,255,255);
+    fboOut.draw(0,0,ofGetWidth(),ofGetWidth());
     ofPopMatrix();
-
+    
     // draw texture previews
-//    ofSetColor(255);
-//    image.draw(0,ofGetHeight()-100,200,200);
-//    syphon.draw(200,ofGetHeight()-100,200,200);
-
+    //    ofSetColor(255);
+    //    image.draw(0,ofGetHeight()-100,200,200);
+    //    syphon.draw(200,ofGetHeight()-100,200,200);
+    
     
     /// SAVE IMAGE
     if(saveNow)
@@ -1149,13 +1083,13 @@ void ofApp::draw()
         imageToSave.setFromPixels(pixels);
         imageToSave.save("./captures/" + ofGetTimestampString() +".png" );
     }
-
+    
 }
-                      
+
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
-
+    
     if(key==' ')
     {
         mode=(mode+1)%numModes;
@@ -1238,67 +1172,67 @@ void ofApp::keyPressed(int key){
             }
         }
         //        if(!isRecording)
-//        {
-//            cout << ">>>>> STOP RECORDING" << endl;
-//            videoRecorder.close();
-//        }
-//        else
-//        {
-//            cout << ">>>> START RECORDING !!!!! " << endl;
-//            videoRecorder.setup("./recordings/" +ofGetTimestampString()+fileExt, fboOut.getWidth(), fboOut.getHeight(), desiredFramerate, 0, 0);
-//            videoRecorder.start();
-//        }
+        //        {
+        //            cout << ">>>>> STOP RECORDING" << endl;
+        //            videoRecorder.close();
+        //        }
+        //        else
+        //        {
+        //            cout << ">>>> START RECORDING !!!!! " << endl;
+        //            videoRecorder.setup("./recordings/" +ofGetTimestampString()+fileExt, fboOut.getWidth(), fboOut.getHeight(), desiredFramerate, 0, 0);
+        //            videoRecorder.start();
+        //        }
     }
-
+    
 }
 
-                      
+
 //--------------------------------------------------------------
 void ofApp::keyReleased(int key){
-
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseMoved(int x, int y ){
-
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseDragged(int x, int y, int button){
-
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button){
-
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseReleased(int x, int y, int button){
-
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseEntered(int x, int y){
-
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseExited(int x, int y){
-
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::windowResized(int w, int h){
-
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::gotMessage(ofMessage msg){
-
+    
 }
 
-                      
+
 //--------------------------------------------------------------
 void ofApp::dragEvent(ofDragInfo info)
 {
@@ -1325,7 +1259,7 @@ void ofApp::dragEvent(ofDragInfo info)
         {
             dropdown_whichSource = HEX_SOURCE_TEXTURE;
             dropdown_whichTextureSource = HEX_TEXTURE_VIDEO;
-
+            
             cout << "Loading new video ... " << "./testMedia/" + ofSplitString(dragFileName[dragFileName.size()-1],".")[0] +"." +dragFileExtension <<endl;
             videoFilename=ofToString("./testMedia/" + ofSplitString(dragFileName[dragFileName.size()-1],".")[0] +"." +dragFileExtension);
             videoPlayer.load(videoFilename);
@@ -1339,10 +1273,10 @@ void ofApp::dragEvent(ofDragInfo info)
             //pmVbo1.setTextureReference(videoPlayer.getTexture());
         }
     }
-
+    
 }
 
-                      
+
 //--------------------------------------------------------------
 bool ofApp::sortPointsOnDistanceToOrigin(ofPoint &p1, ofPoint &p2)
 {
@@ -1350,12 +1284,12 @@ bool ofApp::sortPointsOnDistanceToOrigin(ofPoint &p1, ofPoint &p2)
     float dist1,dist2;
     dist1  = origin.distance(p1);
     dist2  = origin.distance(p2);
-
+    
     return dist2>dist1;
 }
 
 
-                      
+
 //--------------------------------------------------------------
 ofPoint ofApp::projectPointToLine(ofPoint Point,ofPoint LineStart,ofPoint LineEnd)
 {
@@ -1399,18 +1333,18 @@ void ofApp::exit(){
 //--------------------------------------------------------------
 void ofApp::resetVecOscVector()
 {
-  vecOsc.resize(64);
-  for(int i=0;i<vecOsc.size();i++)
-  {
-      vecOsc[i].resize(35);
-      for(int j=0;j<35;j++)
-      {
-          vecOsc[i][j] = 1.0;
-      }
-  }
-  
+    vecOsc.resize(64);
+    for(int i=0;i<vecOsc.size();i++)
+    {
+        vecOsc[i].resize(35);
+        for(int j=0;j<35;j++)
+        {
+            vecOsc[i][j] = 1.0;
+        }
+    }
+    
 }
-                      
+
 //--------------------------------------------------------------
 void ofApp::changedTexCoord(int &i)
 {
@@ -1466,7 +1400,7 @@ void ofApp::calculateRibs()
             ribs[i][0] = v;
             ribs[i][1] = w;
             
-            cout << "first rib dist = " << ofVec3f(w-v).length() << endl;
+            //            cout << "first rib dist = " << ofVec3f(w-v).length() << endl;
         }
         else if(i==numSteps-1)
         {
@@ -1476,7 +1410,7 @@ void ofApp::calculateRibs()
             ribs[i][0] = w;
             ribs[i][1] = v;
             
-            cout << "last rib dist = " << ofVec3f(w-v).length()<< endl;
+            //            cout << "last rib dist = " << ofVec3f(w-v).length()<< endl;
             
         }
         else
@@ -1487,14 +1421,14 @@ void ofApp::calculateRibs()
             ofVec3f vE = endPoint + (hexaSides[endSide] * widthPct);
             ofVec3f wE = endPoint - (hexaSides[endSide] * widthPct);
             
-        
-            cout << "start rib dist = " << ofVec3f(wS-vS).length() << endl;
-            cout << "end rib dist = " << ofVec3f(wE-vE).length()<< endl;
-
+            
+            //            cout << "start rib dist = " << ofVec3f(wS-vS).length() << endl;
+            //            cout << "end rib dist = " << ofVec3f(wE-vE).length()<< endl;
+            
             float middleWidth = ofMap(i,0,numSteps-1,ofVec3f(wS-vS).length(),ofVec3f(wE-vE).length());
             middleWidth = middleWidth ;
             
-            cout << "middle width = " << middleWidth << endl;
+            //            cout << "middle width = " << middleWidth << endl;
             
             //            // middle ribs
             //            float middleWidth = ofMap(i,0,numSteps-1,widthStart,widthEnd);
@@ -1517,7 +1451,7 @@ void ofApp::calculateRibs()
 //--------------------------------------------------------------
 void ofApp::calculateVboData()
 {
-
+    
     // DEFINE VBO DATA
     
     // VERTEXS
@@ -1547,13 +1481,13 @@ void ofApp::calculateVboData()
         
     }
     lastFaceAddedToCucs=lastFaceAddedToCucs + (numSteps*2);
-    
+    cout << "Last Face Added : " << lastFaceAddedToCucs << endl;
     
     
     for(int i=0;i<vecTempVbo_Faces.size();i++)
     {
-//                cout << "Face : " << i << " :: " << vecVboCucs_faces[(i*3)] << " , " << vecVboCucs_faces[(i*3)+1] << " , " << vecVboCucs_faces[(i*3)+2] << endl;
-//        cout << "FaceTemp " << i << ": " << vecTempVbo_Faces[i] << endl;
+        //                cout << "Face : " << i << " :: " << vecVboCucs_faces[(i*3)] << " , " << vecVboCucs_faces[(i*3)+1] << " , " << vecVboCucs_faces[(i*3)+2] << endl;
+        //        cout << "FaceTemp " << i << ": " << vecTempVbo_Faces[i] << endl;
     }
     
     // COLORS and TEXCOORDS
@@ -1579,7 +1513,7 @@ void ofApp::calculateVboData()
 //--------------------------------------------------------------
 void ofApp::calculateSides()
 {
-
+    
     // HEXAGON SIDES VECTORS represent the vectors of each "side". From V01, V12, ... to V50 total = 6
     for(int i=0;i<6;i++)
     {

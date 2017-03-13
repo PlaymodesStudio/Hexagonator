@@ -9,6 +9,7 @@
 #include "ofxVideoRecorder.h"
 #include "ofxAVScreenCapture.h"
 #include "parametersControl.h"
+#include "pmHexagonTile.hpp"
 
 enum sourceTextureType
 {
@@ -146,11 +147,12 @@ class ofApp : public ofBaseApp{
     float   widthEnd;
     ofPolyline bezierLine;
     vector<ofVec3f> sampledPoints;
-    vector<vector<ofVec3f>> ribs;
     // RIBS
     // init ribs vector
     // each "rib" is 2 x ofVec2f with the coordinates of the segment of each rib [Vert.Left , Vert.Right]
-    
+    vector<vector<ofVec3f>> ribs;
+
+    vector<pmHexagonTile>   hexagonTiles;
     
     int numSteps;
     int lastFaceAddedToCucs;
