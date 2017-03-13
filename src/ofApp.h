@@ -147,6 +147,11 @@ class ofApp : public ofBaseApp{
     ofPolyline bezierLine;
     vector<ofVec3f> sampledPoints;
     vector<vector<ofVec3f>> ribs;
+    // RIBS
+    // init ribs vector
+    // each "rib" is 2 x ofVec2f with the coordinates of the segment of each rib [Vert.Left , Vert.Right]
+    
+    
     int numSteps;
     int lastFaceAddedToCucs;
     
@@ -160,6 +165,7 @@ class ofApp : public ofBaseApp{
     void                    calculateStartEndPointsAndCurve();
     void                    calculateRibs();
     void                    calculateVboData();
+    void                    calculateSides();
     
     // DATA VECTORS
     vector<ofVec3f>         vertexsRibbon;

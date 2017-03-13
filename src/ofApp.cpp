@@ -190,7 +190,7 @@ void ofApp::setup(){
     
     //svgFilename = "./svg/test_svg_part.svg";
     svgFilename = "./svg/santi3_App.svg";
-    //svgFilename = "./svg/testSVG9Hexagons.svg";
+    //svgFilename = "./svg/testSVG3Hexagons.svg";
     //        svgFilename = "./svg/testSVG3Hexagons.svg";
     //    svgFilename = "./svg/test_svg_part_nomes2.svg";
     //    svgFilename = "./svg/testOrdreRadial.svg";
@@ -208,7 +208,6 @@ void ofApp::setup(){
     // prepare vectors of data for vboTex. * 7 as we'll have 7 vertexs per each hexagon ... center + 6 sides.
     int nVerts = hexagonCanvas.getNumHexagons()*7;
     vecVboTex_Verts.resize(nVerts);
-    vecVboTex_Verts = hexagonCanvas.getVertexData();
     vecVboTex_Colors.resize(nVerts);
     vecVboTex_Faces.resize(nVerts*3);
     vecVboTex_TexCoords.resize(2);
@@ -216,10 +215,8 @@ void ofApp::setup(){
     {
         vecVboTex_TexCoords[i].resize(nVerts);
     }
-    
-    //*pmVbo1.setup(hexagonCanvas.getNumHexagons(),7);
-    //pmVbo1.setVertData(hexagonCanvas.getVertexData(), 0);
-    vboTex.setVertexData(vecVboTex_Verts.data(),vecVboTex_Verts.size(),GL_DYNAMIC_DRAW);
+
+    vecVboTex_Verts = hexagonCanvas.getVertexData();
     
     ////////////////////////////////////////
     /// GENERATE TEXTURE COORDINATES DATA !!
@@ -252,6 +249,7 @@ void ofApp::setup(){
 
     /// FILL VBO TEX DATA
     //////////////////////
+    vboTex.setVertexData(vecVboTex_Verts.data(),vecVboTex_Verts.size(),GL_DYNAMIC_DRAW);
     vboTex.setTexCoordData(vecVboTex_TexCoords[0].data(), vecVboTex_TexCoords[0].size(), GL_DYNAMIC_DRAW);
     vboTex.setColorData(vecVboTex_Colors.data(), vecVboTex_Colors.size(), GL_DYNAMIC_DRAW);
     vboTex.setIndexData(vecVboTex_Faces.data(), vecVboTex_Faces.size(), GL_DYNAMIC_DRAW);
@@ -309,91 +307,184 @@ void ofApp::setup(){
     
     // inits
     int numCucs = hexagonCanvas.getNumHexagons();
-    startSide = 0;
-    endSide = 3;
+    startSide = 4;
+    endSide = 2;
     numSteps = 8;
-    widthPct = 0.25;
+    widthPct = 0.10;
     lastFaceAddedToCucs=0;
 
-//    vecVboCucs_Verts.resize(numSteps*2*numCucs);
-//    vecVboCucs_Colors.resize(vecVboCucs_Verts.size());
-//    vecVboCucs_TexCoords.resize(vecVboCucs_Verts.size());
-//    vecVboCucs_Faces.resize((numSteps-1)*2*3*numCucs);
-
+    // we put the vbo data of each hexagon cuc into a temp vector that will be inserted(appended) on the vecVboCucs_Verts
+    
+    // resize temp vectors that are recalculated for each hexaogn cuc
     vecTempVbo_Verts.resize(numSteps*2);
     vecTempVbo_Colors.resize(vecTempVbo_Verts.size());
     vecTempVbo_TexCoords.resize(vecTempVbo_Verts.size());
     vecTempVbo_Faces.resize((numSteps-1)*2*3);
-
+    
+    
+    
     hexaPoints.clear();
     hexaPoints.resize(6);
+    hexaSides.resize(6);
+    sampledPoints.resize(numSteps);
+    ribs.resize(numSteps);
+    for(int i=0;i<numSteps;i++)
+    {
+        ribs[i].resize(2);
+    }
+    
     for(int i=0;i<numCucs;i++)
     {
+        ofVec2f idRing = hexagonCanvas.getHexagonIdAndRing(i);
+        
         // define HEXAGON POINTS
         //add them to the hexagon
-        cout << ">> Processing CUC : " << i << endl;
         for(int j=0;j<6;j++)
         {
             hexaPoints[j] = vecVboTex_Verts[(i*7)+j+1]; //+1 because vecVbo[0s] are centroids?
-            cout << ">> Putting in hexaPoints[" << i << "] : " << hexaPoints[j] << " Index of VecVboVert : " << (i*7)+j +1 << endl;
         }
+        cout << "Hexagon " << i <<" has Id Ring : "<< idRing <<endl;
         
-        // HEXAGON SIDES VECTORS represent the vectors of each "side". From V01, V12, ... to V50 total = 6
-        hexaSides.resize(6);
-        for(int i=0;i<6;i++)
+        // DEFINE PATTERNS
+        
+        //
+//        if(int(idRing.y)%2)
+//        {
+//            startSide = 0;
+//            endSide =2;
+//        }
+//        else
+//        {
+//            startSide = 1;
+//            endSide =4;
+//            
+//        }
+        //
+        if(int(idRing.y)%2==0)
         {
-            if(i!=5)
+            if(int(idRing.x)%3==0)
             {
-                // from 0 to 4th vertex it's i+1 - i
-                hexaSides[i] = hexaPoints[i+1] - hexaPoints[i];
+                startSide = 0;
+                endSide =1;
             }
-            else if(i==5)
+            else if(int(idRing.x)%3==1)
             {
-                // last vertex, special case 5 - 0
-                hexaSides[i] = hexaPoints[0] - hexaPoints[i];
+                startSide = 4;
+                endSide =5;
             }
+            else if(int(idRing.x)%3==2)
+            {
+                startSide = 5;
+                endSide = 3;
+            }
+            
         }
-        
-        // SAMPLED POINTS OF BEZIER CURVE
-        sampledPoints.resize(numSteps);
-        
-        // RIBS
-        // init ribs vector
-        // each "rib" is 2 x ofVec2f with the coordinates of the segment of each rib [Vert.Left , Vert.Right]
-        
-        ribs.resize(numSteps);
-        for(int i=0;i<numSteps;i++)
+        else if(int(idRing.y)%2==1)
         {
-            ribs[i].resize(2);
+            if(int(idRing.x)%3==0)
+            {
+                startSide = 1;
+                endSide =4;
+            }
+            else if(int(idRing.x)%3==1)
+            {
+                startSide = 2;
+                endSide =3;
+            }
+            else if(int(idRing.x)%3==2)
+            {
+                startSide = 0;
+                endSide = 2;
+            }
+            
         }
+ 
+//
         
-        
-        // INITIAL CALCULATION OF START AND END
+//        if(int(idRing.y)%3==0)
+//        {
+//            if(int(idRing.x)%3==0)
+//            {
+//                startSide = 1;
+//                endSide =3;
+//            }
+//            else if(int(idRing.x)%3==1)
+//            {
+//                startSide = 4;
+//                endSide =2;
+//            }
+//            else if(int(idRing.x)%3==2)
+//            {
+//                startSide = 1;
+//                endSide = 4;
+//            }
+//            
+//        }
+//        else if(int(idRing.y)%3==1)
+//        {
+//            if(int(idRing.x)%3==0)
+//            {
+//                startSide = 1;
+//                endSide =4;
+//            }
+//            else if(int(idRing.x)%3==1)
+//            {
+//                startSide = 5;
+//                endSide =3;
+//            }
+//            else if(int(idRing.x)%3==2)
+//            {
+//                startSide = 0;
+//                endSide = 2;
+//            }
+//            
+//        }
+//        else if(int(idRing.y)%3==2)
+//        {
+//            if(int(idRing.x)%3==0)
+//            {
+//                startSide = 5;
+//                endSide =1;
+//            }
+//            else if(int(idRing.x)%3==1)
+//            {
+//                startSide = 4;
+//                endSide =0;
+//            }
+//            else if(int(idRing.x)%3==2)
+//            {
+//                startSide = 1;
+//                endSide = 4;
+//            }
+//            
+//        }
+
+        // STEPS
+        calculateSides();
         calculateStartEndPointsAndCurve();
         calculateRibs();
         calculateVboData();
 
         // print vecVboTemp ...
-        cout << "-----------" << endl;
-        for(int i =0;i<vecTempVbo_Verts.size();i++)
-        {
-            cout << "VecTmpVboVerts[" << i <<"] :: " << vecTempVbo_Verts[i] << endl;
-        }
-        cout << "-----------" << endl;
-        for(int i =0;i<vecTempVbo_Faces.size();i++)
-        {
-            cout << "VecTmpVboFaces[" << i <<"] :: " << vecTempVbo_Faces[i] << endl;
-        }
+//        cout << "-----------" << endl;
+//        for(int i =0;i<vecTempVbo_Verts.size();i++)
+//        {
+//            cout << "VecTmpVboVerts[" << i <<"] :: " << vecTempVbo_Verts[i] << endl;
+//        }
+//        cout << "-----------" << endl;
+//        for(int i =0;i<vecTempVbo_Faces.size();i++)
+//        {
+//            cout << "VecTmpVboFaces[" << i <<"] :: " << vecTempVbo_Faces[i] << endl;
+//        }
         
-        
+        // inserting calculated hexagon cuc into vectors that will feed the vboCucs
         vecVboCucs_Verts.insert(vecVboCucs_Verts.end(), vecTempVbo_Verts.begin(), vecTempVbo_Verts.end());
         vecVboCucs_Faces.insert(vecVboCucs_Faces.end(), vecTempVbo_Faces.begin(), vecTempVbo_Faces.end());
         vecVboCucs_Colors.insert(vecVboCucs_Colors.end(), vecTempVbo_Colors.begin(), vecTempVbo_Colors.end());
         vecVboCucs_TexCoords.insert(vecVboCucs_TexCoords.end(), vecTempVbo_TexCoords.begin(), vecTempVbo_TexCoords.end());
         
     }
-    cout << endl;
-    // FILL VBO DATA
+    // FILL DATA INTO VBO CUCS
     vboCucs.setVertexData(vecVboCucs_Verts.data(), vecVboCucs_Verts.size(),GL_DYNAMIC_DRAW);
     vboCucs.setIndexData(vecVboCucs_Faces.data(), vecVboCucs_Faces.size(),GL_DYNAMIC_DRAW);
     vboCucs.setColorData(vecVboCucs_Colors.data(), vecVboCucs_Colors.size(),GL_DYNAMIC_DRAW);
@@ -1341,8 +1432,8 @@ void ofApp::calculateStartEndPointsAndCurve()
     
     // BEZIER CURVE BASED ON START AND END POINTS
     // try to calculate the bezier control points automatically ...
-    ofVec2f controlStart = ofVec2f(startPoint.x + hexaSides[startSide].y/2, startPoint.y -hexaSides[startSide].x/2 );
-    ofVec2f controlEnd = ofVec2f(endPoint.x + hexaSides[endSide].y/2    , endPoint.y - hexaSides[endSide].x/2 );
+    ofVec2f controlStart = ofVec2f(startPoint.x + hexaSides[startSide].y/4, startPoint.y -hexaSides[startSide].x/4 );
+    ofVec2f controlEnd = ofVec2f(endPoint.x + hexaSides[endSide].y/4    , endPoint.y - hexaSides[endSide].x/4 );
     
     bezierLine.clear();
     bezierLine.addVertex(startPoint);
@@ -1374,6 +1465,8 @@ void ofApp::calculateRibs()
             ofVec3f w = startPoint - (hexaSides[startSide] * widthPct);
             ribs[i][0] = v;
             ribs[i][1] = w;
+            
+            cout << "first rib dist = " << ofVec3f(w-v).length() << endl;
         }
         else if(i==numSteps-1)
         {
@@ -1383,16 +1476,33 @@ void ofApp::calculateRibs()
             ribs[i][0] = w;
             ribs[i][1] = v;
             
+            cout << "last rib dist = " << ofVec3f(w-v).length()<< endl;
+            
         }
         else
         {
             // middle ribs
-            float middleWidth = ofMap(i,0,numSteps-1,widthStart,widthEnd);
+            ofVec3f vS = startPoint + (hexaSides[startSide] * widthPct);
+            ofVec3f wS = startPoint - (hexaSides[startSide] * widthPct);
+            ofVec3f vE = endPoint + (hexaSides[endSide] * widthPct);
+            ofVec3f wE = endPoint - (hexaSides[endSide] * widthPct);
+            
+        
+            cout << "start rib dist = " << ofVec3f(wS-vS).length() << endl;
+            cout << "end rib dist = " << ofVec3f(wE-vE).length()<< endl;
+
+            float middleWidth = ofMap(i,0,numSteps-1,ofVec3f(wS-vS).length(),ofVec3f(wE-vE).length());
+            middleWidth = middleWidth ;
+            
+            cout << "middle width = " << middleWidth << endl;
+            
+            //            // middle ribs
+            //            float middleWidth = ofMap(i,0,numSteps-1,widthStart,widthEnd);
             
             ofVec3f vMiddle = sampledPoints[i-1]-sampledPoints[i+1];
             vMiddle = ofVec3f(vMiddle.y,-vMiddle.x,0);
-            ofVec3f v = sampledPoints[i] + (vMiddle.normalize() * middleWidth/4.0);
-            ofVec3f w = sampledPoints[i] - (vMiddle.normalize() * middleWidth/4.0);
+            ofVec3f v = sampledPoints[i] + (vMiddle.normalize() * middleWidth)/2;
+            ofVec3f w = sampledPoints[i] - (vMiddle.normalize() * middleWidth)/2;
             
             ribs[i][0] = v;
             ribs[i][1] = w;
@@ -1443,7 +1553,7 @@ void ofApp::calculateVboData()
     for(int i=0;i<vecTempVbo_Faces.size();i++)
     {
 //                cout << "Face : " << i << " :: " << vecVboCucs_faces[(i*3)] << " , " << vecVboCucs_faces[(i*3)+1] << " , " << vecVboCucs_faces[(i*3)+2] << endl;
-        cout << "FaceTemp " << i << ": " << vecTempVbo_Faces[i] << endl;
+//        cout << "FaceTemp " << i << ": " << vecTempVbo_Faces[i] << endl;
     }
     
     // COLORS and TEXCOORDS
@@ -1464,4 +1574,24 @@ void ofApp::calculateVboData()
         vecTempVbo_TexCoords[i] = ofVec2f(0.5,0.5);
     }
     
+}
+
+//--------------------------------------------------------------
+void ofApp::calculateSides()
+{
+
+    // HEXAGON SIDES VECTORS represent the vectors of each "side". From V01, V12, ... to V50 total = 6
+    for(int i=0;i<6;i++)
+    {
+        if(i!=5)
+        {
+            // from 0 to 4th vertex it's i+1 - i
+            hexaSides[i] = hexaPoints[i+1] - hexaPoints[i];
+        }
+        else if(i==5)
+        {
+            // last vertex, special case 5 - 0
+            hexaSides[i] = hexaPoints[0] - hexaPoints[i];
+        }
+    }
 }
