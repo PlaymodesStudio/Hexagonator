@@ -190,7 +190,7 @@ void ofApp::setup(){
     
     //svgFilename = "./svg/test_svg_part.svg";
     svgFilename = "./svg/santi3_App.svg";
-    //svgFilename = "./svg/testSVG1Hexagons.svg";
+    //svgFilename = "./svg/testSVG3Hexagons.svg";
     //        svgFilename = "./svg/testSVG3Hexagons.svg";
     //    svgFilename = "./svg/test_svg_part_nomes2.svg";
     //    svgFilename = "./svg/testOrdreRadial.svg";
@@ -307,49 +307,30 @@ void ofApp::setup(){
     
     // inits
     int numCucs = hexagonCanvas.getNumHexagons();
-    startSide = 4;
-    endSide = 2;
+    startSide = 0;
+    endSide = 1;
     numSteps = 8;
-    widthPct = 0.10;
+    widthPct = 0.20;
     lastFaceAddedToCucs=0;
     
     
     // TILES
-    hexagonTiles.resize(hexagonCanvas.getNumHexagons());
-    for(int i=0;i<hexagonTiles.size();i++)
-    {
-        hexagonTiles[i].resetConnections();
-        for(int j=0;j<6;j++)
-        {
-            hexagonTiles[i].addConnection(0,j);
-        }
-    }
+    calculateTilePatterns();
     
     // we put the vbo data of each hexagon cuc into a temp vector that will be inserted(appended) on the vecVboCucs_Verts
     // resize temp vectors that are recalculated for each hexaogn cuc
-    vecTempVbo_Verts.resize(numSteps*2);
-    vecTempVbo_Colors.resize(vecTempVbo_Verts.size());
-    vecTempVbo_TexCoords.resize(vecTempVbo_Verts.size());
-    vecTempVbo_Faces.resize((numSteps-1)*2*3);
+    int numMaxOfCucsInOneHexagon = 6;
     
     
     
     for(int i=0;i<hexagonCanvas.getNumHexagons();i++)
     {
-        
+        // for each hexagon ....
         // clear and resizing data
         hexaPoints.clear();
         hexaSides.clear();
-        sampledPoints.clear();
-        ribs.clear();
-        hexaPoints.resize(6);
+        hexaPoints.resize(6,ofVec3f(0,0,0));
         hexaSides.resize(6);
-        sampledPoints.resize(numSteps);
-        ribs.resize(numSteps);
-        for(int i=0;i<numSteps;i++)
-        {
-            ribs[i].resize(2);
-        }
         
         // define HEXAGON POINTS
         // add them to the hexagon
@@ -359,64 +340,62 @@ void ofApp::setup(){
         }
         // CALCULATE SIDES (SAME FOR EVERY HEXAGON)
         calculateSides();
-        
         ofVec2f idRing = hexagonCanvas.getHexagonIdAndRing(i);
-        
-        int numCucsThisHexagon = 6;
-        
-        for(int k=0;k<numCucsThisHexagon;k++)
+
+        int maxCucsInOneHexagon = 6;
+        int numCucsActualHexagon = 1; //int(ofRandom(0, 6));
+        for(int k=0;k<maxCucsInOneHexagon;k++)
         {
-            switch(k)
+            vecTempVbo_Verts.resize(numSteps*2,ofVec3f(0,0,0));
+            vecTempVbo_Colors.resize(vecTempVbo_Verts.size()),ofFloatColor(0.0,1.0,1.0);
+            vecTempVbo_TexCoords.resize(vecTempVbo_Verts.size(),ofVec2f(0,0));
+            vecTempVbo_Faces.resize((numSteps-1)*2*3,0);
+            
+            if(k<numCucsActualHexagon)
             {
-                case 0 :
-                    startSide=0;
-                    endSide=1;
-                    break;
-                case 1 :
-                    startSide=1;
-                    endSide=2;
-                    break;
-                case 2 :
-                    startSide=2;
-                    endSide=3;
-                    break;
-                case 3 :
-                    startSide=3;
-                    endSide=4;
-                    break;
-                case 4 :
-                    startSide=4;
-                    endSide=5;
-                    break;
-                case 5 :
-                    startSide=5;
-                    endSide=0;
-                    break;
+                // this is a user defined cuc ... take it normally
+                sampledPoints.clear();
+                ribs.clear();
+                sampledPoints.resize(numSteps);
+                ribs.resize(numSteps);
+                for(int i=0;i<numSteps;i++)
+                {
+                    ribs[i].resize(2);
+                }
+                
+                if(int(idRing.y)%2==0)
+                {
+                        startSide = 0;
+                        endSide =3;
+                    
+                }
+                else
+                {
+                    startSide = 2;
+                    endSide =5;
+                }
+            
+                // STEPS
+                calculateStartEndPointsAndCurve();
+                calculateRibs();
+                calculateVboData();
+
             }
-            
-            // STEPS
-            calculateStartEndPointsAndCurve();
-            calculateRibs();
-            calculateVboData();
-            
-            // print vecVboTemp ...
-            //        cout << "-----------" << endl;
-            //        for(int i =0;i<vecTempVbo_Verts.size();i++)
-            //        {
-            //            cout << "VecTmpVboVerts[" << i <<"] :: " << vecTempVbo_Verts[i] << endl;
-            //        }
-            //        cout << "-----------" << endl;
-            //        for(int i =0;i<vecTempVbo_Faces.size();i++)
-            //        {
-            //            cout << "VecTmpVboFaces[" << i <<"] :: " << vecTempVbo_Faces[i] << endl;
-            //        }
-            
+            else
+            {
+                // fill with "void" cucs
+                lastFaceAddedToCucs=lastFaceAddedToCucs + ((numSteps)*2);
+
+            }
             // inserting calculated hexagon cuc into vectors that will feed the vboCucs
             vecVboCucs_Verts.insert(vecVboCucs_Verts.end(), vecTempVbo_Verts.begin(), vecTempVbo_Verts.end());
             vecVboCucs_Faces.insert(vecVboCucs_Faces.end(), vecTempVbo_Faces.begin(), vecTempVbo_Faces.end());
             vecVboCucs_Colors.insert(vecVboCucs_Colors.end(), vecTempVbo_Colors.begin(), vecTempVbo_Colors.end());
             vecVboCucs_TexCoords.insert(vecVboCucs_TexCoords.end(), vecTempVbo_TexCoords.begin(), vecTempVbo_TexCoords.end());
+
         }
+        
+
     }
     // FILL DATA INTO VBO CUCS
     vboCucs.setVertexData(vecVboCucs_Verts.data(), vecVboCucs_Verts.size(),GL_DYNAMIC_DRAW);
@@ -967,6 +946,12 @@ void ofApp::draw()
                 break;
         }
     }
+    else if(dropdown_whichSource==HEX_SOURCE_CUCS)
+    {
+        ofDrawBitmapString("CUCS" ,550,30);
+        ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), 550,45);
+    }
+
     if(isRecording)
     {
         ofDrawBitmapString("REC : Recorded Frame : " + ofToString(recordedFrame) + " // Time : " +ofToString(ofGetElapsedTimef()), 550,60 );
@@ -1464,7 +1449,7 @@ void ofApp::calculateVboData()
         }
         else
         {
-            vecTempVbo_Verts[i] = ribs[7-(i-8)][1];
+            vecTempVbo_Verts[i] = ribs[(numSteps-1)-(i-numSteps)][1];
         }
     }
     // FACES
@@ -1480,7 +1465,7 @@ void ofApp::calculateVboData()
         vecTempVbo_Faces[(i*6)+5] = (totalVertexs-1)-i + lastFaceAddedToCucs;
         
     }
-    lastFaceAddedToCucs=lastFaceAddedToCucs + (numSteps*2);
+    lastFaceAddedToCucs=lastFaceAddedToCucs + ((numSteps)*2);
     cout << "Last Face Added : " << lastFaceAddedToCucs << endl;
     
     
@@ -1528,4 +1513,263 @@ void ofApp::calculateSides()
             hexaSides[i] = hexaPoints[0] - hexaPoints[i];
         }
     }
+}
+
+//--------------------------------------------------------------
+void ofApp::calculateTilePatterns()
+{
+    // 1 CONNECTION JUMP 1
+    for(int i=0;i<6;i++)
+    {
+        pmHexagonTile t;
+        t.addConnection(i%6, (i+1)%6);
+        hexagonTiles.push_back(t);
+    }
+    // 2 CONNECTION JUMP 1 +1
+    for(int i=0;i<6;i++)
+    {
+        pmHexagonTile t;
+        t.addConnection(i%6, (i+1)%6);
+        t.addConnection((i+1)%6, (i+2)%6);
+        hexagonTiles.push_back(t);
+    }
+    // 2 CONNECTION JUMP 1 +2
+    for(int i=0;i<6;i++)
+    {
+        pmHexagonTile t;
+        t.addConnection(i%6, (i+1)%6);
+        t.addConnection((i+2)%6, (i+3)%6);
+        hexagonTiles.push_back(t);
+    }
+    // 2 CONNECTION JUMP 1 +3
+    for(int i=0;i<6;i++)
+    {
+        pmHexagonTile t;
+        t.addConnection(i%6, (i+1)%6);
+        t.addConnection((i+3)%6, (i+4)%6);
+        hexagonTiles.push_back(t);
+    }
+    // 3 CONNECTION JUMP 1
+    for(int i=0;i<6;i++)
+    {
+        pmHexagonTile t;
+        t.addConnection(i%6, (i+1)%6);
+        t.addConnection((i+1)%6, (i+2)%6);
+        t.addConnection((i+2)%6, (i+3)%6);
+        hexagonTiles.push_back(t);
+    }
+    // 3 CONNECTION JUMP 1'
+    for(int i=0;i<6;i++)
+    {
+        pmHexagonTile t;
+        t.addConnection(i%6, (i+1)%6);
+        t.addConnection((i+1)%6, (i+2)%6);
+        t.addConnection((i+3)%6, (i+4)%6);
+        hexagonTiles.push_back(t);
+    }
+    // 3 CONNECTION JUMP 1''
+    for(int i=0;i<6;i++)
+    {
+        pmHexagonTile t;
+        t.addConnection(i%6, (i+1)%6);
+        t.addConnection((i+2)%6, (i+3)%6);
+        t.addConnection((i+3)%6, (i+4)%6);
+        hexagonTiles.push_back(t);
+    }
+    // 3 CONNECTION JUMP 1'''
+    for(int i=0;i<6;i++)
+    {
+        pmHexagonTile t;
+        t.addConnection(i%6, (i+1)%6);
+        t.addConnection((i+2)%6, (i+3)%6);
+        t.addConnection((i+4)%6, (i+5)%6);
+        hexagonTiles.push_back(t);
+    }
+    // 4 CONNECTION JUMP 1
+    for(int i=0;i<6;i++)
+    {
+        pmHexagonTile t;
+        t.addConnection(i%6, (i+1)%6);
+        t.addConnection((i+1)%6, (i+2)%6);
+        t.addConnection((i+2)%6, (i+3)%6);
+        t.addConnection((i+3)%6, (i+4)%6);
+        hexagonTiles.push_back(t);
+    }
+    // 4 CONNECTION JUMP 1'
+    for(int i=0;i<6;i++)
+    {
+        pmHexagonTile t;
+        t.addConnection(i%6, (i+1)%6);
+        t.addConnection((i+2)%6, (i+3)%6);
+        t.addConnection((i+3)%6, (i+4)%6);
+        t.addConnection((i+4)%6, (i+5)%6);
+        hexagonTiles.push_back(t);
+    }
+    // 4 CONNECTION JUMP 1''
+    for(int i=0;i<6;i++)
+    {
+        pmHexagonTile t;
+        t.addConnection(i%6, (i+1)%6);
+        t.addConnection((i+1)%6, (i+2)%6);
+        t.addConnection((i+3)%6, (i+4)%6);
+        t.addConnection((i+4)%6, (i+5)%6);
+        hexagonTiles.push_back(t);
+    }
+    // 5 CONNECTION JUMP 1
+    for(int i=0;i<6;i++)
+    {
+        pmHexagonTile t;
+        t.addConnection(i%6, (i+1)%6);
+        t.addConnection((i+1)%6, (i+2)%6);
+        t.addConnection((i+2)%6, (i+3)%6);
+        t.addConnection((i+3)%6, (i+4)%6);
+        t.addConnection((i+4)%6, (i+5)%6);
+        hexagonTiles.push_back(t);
+    }
+    // 6 CONNECTION JUMP 1'
+    for(int i=0;i<6;i++)
+    {
+        pmHexagonTile t;
+        t.addConnection(i%6, (i+1)%6);
+        t.addConnection((i+1)%6, (i+2)%6);
+        t.addConnection((i+2)%6, (i+3)%6);
+        t.addConnection((i+3)%6, (i+4)%6);
+        t.addConnection((i+4)%6, (i+5)%6);
+        t.addConnection((i+5)%6, (i+6)%6);
+        hexagonTiles.push_back(t);
+    }
+    // 1 CONNECTION JUMP 2
+    for(int i=0;i<6;i++)
+    {
+        pmHexagonTile t;
+        t.addConnection(i%6, (i+2)%6);
+        hexagonTiles.push_back(t);
+    }
+    // 2 CONNECTION JUMP 2
+    for(int i=0;i<6;i++)
+    {
+        pmHexagonTile t;
+        t.addConnection(i%6, (i+2)%6);
+        t.addConnection((i+2)%6, (i+4)%6);
+        hexagonTiles.push_back(t);
+    }
+    // 2 CONNECTION JUMP 2'
+    for(int i=0;i<6;i++)
+    {
+        pmHexagonTile t;
+        t.addConnection(i%6, (i+2)%6);
+        t.addConnection((i+3)%6, (i+5)%6);
+        hexagonTiles.push_back(t);
+    }
+    // 2 CONNECTION JUMP 2''
+    for(int i=0;i<6;i++)
+    {
+        pmHexagonTile t;
+        t.addConnection(i%6, (i+2)%6);
+        t.addConnection((i+1)%6, (i+3)%6);
+        hexagonTiles.push_back(t);
+    }
+    // 3 CONNECTION JUMP 2
+    for(int i=0;i<6;i++)
+    {
+        pmHexagonTile t;
+        t.addConnection(i%6, (i+2)%6);
+        t.addConnection((i+2)%6, (i+4)%6);
+        t.addConnection((i+4)%6, (i+6)%6);
+        hexagonTiles.push_back(t);
+    }
+    // 3 CONNECTION JUMP 2
+    for(int i=0;i<6;i++)
+    {
+        pmHexagonTile t;
+        t.addConnection(i%6, (i+2)%6);
+        t.addConnection((i+3)%6, (i+5)%6);
+        t.addConnection((i+5)%6, (i+7)%6);
+        hexagonTiles.push_back(t);
+    }
+    // 3 CONNECTION JUMP 2
+    for(int i=0;i<6;i++)
+    {
+        pmHexagonTile t;
+        t.addConnection(i%6, (i+2)%6);
+        t.addConnection((i+1)%6, (i+3)%6);
+        t.addConnection((i+3)%6, (i+5)%6);
+        hexagonTiles.push_back(t);
+    }
+    // 3 CONNECTION JUMP 2
+    for(int i=0;i<6;i++)
+    {
+        pmHexagonTile t;
+        t.addConnection(i%6, (i+2)%6);
+        t.addConnection((i+1)%6, (i+3)%6);
+        t.addConnection((i+2)%6, (i+4)%6);
+        hexagonTiles.push_back(t);
+    }
+    // 1 CONNECTION JUMP 3
+    for(int i=0;i<6;i++)
+    {
+        pmHexagonTile t;
+        t.addConnection(i%6, (i+3)%6);
+        hexagonTiles.push_back(t);
+    }
+    // 2 CONNECTION JUMP 3
+    for(int i=0;i<6;i++)
+    {
+        pmHexagonTile t;
+        t.addConnection(i%6, (i+3)%6);
+        t.addConnection((i+1)%6, (i+4)%6);
+        hexagonTiles.push_back(t);
+    }
+    // 3 CONNECTION JUMP 3
+    for(int i=0;i<6;i++)
+    {
+        pmHexagonTile t;
+        t.addConnection(i%6, (i+3)%6);
+        t.addConnection((i+1)%6, (i+4)%6);
+        t.addConnection((i+2)%6, (i+5)%6);
+        hexagonTiles.push_back(t);
+    }
+
+    // COMBOS
+    for(int i=0;i<6;i++)
+    {
+        pmHexagonTile t;
+        t.addConnection(i%6, (i+1)%6);
+        t.addConnection((i)%6, (i+2)%6);
+        t.addConnection((i)%6, (i+3)%6);
+        hexagonTiles.push_back(t);
+    }
+    // COMBOS '
+    for(int i=0;i<6;i++)
+    {
+        pmHexagonTile t;
+        t.addConnection(i%6, (i+1)%6);
+        t.addConnection((i)%6, (i+2)%6);
+        t.addConnection((i+1)%6, (i+4)%6);
+        hexagonTiles.push_back(t);
+    }
+    // COMBOS '
+    for(int i=0;i<6;i++)
+    {
+        pmHexagonTile t;
+        t.addConnection(i%6, (i+1)%6);
+        t.addConnection((i+1)%6, (i+2)%6);
+        t.addConnection((i+1)%6, (i+4)%6);
+        hexagonTiles.push_back(t);
+    }
+    // COMBOS '
+    for(int i=0;i<6;i++)
+    {
+        pmHexagonTile t;
+        t.addConnection(i%6, (i+1)%6);
+        t.addConnection((i+0)%6, (i+1)%6);
+        t.addConnection((i+0)%6, (i+2)%6);
+        t.addConnection((i+0)%6, (i+3)%6);
+        t.addConnection((i+0)%6, (i+4)%6);
+        t.addConnection((i+0)%6, (i+5)%6);
+        hexagonTiles.push_back(t);
+    }
+
+    // MERGING sample
+    hexagonTiles.push_back(hexagonTiles[0].mergeTileData(hexagonTiles[1]));
 }

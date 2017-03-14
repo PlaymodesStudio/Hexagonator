@@ -151,7 +151,6 @@ class ofApp : public ofBaseApp{
     // init ribs vector
     // each "rib" is 2 x ofVec2f with the coordinates of the segment of each rib [Vert.Left , Vert.Right]
     vector<vector<ofVec3f>> ribs;
-
     vector<pmHexagonTile>   hexagonTiles;
     
     int numSteps;
@@ -168,6 +167,7 @@ class ofApp : public ofBaseApp{
     void                    calculateRibs();
     void                    calculateVboData();
     void                    calculateSides();
+    void                    calculateTilePatterns();
     
     // DATA VECTORS
     vector<ofVec3f>         vertexsRibbon;

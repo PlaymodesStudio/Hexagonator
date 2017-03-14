@@ -12,6 +12,11 @@
 #include <stdio.h>
 #include "ofMain.h"
 
+typedef struct
+{
+    int startsAt;
+    int endsAt;
+}tileData;
 
 class pmHexagonTile
 {
@@ -19,13 +24,17 @@ class pmHexagonTile
     
     pmHexagonTile();
     
-    bool                    hasConnectionOnSide(int s);
+    int                     howManyConnections();
+    //bool                    hasConnectionOnSide(int s);
     void                    resetConnections();
     void                    addConnection(int i, int j);
+    tileData                getConnection(int n);
+    pmHexagonTile           mergeTileData(pmHexagonTile t);
+    vector<tileData>        getConnections(){return connections;};
     
     private :
     
-    vector<vector<bool>>    connections;
+    vector<tileData>        connections;
     vector<bool>            connectedSides;
 };
 
