@@ -19,7 +19,7 @@ void main()
         else out_color = texture(uTexture, vTexCoord);
     }
     else if(u_modulo==4) out_color = vec4(1.0,1.0,1.0,1.0);
-    else if(u_modulo==96) out_color = vec4(1.0,1.0,0.0,1.0);
+    else if(u_modulo==96) out_color = vec4(1.0,1.0,1.0,1.0);
     else out_color = vec4(1.0,0.0,1.0,1.0);
 //    out_color = texelFetch(uTexture,vTexCoord,0);
 //    out_color = texelFetch(uTexture, ivec2(0.3,0.3),0);

@@ -22,7 +22,8 @@ enum sourceType
 {
     HEX_SOURCE_TEXTURE = 0,
     HEX_SOURCE_QUADS = 1,
-    HEX_SOURCE_CUCS = 2
+    HEX_SOURCE_CUCS = 2,
+    HEX_SOURCE_RANDOM = 3
 };
 
 
@@ -53,7 +54,18 @@ class ofApp : public ofBaseApp{
 		void windowResized(int w, int h);
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
-		
+	
+    ///
+    void processQuads();
+    void processCucs();
+    void processHexagons();
+    void buildTBOs();
+    // MATRIX DATA UPDATE
+    void                    updateMatrices();
+    void                    updateCubeColors();
+    void                    updateVertexsForQuad();
+    void                    updateCucs();
+
     /// SVG
     string              svgFilename;
     ofxSVG              svg;
@@ -176,9 +188,6 @@ class ofApp : public ofBaseApp{
     ofShader                shader;
     bool                    useShader;
     
-    // MATRIX DATA UPDATE
-    void                    updateMatrices();
-    void                    updateCubeColors();
     // TBO : Texture Buffer Object used to give encoded data to Shader as a texture
     ofTexture               texTransform;
     ofBufferObject          bufferTransform;
@@ -195,7 +204,6 @@ class ofApp : public ofBaseApp{
     vector<ofPoint>         reverseVerticesInVector(vector<ofPoint> _v);
     vector<ofPoint>         orderVerticesOfHexagonBasedOnDistanceToOrigin(vector<ofPoint> _v);
     void                    orderHexagonOnRingsAndIds(int _index);
-    void                    updateVertexsForQuad();
     
     // VIDEO RECORDING
     ofxVideoRecorder        videoRecorder;

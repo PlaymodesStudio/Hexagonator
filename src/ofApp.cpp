@@ -32,7 +32,6 @@ void ofApp::setup(){
     /// GUI
     /////////////////////////////
     
-    // GUI VARS
     dropdown_whichTextureSource = HEX_TEXTURE_VIDEO; // image as initial texture source
     dropdown_whichTexCoord = 0 ;
     
@@ -60,11 +59,7 @@ void ofApp::setup(){
     
     
     parametersControl::getInstance().createGuiFromParams(parametersRecording, ofColor::white);
-    //parametersControl::getInstance().createGuiFromParams(parameters, ofColor::orange);
     parametersControl::getInstance().setup();
-    
-    
-    
     
     
     /////////////////////////////
@@ -205,248 +200,24 @@ void ofApp::setup(){
     /// VBO TEXTURE
     /////////////////////////////
     
-    // prepare vectors of data for vboTex. * 7 as we'll have 7 vertexs per each hexagon ... center + 6 sides.
-    int nVerts = hexagonCanvas.getNumHexagons()*7;
-    vecVboTex_Verts.resize(nVerts);
-    vecVboTex_Colors.resize(nVerts);
-    vecVboTex_Faces.resize(nVerts*3);
-    vecVboTex_TexCoords.resize(2);
-    for(int i=0;i<vecVboTex_TexCoords.size();i++)
-    {
-        vecVboTex_TexCoords[i].resize(nVerts);
-    }
-    
-    vecVboTex_Verts = hexagonCanvas.getVertexData();
-    
-    ////////////////////////////////////////
-    /// GENERATE TEXTURE COORDINATES DATA !!
-    ////////////////////////////////////////
-    
-    // vector<ofVec2f> vecTexCoord
-    // try to get centroid data to convert it to texCoord of centroids (we need 2 way of texCoord ... based on Rings and based on Centroids)
-    // we got 1 centroid per path = 2735 paths
-    vector<ofPoint> vCentroidPoints = hexagonCanvas.getCentroidData();
-    vector<ofVec2f> vecCentroidTexCoord;
-    vecCentroidTexCoord.resize(hexagonCanvas.getNumHexagons()*7);
-    
-    for(int i=0;i<hexagonCanvas.getNumHexagons();i++)
-    {
-        for(int j=0;j<7;j++)
-        {
-            vecCentroidTexCoord[(i*7)+j] = vCentroidPoints[i] / 1200.0 ;
-        }
-    }
-    
-    /// STORE DATA INTO VECTORS FOR VBO_TEX
-    //////////////////////////////////////////
-    
-    // index 1 we store the texcoords "normal" ... flat texture mapping
-    vecVboTex_TexCoords[1] = vecCentroidTexCoord;
-    // index 0 we store the texcoords "ring and id" mode
-    vecVboTex_TexCoords[0] = hexagonCanvas.getTextureCoords();
-    vecVboTex_Colors = hexagonCanvas.getColorData();
-    vecVboTex_Faces = hexagonCanvas.getFaceData();
-    
-    /// FILL VBO TEX DATA
-    //////////////////////
-    vboTex.setVertexData(vecVboTex_Verts.data(),vecVboTex_Verts.size(),GL_DYNAMIC_DRAW);
-    vboTex.setTexCoordData(vecVboTex_TexCoords[0].data(), vecVboTex_TexCoords[0].size(), GL_DYNAMIC_DRAW);
-    vboTex.setColorData(vecVboTex_Colors.data(), vecVboTex_Colors.size(), GL_DYNAMIC_DRAW);
-    vboTex.setIndexData(vecVboTex_Faces.data(), vecVboTex_Faces.size(), GL_DYNAMIC_DRAW);
-    
+    processHexagons();
     
     ///////////////////
     /// PM VBO QUADS
     ///////////////////
-    {
-        
-        int numRibbons = hexagonCanvas.getNumHexagons();
-        int numRibbonVertexs = hexagonCanvas.getNumHexagons()*4;
-        
-        // VERTEXS
-        vecVboQuads_Verts.resize(numRibbonVertexs);
-        vboQuads.setVertexData(vecVboQuads_Verts.data(),vecVboQuads_Verts.size(),GL_DYNAMIC_DRAW);
-        
-        // TEXTURE COORDS
-        //    vector<ofVec2f> ribbonTexCoords;
-        //    ribbonTexCoords.resize(numRibbons*4);
-        //    for(int i=0;i<numRibbons;i++)
-        //    {
-        //        for(int j=0;j<4;j++)
-        //        {
-        //            ribbonTexCoords[(i*4)+j] = vCentroidPoints[i] / 1200.0 ;
-        //        }
-        //    }
-        //    pmVboRibbon.setTexCoordsData(vecCentroidTexCoord,1);
-        
-        // COLORS
-        vecVboQuads_Colors.resize(numRibbonVertexs);
-        for(int i=0;i<vecVboQuads_Colors.size();i++)
-        {
-            vecVboQuads_Colors[i] = ofFloatColor(1.0,1.0,1.0,1.0);
-        }
-        vboQuads.setColorData(vecVboQuads_Colors.data(), vecVboQuads_Colors.size(), GL_DYNAMIC_DRAW);
-        
-        // INDEXS
-        vecVboQuads_Indexs.resize(numRibbons*6);
-        for(int i=0;i<numRibbons;i++)
-        {
-            vecVboQuads_Indexs[(i*6)+0] = (i*4)+0;
-            vecVboQuads_Indexs[(i*6)+1] = (i*4)+1;
-            vecVboQuads_Indexs[(i*6)+2] = (i*4)+2;
-            vecVboQuads_Indexs[(i*6)+3] = (i*4)+0;
-            vecVboQuads_Indexs[(i*6)+4] = (i*4)+2;
-            vecVboQuads_Indexs[(i*6)+5] = (i*4)+3;
-        }
-        vboQuads.setIndexData(vecVboQuads_Indexs.data(), vecVboQuads_Indexs.size(), GL_DYNAMIC_DRAW);
-        
-    }
     
+    processQuads();
+    
+    ///////////////////
     // VBO CUCS STUFF
     ///////////////////
-    
-    // inits
-    int numCucs = hexagonCanvas.getNumHexagons();
-    startSide = 0;
-    endSide = 1;
-    numSteps = 8;
-    widthPct = 0.20;
-    lastFaceAddedToCucs=0;
-    
-    
-    // TILES
-    calculateTilePatterns();
-    
-    // we put the vbo data of each hexagon cuc into a temp vector that will be inserted(appended) on the vecVboCucs_Verts
-    // resize temp vectors that are recalculated for each hexaogn cuc
-    int numMaxOfCucsInOneHexagon = 6;
-    
-    
-    
-    for(int i=0;i<hexagonCanvas.getNumHexagons();i++)
-    {
-        // for each hexagon ....
-        // clear and resizing data
-        hexaPoints.clear();
-        hexaSides.clear();
-        hexaPoints.resize(6,ofVec3f(0,0,0));
-        hexaSides.resize(6);
-        
-        // define HEXAGON POINTS
-        // add them to the hexagon
-        for(int j=0;j<6;j++)
-        {
-            hexaPoints[j] = vecVboTex_Verts[(i*7)+j+1]; //+1 because vecVbo[0s] are centroids?
-        }
-        // CALCULATE SIDES (SAME FOR EVERY HEXAGON)
-        calculateSides();
-        ofVec2f idRing = hexagonCanvas.getHexagonIdAndRing(i);
 
-        int maxCucsInOneHexagon = 6;
-        int numCucsActualHexagon = 1; //int(ofRandom(0, 6));
-        for(int k=0;k<maxCucsInOneHexagon;k++)
-        {
-            vecTempVbo_Verts.resize(numSteps*2,ofVec3f(0,0,0));
-            vecTempVbo_Colors.resize(vecTempVbo_Verts.size()),ofFloatColor(0.0,1.0,1.0);
-            vecTempVbo_TexCoords.resize(vecTempVbo_Verts.size(),ofVec2f(0,0));
-            vecTempVbo_Faces.resize((numSteps-1)*2*3,0);
-            
-            if(k<numCucsActualHexagon)
-            {
-                // this is a user defined cuc ... take it normally
-                sampledPoints.clear();
-                ribs.clear();
-                sampledPoints.resize(numSteps);
-                ribs.resize(numSteps);
-                for(int i=0;i<numSteps;i++)
-                {
-                    ribs[i].resize(2);
-                }
-                
-                if(int(idRing.y)%2==0)
-                {
-                        startSide = 0;
-                        endSide =3;
-                    
-                }
-                else
-                {
-                    startSide = 2;
-                    endSide =5;
-                }
-            
-                // STEPS
-                calculateStartEndPointsAndCurve();
-                calculateRibs();
-                calculateVboData();
-
-            }
-            else
-            {
-                // fill with "void" cucs
-                lastFaceAddedToCucs=lastFaceAddedToCucs + ((numSteps)*2);
-
-            }
-            // inserting calculated hexagon cuc into vectors that will feed the vboCucs
-            vecVboCucs_Verts.insert(vecVboCucs_Verts.end(), vecTempVbo_Verts.begin(), vecTempVbo_Verts.end());
-            vecVboCucs_Faces.insert(vecVboCucs_Faces.end(), vecTempVbo_Faces.begin(), vecTempVbo_Faces.end());
-            vecVboCucs_Colors.insert(vecVboCucs_Colors.end(), vecTempVbo_Colors.begin(), vecTempVbo_Colors.end());
-            vecVboCucs_TexCoords.insert(vecVboCucs_TexCoords.end(), vecTempVbo_TexCoords.begin(), vecTempVbo_TexCoords.end());
-
-        }
-        
-
-    }
-    // FILL DATA INTO VBO CUCS
-    vboCucs.setVertexData(vecVboCucs_Verts.data(), vecVboCucs_Verts.size(),GL_DYNAMIC_DRAW);
-    vboCucs.setIndexData(vecVboCucs_Faces.data(), vecVboCucs_Faces.size(),GL_DYNAMIC_DRAW);
-    vboCucs.setColorData(vecVboCucs_Colors.data(), vecVboCucs_Colors.size(),GL_DYNAMIC_DRAW);
-    vboCucs.setTexCoordData(vecVboCucs_TexCoords.data(), vecVboCucs_TexCoords.size(),GL_DYNAMIC_DRAW);
-    
-    cout << "vboCucs sizes _ Verts = " << vecVboCucs_Verts.size() << " Faces = " << vecVboCucs_Verts.size() << endl;
-    
+    processCucs();
     
     /// TRANSFORM TBO STUFF (Texture Buffer Object)
     ///////////////////////////////////////////////
     
-    {
-        
-        matricesTransform.resize(hexagonCanvas.getNumHexagons());
-        
-        // upload the transformation for each box using a
-        // texture buffer.
-        // for that we need to upload the matrices to the buffer
-        // and allocate the texture using it
-        bufferTransform.allocate();
-        bufferTransform.bind(GL_TEXTURE_BUFFER);
-        bufferTransform.setData(matricesTransform,GL_STREAM_DRAW);
-        
-        // using GL_RGBA32F allows to read each row of each matrix
-        // as a float vec4 from the shader.
-        // Note that we're allocating the texture as a Buffer Texture:
-        // https://www.opengl.org/wiki/Buffer_Texture
-        texTransform.allocateAsBufferTexture(bufferTransform,GL_RGBA32F);
-        
-        /// CUBIC COLORS TBO STUFF (Texture Buffer Object)
-        //////////////////////////////////////////////////
-        
-        matricesCubeColors.resize(hexagonCanvas.getNumHexagons() * 3);
-        
-        // upload the
-        // texture buffer.
-        // for that we need to upload the matrices to the buffer
-        // and allocate the texture using it
-        bufferCubeColors.allocate();
-        bufferCubeColors.bind(GL_TEXTURE_BUFFER);
-        bufferCubeColors.setData(matricesCubeColors,GL_STREAM_DRAW);
-        
-        // using GL_RGBA32F allows to read each row of each matrix
-        // as a float vec4 from the shader.
-        // Note that we're allocating the texture as a Buffer Texture:
-        // https://www.opengl.org/wiki/Buffer_Texture
-        texCubeColors.allocateAsBufferTexture(bufferCubeColors,GL_RGBA32F);
-        
-    }
+    buildTBOs();
     
     /// SHADER INITS
     ////////////////
@@ -692,9 +463,15 @@ void ofApp::update()
         updateMatrices();
         updateVertexsForQuad();
     }
-    else
+    else if(dropdown_whichSource == HEX_SOURCE_TEXTURE)
     {
         // HEX_SOURCE_TEXTURE
+        updateOsc();
+        updateMatrices();
+        updateCubeColors();
+    }
+    else if(dropdown_whichSource == HEX_SOURCE_CUCS)
+    {
         updateOsc();
         updateMatrices();
         updateCubeColors();
@@ -1466,7 +1243,6 @@ void ofApp::calculateVboData()
         
     }
     lastFaceAddedToCucs=lastFaceAddedToCucs + ((numSteps)*2);
-    cout << "Last Face Added : " << lastFaceAddedToCucs << endl;
     
     
     for(int i=0;i<vecTempVbo_Faces.size();i++)
@@ -1518,6 +1294,7 @@ void ofApp::calculateSides()
 //--------------------------------------------------------------
 void ofApp::calculateTilePatterns()
 {
+    
     // 1 CONNECTION JUMP 1
     for(int i=0;i<6;i++)
     {
@@ -1729,7 +1506,7 @@ void ofApp::calculateTilePatterns()
         t.addConnection((i+2)%6, (i+5)%6);
         hexagonTiles.push_back(t);
     }
-
+    
     // COMBOS
     for(int i=0;i<6;i++)
     {
@@ -1769,7 +1546,435 @@ void ofApp::calculateTilePatterns()
         t.addConnection((i+0)%6, (i+5)%6);
         hexagonTiles.push_back(t);
     }
+    
+    // DR KING HEXAGONAL STUDY
+    // 0,0
+    {
+        pmHexagonTile t;
+        t.addConnection(0,2);
+        t.addConnection(1,3);
+        t.addConnection(4,5);
+        
+        hexagonTiles.push_back(t);
+    }
+    // 0,1
+    {
+        pmHexagonTile t;
+        t.addConnection(0,2);
+        t.addConnection(5,1);
+        t.addConnection(3,4);
+        
+        hexagonTiles.push_back(t);
+    }
+    // 0,2
+    {
+        pmHexagonTile t;
+        t.addConnection(1,5);
+        t.addConnection(0,4);
+        t.addConnection(2,3);
+        
+        hexagonTiles.push_back(t);
+    }
+    // 0,3
+    {
+        pmHexagonTile t;
+        t.addConnection(3,5);
+        t.addConnection(0,4);
+        t.addConnection(1,2);
+        
+        hexagonTiles.push_back(t);
+    }
+    // 0,4
+    {
+        pmHexagonTile t;
+        t.addConnection(2,4);
+        t.addConnection(3,5);
+        t.addConnection(0,1);
+        
+        hexagonTiles.push_back(t);
+    }
+    // 0,5
+    {
+        pmHexagonTile t;
+        t.addConnection(1,3);
+        t.addConnection(2,4);
+        t.addConnection(5,0);
+        
+        hexagonTiles.push_back(t);
+    }
+    // 0,5
+    {
+        pmHexagonTile t;
+        t.addConnection(1,3);
+        t.addConnection(2,4);
+        t.addConnection(5,0);
+        
+        hexagonTiles.push_back(t);
+    }
+    // 1,0
+    {
+        pmHexagonTile t;
+        t.addConnection(2,3);
+        t.addConnection(4,5);
+        t.addConnection(0,1);
+        
+        hexagonTiles.push_back(t);
+    }
+    // 1,1
+    {
+        pmHexagonTile t;
+        t.addConnection(1,2);
+        t.addConnection(3,4);
+        t.addConnection(5,0);
+        
+        hexagonTiles.push_back(t);
+    }
+    // 2,0
+    {
+        pmHexagonTile t;
+        t.addConnection(2,5);
+        t.addConnection(1,3);
+        t.addConnection(0,4);
+        
+        hexagonTiles.push_back(t);
+    }
+    // 2,1
+    {
+        pmHexagonTile t;
+        t.addConnection(1,4);
+        t.addConnection(0,2);
+        t.addConnection(3,5);
+        
+        hexagonTiles.push_back(t);
+    }
+    // 2,2
+    {
+        pmHexagonTile t;
+        t.addConnection(0,3);
+        t.addConnection(1,5);
+        t.addConnection(2,4);
+        
+        hexagonTiles.push_back(t);
+    }
+    // 3,0
+    {
+        pmHexagonTile t;
+        t.addConnection(2,5);
+        t.addConnection(3,4);
+        t.addConnection(0,1);
+        
+        hexagonTiles.push_back(t);
+    }
+    // 3,1
+    {
+        pmHexagonTile t;
+        t.addConnection(1,4);
+        t.addConnection(2,3);
+        t.addConnection(5,0);
+        
+        hexagonTiles.push_back(t);
+    }
+    // 3,2
+    {
+        pmHexagonTile t;
+        t.addConnection(0,3);
+        t.addConnection(1,2);
+        t.addConnection(4,5);
+        
+        hexagonTiles.push_back(t);
+    }
+    // 4,0
+    {
+        pmHexagonTile t;
+        t.addConnection(2,5);
+        t.addConnection(1,4);
+        t.addConnection(0,3);
+        
+        hexagonTiles.push_back(t);
+    }
+    // fill 2 void
+    {
+        pmHexagonTile t;
+        
+        hexagonTiles.push_back(t);
+    }
+    // fill 2 void
+    {
+        pmHexagonTile t;
+        
+        hexagonTiles.push_back(t);
+    }
+    
 
     // MERGING sample
     hexagonTiles.push_back(hexagonTiles[0].mergeTileData(hexagonTiles[1]));
 }
+
+//--------------------------------------------------------------
+void ofApp::processQuads()
+{
+        
+        int numRibbons = hexagonCanvas.getNumHexagons();
+        int numRibbonVertexs = hexagonCanvas.getNumHexagons()*4;
+        
+        // VERTEXS
+        vecVboQuads_Verts.resize(numRibbonVertexs);
+        vboQuads.setVertexData(vecVboQuads_Verts.data(),vecVboQuads_Verts.size(),GL_DYNAMIC_DRAW);
+        
+        // TEXTURE COORDS
+        //    vector<ofVec2f> ribbonTexCoords;
+        //    ribbonTexCoords.resize(numRibbons*4);
+        //    for(int i=0;i<numRibbons;i++)
+        //    {
+        //        for(int j=0;j<4;j++)
+        //        {
+        //            ribbonTexCoords[(i*4)+j] = vCentroidPoints[i] / 1200.0 ;
+        //        }
+        //    }
+        //    pmVboRibbon.setTexCoordsData(vecCentroidTexCoord,1);
+        
+        // COLORS
+        vecVboQuads_Colors.resize(numRibbonVertexs);
+        for(int i=0;i<vecVboQuads_Colors.size();i++)
+        {
+            vecVboQuads_Colors[i] = ofFloatColor(1.0,1.0,1.0,1.0);
+        }
+        vboQuads.setColorData(vecVboQuads_Colors.data(), vecVboQuads_Colors.size(), GL_DYNAMIC_DRAW);
+        
+        // INDEXS
+        vecVboQuads_Indexs.resize(numRibbons*6);
+        for(int i=0;i<numRibbons;i++)
+        {
+            vecVboQuads_Indexs[(i*6)+0] = (i*4)+0;
+            vecVboQuads_Indexs[(i*6)+1] = (i*4)+1;
+            vecVboQuads_Indexs[(i*6)+2] = (i*4)+2;
+            vecVboQuads_Indexs[(i*6)+3] = (i*4)+0;
+            vecVboQuads_Indexs[(i*6)+4] = (i*4)+2;
+            vecVboQuads_Indexs[(i*6)+5] = (i*4)+3;
+        }
+        vboQuads.setIndexData(vecVboQuads_Indexs.data(), vecVboQuads_Indexs.size(), GL_DYNAMIC_DRAW);
+        
+
+   
+}
+
+//---------------------------------------------------------------------------
+void ofApp::buildTBOs()
+{
+    
+    matricesTransform.resize(hexagonCanvas.getNumHexagons());
+    
+    // upload the transformation for each box using a
+    // texture buffer.
+    // for that we need to upload the matrices to the buffer
+    // and allocate the texture using it
+    bufferTransform.allocate();
+    bufferTransform.bind(GL_TEXTURE_BUFFER);
+    bufferTransform.setData(matricesTransform,GL_STREAM_DRAW);
+    
+    // using GL_RGBA32F allows to read each row of each matrix
+    // as a float vec4 from the shader.
+    // Note that we're allocating the texture as a Buffer Texture:
+    // https://www.opengl.org/wiki/Buffer_Texture
+    texTransform.allocateAsBufferTexture(bufferTransform,GL_RGBA32F);
+    
+    /// CUBIC COLORS TBO STUFF (Texture Buffer Object)
+    //////////////////////////////////////////////////
+    
+    matricesCubeColors.resize(hexagonCanvas.getNumHexagons() * 3);
+    
+    // upload the
+    // texture buffer.
+    // for that we need to upload the matrices to the buffer
+    // and allocate the texture using it
+    bufferCubeColors.allocate();
+    bufferCubeColors.bind(GL_TEXTURE_BUFFER);
+    bufferCubeColors.setData(matricesCubeColors,GL_STREAM_DRAW);
+    
+    // using GL_RGBA32F allows to read each row of each matrix
+    // as a float vec4 from the shader.
+    // Note that we're allocating the texture as a Buffer Texture:
+    // https://www.opengl.org/wiki/Buffer_Texture
+    texCubeColors.allocateAsBufferTexture(bufferCubeColors,GL_RGBA32F);
+    
+}
+
+
+//---------------------------------------------------------------------------
+void ofApp::processHexagons()
+{
+    // prepare vectors of data for vboTex. * 7 as we'll have 7 vertexs per each hexagon ... center + 6 sides.
+    int nVerts = hexagonCanvas.getNumHexagons()*7;
+    vecVboTex_Verts.resize(nVerts);
+    vecVboTex_Colors.resize(nVerts);
+    vecVboTex_Faces.resize(nVerts*3);
+    vecVboTex_TexCoords.resize(2);
+    for(int i=0;i<vecVboTex_TexCoords.size();i++)
+    {
+        vecVboTex_TexCoords[i].resize(nVerts);
+    }
+    
+    vecVboTex_Verts = hexagonCanvas.getVertexData();
+    
+    ////////////////////////////////////////
+    /// GENERATE TEXTURE COORDINATES DATA !!
+    ////////////////////////////////////////
+    
+    // vector<ofVec2f> vecTexCoord
+    // try to get centroid data to convert it to texCoord of centroids (we need 2 way of texCoord ... based on Rings and based on Centroids)
+    // we got 1 centroid per path = 2735 paths
+    vector<ofPoint> vCentroidPoints = hexagonCanvas.getCentroidData();
+    vector<ofVec2f> vecCentroidTexCoord;
+    vecCentroidTexCoord.resize(hexagonCanvas.getNumHexagons()*7);
+    
+    for(int i=0;i<hexagonCanvas.getNumHexagons();i++)
+    {
+        for(int j=0;j<7;j++)
+        {
+            vecCentroidTexCoord[(i*7)+j] = vCentroidPoints[i] / 1200.0 ;
+        }
+    }
+    
+    /// STORE DATA INTO VECTORS FOR VBO_TEX
+    //////////////////////////////////////////
+    
+    // index 1 we store the texcoords "normal" ... flat texture mapping
+    vecVboTex_TexCoords[1] = vecCentroidTexCoord;
+    // index 0 we store the texcoords "ring and id" mode
+    vecVboTex_TexCoords[0] = hexagonCanvas.getTextureCoords();
+    vecVboTex_Colors = hexagonCanvas.getColorData();
+    vecVboTex_Faces = hexagonCanvas.getFaceData();
+    
+    /// FILL VBO TEX DATA
+    //////////////////////
+    vboTex.setVertexData(vecVboTex_Verts.data(),vecVboTex_Verts.size(),GL_DYNAMIC_DRAW);
+    vboTex.setTexCoordData(vecVboTex_TexCoords[0].data(), vecVboTex_TexCoords[0].size(), GL_DYNAMIC_DRAW);
+    vboTex.setColorData(vecVboTex_Colors.data(), vecVboTex_Colors.size(), GL_DYNAMIC_DRAW);
+    vboTex.setIndexData(vecVboTex_Faces.data(), vecVboTex_Faces.size(), GL_DYNAMIC_DRAW);
+    
+}
+//---------------------------------------------------------------------------
+void ofApp::processCucs()
+{
+    
+    vecVboCucs_Verts.clear();
+    vecVboCucs_Faces.clear();
+    vecVboCucs_Colors.clear();
+    vecVboCucs_TexCoords.clear();
+
+    // inits
+    int numCucs = hexagonCanvas.getNumHexagons();
+    startSide = 0;
+    endSide = 1;
+    numSteps = 8;
+    widthPct = 0.05;
+    lastFaceAddedToCucs=0;
+    
+    
+    // TILES
+    calculateTilePatterns();
+    
+    // we put the vbo data of each hexagon cuc into a temp vector that will be inserted(appended) on the vecVboCucs_Verts
+    // resize temp vectors that are recalculated for each hexaogn cuc
+    int numMaxOfCucsInOneHexagon = 6;
+    
+    
+    
+    for(int i=0;i<hexagonCanvas.getNumHexagons();i++)
+    {
+        // for each hexagon ....
+        // clear and resizing data
+        hexaPoints.clear();
+        hexaSides.clear();
+        hexaPoints.resize(6,ofVec3f(0,0,0));
+        hexaSides.resize(6);
+        
+        // define HEXAGON POINTS
+        // add them to the hexagon
+        for(int j=0;j<6;j++)
+        {
+            hexaPoints[j] = vecVboTex_Verts[(i*7)+j+1]; //+1 because vecVbo[0s] are centroids?
+        }
+        // CALCULATE SIDES (SAME FOR EVERY HEXAGON)
+        calculateSides();
+        ofVec2f idRing = hexagonCanvas.getHexagonIdAndRing(i);
+        
+        int choosedPattern = int(ofRandom(168,183));
+        //        if(int(idRing.y)%3==0)
+        //        {
+        //            if(int(idRing.x)%2==0)
+        //            {
+        //                choosedPattern = 134;
+        //            }
+        //            else if(int(idRing.x)%2==1)
+        //            {
+        //                choosedPattern = 126;
+        //            }
+        //        }
+        //        else
+        //        {
+        //            choosedPattern = 90;
+        //        }
+        
+        
+        
+        pmHexagonTile actualTilePattern = hexagonTiles[choosedPattern];
+        int numCucsActualHexagon = actualTilePattern.getConnections().size(); //int(ofRandom(0, 6));
+        //cout << "Get number of cucs in pattern : " << choosedPattern << " :: " << actualTilePattern.getConnections().size() << endl;
+        
+        int maxCucsInOneHexagon = 6;
+        for(int k=0;k<maxCucsInOneHexagon;k++)
+        {
+            vecTempVbo_Verts.resize(numSteps*2,ofVec3f(0,0,0));
+            vecTempVbo_Colors.resize(vecTempVbo_Verts.size()),ofFloatColor(0.0,1.0,1.0);
+            vecTempVbo_TexCoords.resize(vecTempVbo_Verts.size(),ofVec2f(0,0));
+            vecTempVbo_Faces.resize((numSteps-1)*2*3,0);
+            
+            if(k<numCucsActualHexagon)
+            {
+                // this is a user defined cuc ... take it normally
+                sampledPoints.clear();
+                ribs.clear();
+                sampledPoints.resize(numSteps);
+                ribs.resize(numSteps);
+                for(int i=0;i<numSteps;i++)
+                {
+                    ribs[i].resize(2);
+                }
+                
+                startSide = actualTilePattern.getConnections()[k].startsAt;
+                endSide = actualTilePattern.getConnections()[k].endsAt;
+                
+                // STEPS
+                calculateStartEndPointsAndCurve();
+                calculateRibs();
+                calculateVboData();
+                
+            }
+            else
+            {
+                // fill with "void" cucs
+                lastFaceAddedToCucs=lastFaceAddedToCucs + ((numSteps)*2);
+                
+            }
+            // inserting calculated hexagon cuc into vectors that will feed the vboCucs
+            vecVboCucs_Verts.insert(vecVboCucs_Verts.end(), vecTempVbo_Verts.begin(), vecTempVbo_Verts.end());
+            vecVboCucs_Faces.insert(vecVboCucs_Faces.end(), vecTempVbo_Faces.begin(), vecTempVbo_Faces.end());
+            vecVboCucs_Colors.insert(vecVboCucs_Colors.end(), vecTempVbo_Colors.begin(), vecTempVbo_Colors.end());
+            vecVboCucs_TexCoords.insert(vecVboCucs_TexCoords.end(), vecTempVbo_TexCoords.begin(), vecTempVbo_TexCoords.end());
+            
+        }
+        
+        
+    }
+    // FILL DATA INTO VBO CUCS
+    vboCucs.setVertexData(vecVboCucs_Verts.data(), vecVboCucs_Verts.size(),GL_DYNAMIC_DRAW);
+    vboCucs.setIndexData(vecVboCucs_Faces.data(), vecVboCucs_Faces.size(),GL_DYNAMIC_DRAW);
+    vboCucs.setColorData(vecVboCucs_Colors.data(), vecVboCucs_Colors.size(),GL_DYNAMIC_DRAW);
+    vboCucs.setTexCoordData(vecVboCucs_TexCoords.data(), vecVboCucs_TexCoords.size(),GL_DYNAMIC_DRAW);
+    
+    cout << "vboCucs sizes _ Verts = " << vecVboCucs_Verts.size() << " Faces = " << vecVboCucs_Verts.size() << endl;
+    
+    
+}
+
