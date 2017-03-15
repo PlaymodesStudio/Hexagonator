@@ -21,17 +21,19 @@ void ofApp::setup(){
     numHexasPerRing = 64;
     useShader = true;
     toggle_useTBOMatrix = true;
-    useCubeColors = false;
     numVertexsOneHexagonWithCenter = 7;
     numVertexsOneHexagon = 6;
     recordedFrame = 0;
     lastTimeWeReceivedOsc = 0.0;
     usingOsc = false;
+    lastRandomTime = ofGetElapsedTimeMillis();
     
     /////////////////////////////
     /// GUI
     /////////////////////////////
     
+
+    // GRAPHICS
     dropdown_whichTextureSource = HEX_TEXTURE_VIDEO; // image as initial texture source
     dropdown_whichTexCoord = 0 ;
     
@@ -39,17 +41,29 @@ void ofApp::setup(){
     parametersGraphics.add(toggle_showLayout.set("Show Layout",true));
     parametersGraphics.add(toggle_showVertices.set("Show Vertices",false));
     parametersGraphics.add(toggle_drawMask.set("Draw Mask",true));
-    parametersGraphics.add(toggle_useTBOMatrix.set("Use Matrix",true));
-    parametersControl::addDropdownToParameterGroupFromParameters(parametersGraphics,"Source",{"Texture","Quads","Cucs"},dropdown_whichSource);
     parametersControl::addDropdownToParameterGroupFromParameters(parametersGraphics,"Texture Coordinates",{"64x35","1200x1200"},dropdown_whichTexCoord);
-    parametersControl::addDropdownToParameterGroupFromParameters(parametersGraphics,"Texture Source",{"Image","Video","Syphon","Syph.Max"},dropdown_whichTextureSource);
+    parametersControl::addDropdownToParameterGroupFromParameters(parametersGraphics,"Source",{"Texture","Quads","Cucs","Random"},dropdown_whichSource);
+    parametersControl::addDropdownToParameterGroupFromParameters(parametersGraphics,"Texture Source",{"Image","Video","Syphon","Syph.Max","Cubes","Colors AB"},dropdown_whichTextureSource);
+    parametersGraphics.add(color_shaderColorA.set("Color A", ofColor::white, ofColor::white, ofColor::black));
+    parametersGraphics.add(color_shaderColorB.set("Color B", ofColor::white, ofColor::white, ofColor::black));
     
     // LISTENERS
     dropdown_whichTexCoord.addListener(this,&ofApp::changedTexCoord);
     dropdown_whichTextureSource.addListener(this,&ofApp::changedTexSource);
+    dropdown_whichSource.addListener(this,&ofApp::changedSource);
+
+    // RANDOM GUI
+    slider_howManyRandomHexagons = 1;
+    slider_decreaseRate = 0.10;
+    slider_randomPeriod = 0.250;
+    parametersRandom.setName("Random");
+    parametersRandom.add(slider_howManyRandomHexagons.set("Num.Elem.", slider_howManyRandomHexagons,0,500));
+    parametersRandom.add(slider_decreaseRate.set("Fade Out", slider_decreaseRate,0.0,0.10));
     
-    // CREATE
-    parametersControl::getInstance().createGuiFromParams(parametersGraphics, ofColor::orange);
+    
+    
+    parametersRandom.add(slider_randomPeriod.set("Period(ms)", slider_randomPeriod,0.0,1000.0));
+    
     
     // RECORDING GUI
     parametersRecording.setName("Recording");
@@ -57,9 +71,12 @@ void ofApp::setup(){
     parametersRecording.add(framesToRecord.set("frames to Rec", 100, 1, 99999));
     parametersRecording.add(recFilename.set("Filename", ofGetTimestampString()+".mov"));
     
-    
+    // CREATE
+    parametersControl::getInstance().createGuiFromParams(parametersGraphics, ofColor::orange);
     parametersControl::getInstance().createGuiFromParams(parametersRecording, ofColor::white);
+    parametersControl::getInstance().createGuiFromParams(parametersRandom, ofColor::red);
     parametersControl::getInstance().setup();
+    parametersControl::getInstance().setSliderPrecision(2,"Fade Out", 4);
     
     
     /////////////////////////////
@@ -185,7 +202,7 @@ void ofApp::setup(){
     
     //svgFilename = "./svg/test_svg_part.svg";
     svgFilename = "./svg/santi3_App.svg";
-    //svgFilename = "./svg/testSVG3Hexagons.svg";
+//    svgFilename = "./svg/testSVG9Hexagons.svg";
     //        svgFilename = "./svg/testSVG3Hexagons.svg";
     //    svgFilename = "./svg/test_svg_part_nomes2.svg";
     //    svgFilename = "./svg/testOrdreRadial.svg";
@@ -200,19 +217,25 @@ void ofApp::setup(){
     /// VBO TEXTURE
     /////////////////////////////
     
-    processHexagons();
+    prepareHexagons();
     
     ///////////////////
     /// PM VBO QUADS
     ///////////////////
     
-    processQuads();
+    prepareQuads();
     
     ///////////////////
     // VBO CUCS STUFF
     ///////////////////
 
-    processCucs();
+    prepareCucs();
+
+    ///////////////////
+    // VBO CUCS RANDOM
+    ///////////////////
+    
+    prepareRandom();
     
     /// TRANSFORM TBO STUFF (Texture Buffer Object)
     ///////////////////////////////////////////////
@@ -227,16 +250,14 @@ void ofApp::setup(){
         shader.setUniformTexture("texTransform",texTransform,0);
         shader.setUniformTexture("texCubeColors",texCubeColors,1);
         shader.setUniform1i("u_numHexags",hexagonCanvas.getNumHexagons());
-        shader.setUniform4f("u_color", ofFloatColor(1.0,0.5,0.0,1.0));
-        shader.setUniform1i("u_useMatrix", 0);
+        shader.setUniform4f("u_color", ofFloatColor(0.5,0.5,0.5,1.0));
+        shader.setUniform1i("u_source", 0);
+        shader.setUniform1i("u_textureSource", 1);
         shader.end();
     }
     
     updateMatrices();
-    
-    
-    
-    
+
     
 }
 
@@ -455,26 +476,22 @@ void ofApp::updateVertexsForQuad()
 //--------------------------------------------------------------
 void ofApp::update()
 {
+    updateOsc();
+    updateMatrices();
     
     if(dropdown_whichSource == HEX_SOURCE_QUADS )
     {
         // HEX_SOURCE_QUADS
-        updateOsc();
-        updateMatrices();
         updateVertexsForQuad();
     }
     else if(dropdown_whichSource == HEX_SOURCE_TEXTURE)
     {
         // HEX_SOURCE_TEXTURE
-        updateOsc();
-        updateMatrices();
         updateCubeColors();
     }
-    else if(dropdown_whichSource == HEX_SOURCE_CUCS)
+    else if(dropdown_whichSource == HEX_SOURCE_RANDOM)
     {
-        updateOsc();
-        updateMatrices();
-        updateCubeColors();
+        updateRandom();
     }
     
     if(dropdown_whichSource==HEX_SOURCE_TEXTURE && dropdown_whichTextureSource==HEX_TEXTURE_VIDEO && videoPlayer.isLoaded())
@@ -545,6 +562,10 @@ void ofApp::draw()
             {
                 shader.setUniform1i("u_modulo",numSteps*2*6);
             }
+            else if(dropdown_whichSource == HEX_SOURCE_RANDOM)
+            {
+                shader.setUniform1i("u_modulo",7);
+            }
             //                shader.setUniformTexture("uTexture", videoPlayer, 2);
             //                shader.setUniformTexture("uTexture", image, 2);
             //                image.bind();
@@ -556,16 +577,12 @@ void ofApp::draw()
         if (mode == 0)
         {
             ofSetColor(255);
-            shader.setUniform4f("u_color", ofFloatColor(1.0,0.5,0.0,1.0));
-            
+            shader.setUniform4f("u_colorA", ofFloatColor(color_shaderColorA->r/255.0,color_shaderColorA->g/255.0,color_shaderColorA->b/255.0,color_shaderColorA->a/255.0));
+            shader.setUniform4f("u_colorB", ofFloatColor(color_shaderColorB->r/255.0,color_shaderColorB->g/255.0,color_shaderColorB->b/255.0,color_shaderColorB->a/255.0));
+                                
             if(toggle_useTBOMatrix) shader.setUniform1i("u_useMatrix", 1);
             else shader.setUniform1i("u_useMatrix", 0);
             
-            if(useCubeColors)
-            {
-                shader.setUniform1i("u_useCubeColors", 1);
-            }
-            else shader.setUniform1i("u_useCubeColors", 0);
             
             switch(dropdown_whichSource)
             {
@@ -587,10 +604,20 @@ void ofApp::draw()
                     break;
                 }
                 case HEX_SOURCE_CUCS :
+                {
                     vboCucs.drawElements(GL_TRIANGLES, vecVboCucs_Faces.size());
                     
                     break;
+                }
+                case HEX_SOURCE_RANDOM :
+                {
+                    int numVertexsPerOneFace = 18;
+                    vboRandom.drawElements(GL_TRIANGLES,hexagonCanvas.getNumHexagons()*numVertexsPerOneFace );
+                    break;
+                }
+
             }
+            
             
         }
         else
@@ -695,28 +722,30 @@ void ofApp::draw()
     if(isRecording) ofSetColor(255,0,0);
     else ofSetColor(128);
     
+    ofVec2f stringPosition = ofVec2f(530,1100);
+    
     if(dropdown_whichSource==HEX_SOURCE_TEXTURE)
     {
         switch (dropdown_whichTextureSource)
         {
             case HEX_TEXTURE_IMAGE:
-                ofDrawBitmapString(imageFilename + " : " + ofToString(videoPlayer.getCurrentFrame()),550,30);
-                ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), 550,45);
+                ofDrawBitmapString(imageFilename + " : " + ofToString(videoPlayer.getCurrentFrame()),stringPosition);
+                ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), stringPosition + ofVec2f(0,15));
                 break;
             case HEX_TEXTURE_VIDEO:
                 if(videoPlayer.isLoaded())
                 {
                     ofDrawBitmapString(videoFilename + " // Current Frame :  " + ofToString(videoPlayer.getCurrentFrame()),550,30);
                 }
-                ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), 550,45);
+                ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), stringPosition + ofVec2f(0,15));
                 break;
             case HEX_TEXTURE_SYPHON:
-                ofDrawBitmapString("Syhpon",550,30);
-                ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), 550,45);
+                ofDrawBitmapString("Syhpon",stringPosition);
+                ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), stringPosition + ofVec2f(0,15));
                 break;
             case HEX_TEXTURE_SYPHON_MAX:
-                ofDrawBitmapString("Syhpon Max",550,30);
-                ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), 550,45);
+                ofDrawBitmapString("Syhpon Max",stringPosition);
+                ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), stringPosition + ofVec2f(0,15));
                 break;
                 
             default:
@@ -725,13 +754,18 @@ void ofApp::draw()
     }
     else if(dropdown_whichSource==HEX_SOURCE_CUCS)
     {
-        ofDrawBitmapString("CUCS" ,550,30);
-        ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), 550,45);
+        ofDrawBitmapString("CUCS" ,stringPosition);
+        ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), stringPosition + ofVec2f(0,15));
+    }
+    else if(dropdown_whichSource==HEX_SOURCE_RANDOM)
+    {
+        ofDrawBitmapString("RANDOM" ,stringPosition);
+        ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), stringPosition + ofVec2f(0,15));
     }
 
     if(isRecording)
     {
-        ofDrawBitmapString("REC : Recorded Frame : " + ofToString(recordedFrame) + " // Time : " +ofToString(ofGetElapsedTimef()), 550,60 );
+        ofDrawBitmapString("REC : Recorded Frame : " + ofToString(recordedFrame) + " // Time : " +ofToString(ofGetElapsedTimef()), stringPosition + ofVec2f(0,30) );
     }
     
     // DRAW CENTER AND CIRCLE RADIUS
@@ -882,10 +916,6 @@ void ofApp::keyPressed(int key){
     else if(key=='r')
     {
         toggle_useTBOMatrix = !toggle_useTBOMatrix;
-    }
-    else if(key=='c')
-    {
-        useCubeColors = !useCubeColors;
     }
     else if(key=='q')
     {
@@ -1117,6 +1147,41 @@ void ofApp::changedTexCoord(int &i)
 void ofApp::changedTexSource(int &i)
 {
     if(i==HEX_TEXTURE_VIDEO) videoPlayer.play();
+    
+    shader.begin();
+    shader.setUniform1i("u_textureSource", dropdown_whichTextureSource);
+    shader.end();
+
+    cout <<"Changed Texture source to " << dropdown_whichTextureSource <<endl;
+}
+
+//--------------------------------------------------------------
+void ofApp::changedSource(int &i)
+{
+    int source;
+    
+    switch (i) {
+        case HEX_SOURCE_TEXTURE:
+            source = 0;
+            break;
+        case HEX_SOURCE_QUADS:
+            source = 1;
+            break;
+        case HEX_SOURCE_CUCS:
+            source = 2;
+            break;
+        case HEX_SOURCE_RANDOM:
+            source = 3;
+            break;
+
+        default:
+            break;
+    }
+    shader.begin();
+    shader.setUniform1i("u_source", source);
+    shader.end();
+    
+    cout <<"Changed source to " << dropdown_whichSource<<endl;
 }
 
 //--------------------------------------------------------------
@@ -1129,7 +1194,7 @@ void ofApp::calculateStartEndPointsAndCurve()
     // BEZIER CURVE BASED ON START AND END POINTS
     // try to calculate the bezier control points automatically ...
     ofVec2f controlStart = ofVec2f(startPoint.x + hexaSides[startSide].y/4, startPoint.y -hexaSides[startSide].x/4 );
-    ofVec2f controlEnd = ofVec2f(endPoint.x + hexaSides[endSide].y/4    , endPoint.y - hexaSides[endSide].x/4 );
+    ofVec2f controlEnd = ofVec2f(endPoint.x + hexaSides[endSide].y/4   , endPoint.y - hexaSides[endSide].x/4 );
     
     bezierLine.clear();
     bezierLine.addVertex(startPoint);
@@ -1157,8 +1222,8 @@ void ofApp::calculateRibs()
         if(i==0)
         {
             // first rib
-            ofVec3f v = startPoint + (hexaSides[startSide] * widthPct);
-            ofVec3f w = startPoint - (hexaSides[startSide] * widthPct);
+            ofVec3f v = startPoint + (hexaSides[startSide] * cucWidth);
+            ofVec3f w = startPoint - (hexaSides[startSide] * cucWidth);
             ribs[i][0] = v;
             ribs[i][1] = w;
             
@@ -1167,8 +1232,8 @@ void ofApp::calculateRibs()
         else if(i==numSteps-1)
         {
             // last rib
-            ofVec3f v = endPoint + (hexaSides[endSide] * widthPct);
-            ofVec3f w = endPoint - (hexaSides[endSide] * widthPct);
+            ofVec3f v = endPoint + (hexaSides[endSide] * cucWidth);
+            ofVec3f w = endPoint - (hexaSides[endSide] * cucWidth);
             ribs[i][0] = w;
             ribs[i][1] = v;
             
@@ -1178,10 +1243,10 @@ void ofApp::calculateRibs()
         else
         {
             // middle ribs
-            ofVec3f vS = startPoint + (hexaSides[startSide] * widthPct);
-            ofVec3f wS = startPoint - (hexaSides[startSide] * widthPct);
-            ofVec3f vE = endPoint + (hexaSides[endSide] * widthPct);
-            ofVec3f wE = endPoint - (hexaSides[endSide] * widthPct);
+            ofVec3f vS = startPoint + (hexaSides[startSide] * cucWidth);
+            ofVec3f wS = startPoint - (hexaSides[startSide] * cucWidth);
+            ofVec3f vE = endPoint + (hexaSides[endSide] * cucWidth);
+            ofVec3f wE = endPoint - (hexaSides[endSide] * cucWidth);
             
             
             //            cout << "start rib dist = " << ofVec3f(wS-vS).length() << endl;
@@ -1245,11 +1310,11 @@ void ofApp::calculateVboData()
     lastFaceAddedToCucs=lastFaceAddedToCucs + ((numSteps)*2);
     
     
-    for(int i=0;i<vecTempVbo_Faces.size();i++)
-    {
-        //                cout << "Face : " << i << " :: " << vecVboCucs_faces[(i*3)] << " , " << vecVboCucs_faces[(i*3)+1] << " , " << vecVboCucs_faces[(i*3)+2] << endl;
-        //        cout << "FaceTemp " << i << ": " << vecTempVbo_Faces[i] << endl;
-    }
+//    for(int i=0;i<vecTempVbo_Faces.size();i++)
+//    {
+//        //                cout << "Face : " << i << " :: " << vecVboCucs_faces[(i*3)] << " , " << vecVboCucs_faces[(i*3)+1] << " , " << vecVboCucs_faces[(i*3)+2] << endl;
+//        //        cout << "FaceTemp " << i << ": " << vecTempVbo_Faces[i] << endl;
+//    }
     
     // COLORS and TEXCOORDS
     float factor;
@@ -1265,8 +1330,16 @@ void ofApp::calculateVboData()
         //                vecVboCucs_colors[i] = ofFloatColor(1.0,1.0,1.0,1.0);
         //            }
         
-        vecTempVbo_Colors[i] = ofFloatColor(1.0,1.0*factor,0.0,1.0);
-        vecTempVbo_TexCoords[i] = ofVec2f(0.5,0.5);
+//        vecTempVbo_Colors[i] = ofFloatColor(1.0,1.0*factor,0.0,1.0);
+        if(int(i/numSteps)%2)
+        {
+            vecTempVbo_Colors[i] = ofFloatColor(1.0,1.0,1.0,1.0);
+        }
+        else
+        {
+            vecTempVbo_Colors[i] = ofFloatColor(0.0,0.0,0.0,1.0);
+        }
+        vecTempVbo_TexCoords[i] = ofVec2f(vecTempVbo_Verts[i].x,vecTempVbo_Verts[i].y);
     }
     
 }
@@ -1521,7 +1594,7 @@ void ofApp::calculateTilePatterns()
     {
         pmHexagonTile t;
         t.addConnection(i%6, (i+1)%6);
-        t.addConnection((i)%6, (i+2)%6);
+        t.addConnection(i%6, (i+2)%6);
         t.addConnection((i+1)%6, (i+4)%6);
         hexagonTiles.push_back(t);
     }
@@ -1569,7 +1642,7 @@ void ofApp::calculateTilePatterns()
     // 0,2
     {
         pmHexagonTile t;
-        t.addConnection(1,5);
+        t.addConnection(5,1);
         t.addConnection(0,4);
         t.addConnection(2,3);
         
@@ -1711,7 +1784,7 @@ void ofApp::calculateTilePatterns()
 }
 
 //--------------------------------------------------------------
-void ofApp::processQuads()
+void ofApp::prepareQuads()
 {
         
         int numRibbons = hexagonCanvas.getNumHexagons();
@@ -1801,7 +1874,7 @@ void ofApp::buildTBOs()
 
 
 //---------------------------------------------------------------------------
-void ofApp::processHexagons()
+void ofApp::prepareHexagons()
 {
     // prepare vectors of data for vboTex. * 7 as we'll have 7 vertexs per each hexagon ... center + 6 sides.
     int nVerts = hexagonCanvas.getNumHexagons()*7;
@@ -1854,20 +1927,20 @@ void ofApp::processHexagons()
     
 }
 //---------------------------------------------------------------------------
-void ofApp::processCucs()
+void ofApp::prepareCucs()
 {
     
     vecVboCucs_Verts.clear();
     vecVboCucs_Faces.clear();
     vecVboCucs_Colors.clear();
     vecVboCucs_TexCoords.clear();
-
+    
     // inits
     int numCucs = hexagonCanvas.getNumHexagons();
     startSide = 0;
     endSide = 1;
-    numSteps = 8;
-    widthPct = 0.05;
+    numSteps = 16;
+    cucWidth = 0.125;
     lastFaceAddedToCucs=0;
     
     
@@ -1973,8 +2046,73 @@ void ofApp::processCucs()
     vboCucs.setColorData(vecVboCucs_Colors.data(), vecVboCucs_Colors.size(),GL_DYNAMIC_DRAW);
     vboCucs.setTexCoordData(vecVboCucs_TexCoords.data(), vecVboCucs_TexCoords.size(),GL_DYNAMIC_DRAW);
     
-    cout << "vboCucs sizes _ Verts = " << vecVboCucs_Verts.size() << " Faces = " << vecVboCucs_Verts.size() << endl;
+    cout << "vboCucs sizes _ Verts = " << vecVboCucs_Verts.size() << " Faces = " << vecVboCucs_Faces.size() << endl;
     
     
 }
 
+
+
+//---------------------------------------------------------------------------
+void ofApp::prepareRandom()
+{
+    vecVboRandom_Verts.clear();
+    vecVboRandom_Faces.clear();
+ 
+    // in Random mode we use the same ammount of data ... we just change the colors to hide/show hexagons
+    vecVboRandom_Verts.resize(vecVboTex_Verts.size());
+    vecVboRandom_Faces.resize(vecVboTex_Faces.size());
+    vecVboRandom_Colors.resize(vecVboTex_Colors.size(),ofFloatColor(0.0,0.0,0.0,1.0));
+    
+    // initialize arrays of verts and indeces
+    vecVboRandom_Verts = vecVboTex_Verts;
+    vecVboRandom_Faces = vecVboTex_Faces;
+    
+    // put some triangles to white
+    for(int i=0;i<slider_howManyRandomHexagons;i++)
+    {
+        int whichHexagonToShow = int(ofRandom(0,hexagonCanvas.getNumHexagons()));
+        int whereIsIt = (whichHexagonToShow*7);
+        for(int j=0;j<7;j++)
+        {
+            vecVboRandom_Colors[whereIsIt + j] = ofFloatColor(1.0,0.0,0.0,1.0);
+        }
+    }
+    vboRandom.setVertexData(vecVboTex_Verts.data(), vecVboTex_Verts.size(), GL_DYNAMIC_DRAW);
+    vboRandom.setIndexData(vecVboTex_Faces.data(), vecVboTex_Faces.size(), GL_DYNAMIC_DRAW);
+    vboRandom.setColorData(vecVboRandom_Colors.data(),vecVboRandom_Colors.size(),GL_DYNAMIC_DRAW);
+}
+
+
+//---------------------------------------------------------------------------
+void ofApp::updateRandom()
+{
+    // decrease all vertices colors
+    float decrease=0.75;
+    for(int i=0;i<vecVboRandom_Verts.size();i++)
+    {
+        vecVboRandom_Colors[i] = vecVboRandom_Colors[i] - slider_decreaseRate; //*((1-(vecVboRandom_Colors[i].r))*(1-(vecVboRandom_Colors[i].r)));
+//        if(vecVboRandom_Colors[i].r!=0.0) cout << slider_decreaseRate*((1-(vecVboRandom_Colors[i].r))*(1-(vecVboRandom_Colors[i].r))) << endl;
+
+    }
+    
+    if(ofGetElapsedTimeMillis()-lastRandomTime >=slider_randomPeriod)
+    {
+        // put some triangles to white
+        for(int i=0;i<slider_howManyRandomHexagons;i++)
+        {
+            int whichHexagonToShow = int(ofRandom(0,hexagonCanvas.getNumHexagons()));
+            int whereIsIt = (whichHexagonToShow*7);
+            for(int j=0;j<7;j++)
+            {
+                vecVboRandom_Colors[whereIsIt + j] = vecVboRandom_Colors[whereIsIt + j] + ofFloatColor(color_shaderColorA->r/255.0,color_shaderColorA->g/255.0,color_shaderColorA->b/255.0,color_shaderColorA->a/255.0);
+            }
+        }
+        lastRandomTime = ofGetElapsedTimeMillis();
+    }
+
+    vboRandom.updateColorData(vecVboRandom_Colors.data(),vecVboRandom_Colors.size());
+
+    
+
+}

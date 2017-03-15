@@ -675,3 +675,9 @@ void parametersControl::listenerFunction(ofAbstractParameter& e){
         
     }
 }
+
+void parametersControl::setSliderPrecision(int guiId,string sliderName, int p)
+{
+    datGuis[guiId]->getSlider(sliderName)->setPrecision(p);
+    
+}

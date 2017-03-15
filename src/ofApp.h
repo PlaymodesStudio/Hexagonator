@@ -16,7 +16,9 @@ enum sourceTextureType
     HEX_TEXTURE_IMAGE = 0,
     HEX_TEXTURE_VIDEO = 1,
     HEX_TEXTURE_SYPHON = 2,
-    HEX_TEXTURE_SYPHON_MAX = 3
+    HEX_TEXTURE_SYPHON_MAX = 3,
+    HEX_TEXTURE_CUBES = 4,
+    HEX_TEXTURE_COLOR = 5
 };
 enum sourceType
 {
@@ -56,15 +58,18 @@ class ofApp : public ofBaseApp{
 		void gotMessage(ofMessage msg);
 	
     ///
-    void processQuads();
-    void processCucs();
-    void processHexagons();
+    void prepareQuads();
+    void prepareCucs();
+    void prepareHexagons();
+    void prepareRandom();
     void buildTBOs();
+    
     // MATRIX DATA UPDATE
     void                    updateMatrices();
     void                    updateCubeColors();
     void                    updateVertexsForQuad();
     void                    updateCucs();
+    void                    updateRandom();
 
     /// SVG
     string              svgFilename;
@@ -96,7 +101,6 @@ class ofApp : public ofBaseApp{
     ofxSyphonClient         syphonMax;
     bool                    useSyphon;
     bool                    useTransformMatrix;
-    bool                    useCubeColors;
 
     
     /// OSC
@@ -125,6 +129,7 @@ class ofApp : public ofBaseApp{
     ofVbo vboTex;
     ofVbo vboQuads;
     ofVbo vboCucs;
+    ofVbo vboRandom;
     
     // VBO DATA
     vector<ofVec3f>                 vecVboTex_Verts;
@@ -141,6 +146,10 @@ class ofApp : public ofBaseApp{
     vector<ofFloatColor>            vecVboCucs_Colors;
     vector<ofVec2f>                 vecVboCucs_TexCoords;
 
+    vector<ofVec3f>                 vecVboRandom_Verts;
+    vector<ofIndexType>             vecVboRandom_Faces;
+    vector<ofFloatColor>            vecVboRandom_Colors;
+
     
     // VBO CUCS STUFF
     //////////////////////
@@ -154,7 +163,7 @@ class ofApp : public ofBaseApp{
     ofVec3f startPoint;
     ofVec3f endPoint;
     
-    float   widthPct;
+    float   cucWidth;
     float   widthStart;
     float   widthEnd;
     ofPolyline bezierLine;
@@ -180,6 +189,10 @@ class ofApp : public ofBaseApp{
     void                    calculateVboData();
     void                    calculateSides();
     void                    calculateTilePatterns();
+    
+    /// RANDOM
+    float                   lastRandomTime;
+    
     
     // DATA VECTORS
     vector<ofVec3f>         vertexsRibbon;
@@ -241,10 +254,19 @@ class ofApp : public ofBaseApp{
     ofParameter<bool>   toggle_showVertices;
     ofParameter<bool>   toggle_showLayout;
     ofParameter<bool>   toggle_useTBOMatrix;
+    ofParameter<ofColor> color_shaderColorA;
+    ofParameter<ofColor> color_shaderColorB;
     
     // LISTENERS FUNCTIONS
     void                changedTexCoord(int &i);
     void                changedTexSource(int &i);
+    void                changedSource(int &i);
+    
+    // RANDOM GUI
+    ofParameterGroup    parametersRandom;
+    ofParameter<int>    slider_howManyRandomHexagons;
+    ofParameter<float>  slider_decreaseRate;
+    ofParameter<float>  slider_randomPeriod;
     
     // RECORDING GUI
     ofParameterGroup    parametersRecording;

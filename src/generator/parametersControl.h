@@ -34,6 +34,7 @@ public:
     void draw();
     
     int getGuiWidth(){return datGui->getWidth();};
+    void setSliderPrecision(int guiId, string sliderName, int p);
     
     void onGuiButtonEvent(ofxDatGuiButtonEvent e);
     void onGuiToggleEvent(ofxDatGuiToggleEvent e);
