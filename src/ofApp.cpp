@@ -73,10 +73,12 @@ void ofApp::setup(){
     
     // CREATE
     parametersControl::getInstance().createGuiFromParams(parametersGraphics, ofColor::orange);
-    parametersControl::getInstance().createGuiFromParams(parametersRecording, ofColor::white);
     parametersControl::getInstance().createGuiFromParams(parametersRandom, ofColor::red);
+    parametersControl::getInstance().createGuiFromParams(parametersRecording, ofColor::white);
     parametersControl::getInstance().setup();
     parametersControl::getInstance().setSliderPrecision(2,"Fade Out", 4);
+    
+    parametersControl::getInstance().distributeGuis();
     
     
     /////////////////////////////
@@ -735,7 +737,7 @@ void ofApp::draw()
             case HEX_TEXTURE_VIDEO:
                 if(videoPlayer.isLoaded())
                 {
-                    ofDrawBitmapString(videoFilename + " // Current Frame :  " + ofToString(videoPlayer.getCurrentFrame()),550,30);
+                    ofDrawBitmapString(videoFilename + " // Current Frame :  " + ofToString(videoPlayer.getCurrentFrame()),stringPosition);
                 }
                 ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), stringPosition + ofVec2f(0,15));
                 break;

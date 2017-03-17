@@ -101,7 +101,7 @@ void main()
         
     }
     out_colorA = u_colorA;
-    out_colorA = color;
+    //out_colorA = color;
     
     // we output to the fragment shader the vertex color taken from vbo buffers
     out_vertexColor = color;

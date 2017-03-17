@@ -23,6 +23,18 @@ void parametersControl::createGuiFromParams(ofParameterGroup paramGroup, ofColor
     theme->color.slider.fill = guiColor;
     theme->color.textInput.text = guiColor;
     theme->color.icons = guiColor;
+    theme->stripe.visible = true;
+    theme->stripe.button = ofColor::black;
+    theme->stripe.colorPicker = ofColor::black;
+    theme->stripe.graph = ofColor::black;
+    theme->stripe.label = ofColor::black;
+    theme->stripe.matrix = ofColor::black;
+    theme->stripe.slider = ofColor::black;
+    theme->stripe.textInput = ofColor::black;
+    theme->stripe.pad2d = ofColor::black;
+    theme->stripe.toggle = ofColor::black;
+    theme->stripe.dropdown = guiColor;
+    
     tempDatGui->setTheme(theme);
     
     tempDatGui->setWidth(290);
@@ -680,4 +692,17 @@ void parametersControl::setSliderPrecision(int guiId,string sliderName, int p)
 {
     datGuis[guiId]->getSlider(sliderName)->setPrecision(p);
     
+}
+
+void parametersControl::distributeGuis()
+{
+    int lastX=0;
+    
+    for(int i=0;i<datGuis.size();i++)
+    {
+        datGuis[i]->setPosition((datGuis[i]->getWidth()*i) + (5*i) ,0);
+        lastX = (datGuis[i]->getWidth()*i) + (5*i);
+    }
+    
+    datGui->setPosition(lastX + 5 +datGui->getWidth() , 0);
 }
