@@ -37,6 +37,7 @@
 		9F5479271E64AABA00E58E71 /* parametersControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9F5479251E64AABA00E58E71 /* parametersControl.cpp */; };
 		ADE367465D2A8EBAD4C7A8D9 /* IpEndpointName.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD194746185E2DA11468377 /* IpEndpointName.cpp */; };
 		B090C9C71E76BA49004BFD38 /* pmHexagonTile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B090C9C51E76BA49004BFD38 /* pmHexagonTile.cpp */; };
+		B30D5E221E7C07B1009F9F49 /* pmHexagonTileCanvas.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B30D5E201E7C07B1009F9F49 /* pmHexagonTileCanvas.cpp */; };
 		B6F20159F002918063BEDDDB /* pmVbo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8EE6A72CBA6F103FCDCE98C2 /* pmVbo.cpp */; };
 		B88A57B4B0BA6191EF3571E9 /* ofxSvg.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B9E16009E1772C6D00B20013 /* ofxSvg.cpp */; };
 		BE7DAF3CB982C2BD0FE44648 /* ofxDatGui.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DD8F81F7AAB5BA396231DD4C /* ofxDatGui.cpp */; };
@@ -153,6 +154,8 @@
 		B0C46C251E6D76CD003BD2E8 /* shadersGL3 */ = {isa = PBXFileReference; lastKnownFileType = folder; name = shadersGL3; path = bin/data/shadersGL3; sourceTree = SOURCE_ROOT; };
 		B11DB438E2A6EBD360F8BA50 /* ofxDatGuiFRM.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = ofxDatGuiFRM.h; path = ../../../addons/ofxDatGui_PM/src/components/ofxDatGuiFRM.h; sourceTree = SOURCE_ROOT; };
 		B21E7E5F548EEA92F368040B /* tinyxml.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = tinyxml.h; path = ../../../addons/ofxXmlSettings/libs/tinyxml.h; sourceTree = SOURCE_ROOT; };
+		B30D5E201E7C07B1009F9F49 /* pmHexagonTileCanvas.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = pmHexagonTileCanvas.cpp; sourceTree = "<group>"; };
+		B30D5E211E7C07B1009F9F49 /* pmHexagonTileCanvas.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = pmHexagonTileCanvas.hpp; sourceTree = "<group>"; };
 		B31C608870ECEB2490A93736 /* ofxOscParameterSync.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = ofxOscParameterSync.h; path = ../../../addons/ofxOsc/src/ofxOscParameterSync.h; sourceTree = SOURCE_ROOT; };
 		B7B623A02730497FBCEA4FF2 /* ofxDatGuiControls.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = ofxDatGuiControls.h; path = ../../../addons/ofxDatGui_PM/src/components/ofxDatGuiControls.h; sourceTree = SOURCE_ROOT; };
 		B9E16009E1772C6D00B20013 /* ofxSvg.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 30; name = ofxSvg.cpp; path = ../../../addons/ofxSvg/src/ofxSvg.cpp; sourceTree = SOURCE_ROOT; };
@@ -540,6 +543,8 @@
 				E4B69E1F0A3A1BDC003C02F2 /* ofApp.h */,
 				B090C9C51E76BA49004BFD38 /* pmHexagonTile.cpp */,
 				B090C9C61E76BA49004BFD38 /* pmHexagonTile.hpp */,
+				B30D5E201E7C07B1009F9F49 /* pmHexagonTileCanvas.cpp */,
+				B30D5E211E7C07B1009F9F49 /* pmHexagonTileCanvas.hpp */,
 				FC1C7595E64701C3BA8F1564 /* pmHexagonCanvas.cpp */,
 				4C9851AF1CC676A5F9756B03 /* pmHexagonCanvas.hpp */,
 				A41EB053390F8FB525D38232 /* pmHexagonGuell.cpp */,
@@ -736,6 +741,7 @@
 				879A251454401BC0B6E4F238 /* OscTypes.cpp in Sources */,
 				B88A57B4B0BA6191EF3571E9 /* ofxSvg.cpp in Sources */,
 				6A565A9714A6A12EB9098F52 /* src_colors.cpp in Sources */,
+				B30D5E221E7C07B1009F9F49 /* pmHexagonTileCanvas.cpp in Sources */,
 				1D6B78EF041B097CE4F423C4 /* svgtiny.cpp in Sources */,
 				4294163B15857489B2176769 /* svgtiny_gradient.cpp in Sources */,
 				1B5F996886A777589D5DD794 /* svgtiny_list.cpp in Sources */,

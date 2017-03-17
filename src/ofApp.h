@@ -10,6 +10,7 @@
 #include "ofxAVScreenCapture.h"
 #include "parametersControl.h"
 #include "pmHexagonTile.hpp"
+#include "pmHexagonTileCanvas.hpp"
 
 enum sourceTextureType
 {

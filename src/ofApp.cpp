@@ -2083,6 +2083,8 @@ void ofApp::prepareRandom()
     vboRandom.setVertexData(vecVboTex_Verts.data(), vecVboTex_Verts.size(), GL_DYNAMIC_DRAW);
     vboRandom.setIndexData(vecVboTex_Faces.data(), vecVboTex_Faces.size(), GL_DYNAMIC_DRAW);
     vboRandom.setColorData(vecVboRandom_Colors.data(),vecVboRandom_Colors.size(),GL_DYNAMIC_DRAW);
+    
+    pmHexagonTileCanvas::searchForStartingOn(hexagonTiles, 0);
 }
 
 
