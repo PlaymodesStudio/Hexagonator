@@ -2363,7 +2363,7 @@ void ofApp::prepareGrow()
     
         pmHexagonTile actualTilePattern = hexagonTilesDictionary[choosedPattern];
         int numCucsActualHexagon = actualTilePattern.getConnections().size(); //int(ofRandom(0, 6));
-        cout << "Get number of cucs in this pattern id : " << choosedPattern << " :: Number of Connections = " << numCucsActualHexagon << endl;
+        //cout << "Get number of cucs in this pattern id : " << choosedPattern << " :: Number of Connections = " << numCucsActualHexagon << endl;
         
         //int totalVerticesAddedToThisHexagon = 0;
         for(int k=0;k<numCucsActualHexagon;k++)
@@ -2407,7 +2407,7 @@ void ofApp::prepareGrow()
             vecVboGrow_Faces.insert(vecVboGrow_Faces.end(), vecTempVboGrow_Faces.begin(), vecTempVboGrow_Faces.end());
             vecVboGrow_Colors.insert(vecVboGrow_Colors.end(), vecTempVboGrow_Colors.begin(), vecTempVboGrow_Colors.end());
             vecVboGrow_HexagonId.insert(vecVboGrow_HexagonId.end(),numSteps*2,float(i));
-            cout << "Hexagon id : " << i << " we've added " << numSteps << " vertexs to the HexagonId" << endl;
+            //cout << "Hexagon id : " << i << " we've added " << numSteps << " vertexs to the HexagonId" << endl;
             
             //totalVerticesAddedToThisHexagon = totalVerticesAddedToThisHexagon + ((numSteps-1)*2*3) ;
             
@@ -2419,8 +2419,8 @@ void ofApp::prepareGrow()
             //                    matricesNumElements.push_back(ofFloatColor(0,0,0,0));
             //                }
         }
-        cout << "Hexagon num = " << i << " _ Total vertices added to hexagon : " << vecTempVboGrow_Verts.size() <<  endl;
-        cout << " -.-.-.-.-.- " << endl;
+        //cout << "Hexagon num = " << i << " _ Total vertices added to hexagon : " << vecTempVboGrow_Verts.size() <<  endl;
+        //cout << " -.-.-.-.-.- " << endl;
     }
     // FILL DATA INTO VBO CUCS
     vboGrow.setVertexData(vecVboGrow_Verts.data(), vecVboGrow_Verts.size(),GL_DYNAMIC_DRAW);
@@ -2431,9 +2431,9 @@ void ofApp::prepareGrow()
     {
         hexagonIdCustomLocation++;
     }
-    cout << "Hexagon Id Custom Location : " << hexagonIdCustomLocation << endl;
-    cout << "Hexagon Id Custom data size : " << vecVboGrow_HexagonId.size() << endl;
-    cout << "While we had verts size  : " << vecVboGrow_Verts.size() << endl;
+    //cout << "Hexagon Id Custom Location : " << hexagonIdCustomLocation << endl;
+    //cout << "Hexagon Id Custom data size : " << vecVboGrow_HexagonId.size() << endl;
+    //cout << "While we had verts size  : " << vecVboGrow_Verts.size() << endl;
     
     vboGrow.setAttributeData( hexagonIdCustomLocation, reinterpret_cast<float *>( vecVboGrow_HexagonId.data() ),  1, vecVboGrow_HexagonId.size(), GL_STATIC_DRAW, sizeof( vecVboGrow_HexagonId[0] ) );
 
@@ -2534,7 +2534,7 @@ bool ofApp::occupyOneHexagon(ofVec2f startingHexagon, int startingSide)
     // we set it the origin as "used" on the usedHexagons
     int whichNumberOfHexagon = vIndexData[startingHexagon.x][startingHexagon.y];
     usedHexagons[vIndexData[startingHexagon.x][startingHexagon.y]] = true;
-    cout << "Marked hexagon " << whichNumberOfHexagon << " :: " << startingHexagon.x << " , " << startingHexagon.y << " as used !" <<endl;
+    //cout << "Marked hexagon " << whichNumberOfHexagon << " :: " << startingHexagon.x << " , " << startingHexagon.y << " as used !" <<endl;
     
     // NEIGHBOURS
     vector<ofVec2f> hexagonNeighbours;
@@ -2602,7 +2602,7 @@ bool ofApp::occupyOneHexagon(ofVec2f startingHexagon, int startingSide)
             {
                 if(usedHexagons[whichHexagonDoYouWantToGo]==false)
                 {
-                    cout << "Seems like you could go to neighbour : " << i << " :: Ring " << hexagonNeighbours[i].x << " Id :: " << hexagonNeighbours[i].y << endl;
+                    //cout << "Seems like you could go to neighbour : " << i << " :: Ring " << hexagonNeighbours[i].x << " Id :: " << hexagonNeighbours[i].y << endl;
                     possibleNextHexagons.push_back(hexagonNeighbours[i]);
                     possibleNumNexHexagons.push_back(i);
                 }
@@ -2619,7 +2619,7 @@ bool ofApp::occupyOneHexagon(ofVec2f startingHexagon, int startingSide)
         
         optionChoosed = ofRandom(0,possibleNextHexagons.size());
         
-        cout << "Random choosed to go to : " << optionChoosed << endl;
+        //cout << "Random choosed to go to : " << optionChoosed << endl;
         
         ofVec2f nextHexagon = ofVec2f(possibleNextHexagons[optionChoosed].x,possibleNextHexagons[optionChoosed].y);
         int whichSideItStarts = (possibleNumNexHexagons[optionChoosed]+3)%6;
@@ -2634,22 +2634,21 @@ bool ofApp::occupyOneHexagon(ofVec2f startingHexagon, int startingSide)
         
         growingHexagons.push_back(g);
         
-        if(occupyOneHexagon(nextHexagon,whichSideItStarts)==false)
+        bool isFinishingGrow = occupyOneHexagon(nextHexagon,whichSideItStarts);
+        if(!isFinishingGrow)
         {
-            possibleNextHexagons.erase(possibleNextHexagons.begin()+optionChoosed);
-            if(possibleNextHexagons.size() > 0){
-                optionChoosed = ofRandom(0,possibleNextHexagons.size());
-                return occupyOneHexagon(nextHexagon, whichSideItStarts);
-            }else{
+            if(possibleNextHexagons.size()>1){
+                //possibleNextHexagons.erase(possibleNextHexagons.begin()+optionChoosed);
                 growingHexagons.pop_back();
-                usedHexagons[vIndexData[startingHexagon.x][startingHexagon.y]] = true;
-                return false;
+                usedHexagons[vIndexData[startingHexagon.x][startingHexagon.y]] = false;
+                return occupyOneHexagon(startingHexagon, startingSide);
             }
+            else return false;
         }
     }
     else
     {
-        if(usedHexagons.size()>5) return true;
+        if(growingHexagons.size()>1500) return true;
         else return false;
     }
     
