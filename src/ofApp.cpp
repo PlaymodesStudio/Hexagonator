@@ -256,8 +256,7 @@ void ofApp::setup(){
     ///////////////////////////////////////////
     
     usedHexagons.resize(hexagonCanvas.getNumHexagons(),false);
-    growingHexagons.push_back(ofVec2f(0,0));
-    occupyOneHexagon(ofVec2f(0,0),0);
+    occupyOneHexagon(ofVec2f(10,0),0);
     
     int howManyHexagonsOccupied = 0;
     for(int i=0;i<usedHexagons.size();i++)
@@ -2280,92 +2279,148 @@ void ofApp::prepareGrow()
     // resize temp vectors that are recalculated for each hexaogn cuc
     int numMaxOfCucsInOneHexagon = 6;
     
-    for(int i=0;i<hexagonCanvas.getNumHexagons();i++)
+    for(int j=0;j<growingHexagons.size();j++)
     {
-        if(usedHexagons[i]==true)
+        int i = growingHexagons[j]._num;
+        ofVec2f vIdRing = ofVec2f(growingHexagons[j]._id,growingHexagons[j]._ring);
+        int startingAt = growingHexagons[j]._startingAtSide;
+        int endingAt = growingHexagons[j]._endingAtSide;
+    
+        // for each hexagon if it's used on the grow path ....
+        // clear and resizing data
+        hexaPoints.clear();
+        hexaSides.clear();
+        
+        hexaPoints.resize(6,ofVec3f(0,0,0));
+        hexaSides.resize(6);
+        
+        // define HEXAGON POINTS
+        // add them to the hexagon
+        for(int m=0;m<6;m++)
         {
-            // for each hexagon if it's used on the grow path ....
-            // clear and resizing data
-            hexaPoints.clear();
-            hexaSides.clear();
-            
-            hexaPoints.resize(6,ofVec3f(0,0,0));
-            hexaSides.resize(6);
-            
-            // define HEXAGON POINTS
-            // add them to the hexagon
-            for(int j=0;j<6;j++)
-            {
-                hexaPoints[j] = vecVboTex_Verts[(i*7)+j+1]; //+1 because vecVbo[0s] are centroids?
-            }
-            // CALCULATE SIDES (SAME FOR EVERY HEXAGON)
-            // TODO : make this function return the vector ...
-            calculateSides();
-            ofVec2f idRing = hexagonCanvas.getHexagonIdAndRing(i);
-            
-            int choosedPattern = int(ofRandom(105,105));
-            
-            pmHexagonTile actualTilePattern = hexagonTilesDictionary[choosedPattern];
-            int numCucsActualHexagon = actualTilePattern.getConnections().size(); //int(ofRandom(0, 6));
-            cout << "Get number of cucs in this pattern id : " << choosedPattern << " :: Number of Connections = " << numCucsActualHexagon << endl;
-            
-            //int totalVerticesAddedToThisHexagon = 0;
-            for(int k=0;k<numCucsActualHexagon;k++)
-            {
-                
-                vecTempVboGrow_Verts.resize(numSteps*2,ofVec3f(0,0,0));
-                vecTempVboGrow_Colors.resize(vecTempVboGrow_Verts.size(),ofFloatColor(0.0,1.0,1.0));
-                //                vecTempVboGrow_TexCoords.resize(vecTempVbo_Verts.size(),ofVec2f(0,0));
-                vecTempVboGrow_Faces.resize((numSteps-1)*2*3,0);
-                //vecTempVboGrow_HexagonId.resize(vecTempVboGrow_Verts.size());
-                
-                if(k<numCucsActualHexagon)
-                {
-                    // this is a user defined cuc ... take it normally
-                    sampledPoints.clear();
-                    ribs.clear();
-                    sampledPoints.resize(numSteps);
-                    ribs.resize(numSteps);
-                    for(int i=0;i<numSteps;i++)
-                    {
-                        ribs[i].resize(2);
-                    }
-                    
-                    startSide = actualTilePattern.getConnections()[k].startsAt;
-                    endSide = actualTilePattern.getConnections()[k].endsAt;
-                    
-                    // STEPS
-                    calculateStartEndPointsAndCurve();
-                    calculateRibs();
-                    calculateVboDataGrow();
-                    
-                }
-                else
-                {
-                    // fill with "void" cucs
-                    lastFaceAddedToGrow=lastFaceAddedToGrow + ((numSteps)*2);
-                    
-                }
-                // inserting calculated hexagon cuc into vectors that will feed the vboCucs
-                vecVboGrow_Verts.insert(vecVboGrow_Verts.end(), vecTempVboGrow_Verts.begin(), vecTempVboGrow_Verts.end());
-                vecVboGrow_Faces.insert(vecVboGrow_Faces.end(), vecTempVboGrow_Faces.begin(), vecTempVboGrow_Faces.end());
-                vecVboGrow_Colors.insert(vecVboGrow_Colors.end(), vecTempVboGrow_Colors.begin(), vecTempVboGrow_Colors.end());
-                vecVboGrow_HexagonId.insert(vecVboGrow_HexagonId.end(),numSteps*2,float(i));
-                cout << "Hexagon id : " << i << " we've added " << numSteps << " vertexs to the HexagonId" << endl;
-                
-                //totalVerticesAddedToThisHexagon = totalVerticesAddedToThisHexagon + ((numSteps-1)*2*3) ;
-                
-                //matricesNumElements.insert(matricesNumElements.end(),totalVerticesAddedToThisHexagon,100);
-                
-                //                for(int m=0;m<totalVerticesAddedToThisHexagon;m++)
-                //                {
-                //                    matricesNumElements.insert(matricesNumElements.end(),totalVerticesAddedToThisHexagon,ofFloatColor(1,1,1,1));
-                //                    matricesNumElements.push_back(ofFloatColor(0,0,0,0));
-                //                }
-            }
-            cout << "Hexagon num = " << i << " _ Total vertices added to hexagon : " << vecTempVboGrow_Verts.size() <<  endl;
-            cout << " -.-.-.-.-.- " << endl;
+            hexaPoints[m] = vecVboTex_Verts[(i*7)+m+1]; //+1 because vecVbo[0s] are centroids?
         }
+        // CALCULATE SIDES (SAME FOR EVERY HEXAGON)
+        // TODO : make this function return the vector ...
+        calculateSides();
+        ofVec2f idRing = hexagonCanvas.getHexagonIdAndRing(i);
+
+        int choosedPattern;// = int(ofRandom(105,105));
+    
+        if(startingAt == 0)
+        {
+            if(endingAt == 1) choosedPattern = 0;
+            if(endingAt == 2) choosedPattern = 78;
+            if(endingAt == 3) choosedPattern = 126;
+            if(endingAt == 4) choosedPattern = 82;
+            if(endingAt == 5) choosedPattern = 5;
+        }
+        else if(startingAt == 1)
+        {
+            if(endingAt == 0) choosedPattern = 0;
+            if(endingAt == 2) choosedPattern = 1;
+            if(endingAt == 3) choosedPattern = 79;
+            if(endingAt == 4) choosedPattern = 127;
+            if(endingAt == 5) choosedPattern = 83;
+        }
+        else if(startingAt == 2)
+        {
+            if(endingAt == 0) choosedPattern = 78;
+            if(endingAt == 1) choosedPattern = 1;
+            if(endingAt == 3) choosedPattern = 2;
+            if(endingAt == 4) choosedPattern = 80;
+            if(endingAt == 5) choosedPattern = 128;
+        }
+        else if(startingAt == 3)
+        {
+            if(endingAt == 0) choosedPattern = 126;
+            if(endingAt == 1) choosedPattern = 79;
+            if(endingAt == 2) choosedPattern = 2;
+            if(endingAt == 4) choosedPattern = 3;
+            if(endingAt == 5) choosedPattern = 81;
+        }
+        else if(startingAt == 4)
+        {
+            if(endingAt == 0) choosedPattern = 82;
+            if(endingAt == 1) choosedPattern = 127;
+            if(endingAt == 2) choosedPattern = 80;
+            if(endingAt == 3) choosedPattern = 3;
+            if(endingAt == 5) choosedPattern = 4;
+        }
+        else if(startingAt == 5)
+        {
+            if(endingAt == 0) choosedPattern = 5;
+            if(endingAt == 1) choosedPattern = 83;
+            if(endingAt == 2) choosedPattern = 128;
+            if(endingAt == 3) choosedPattern = 81;
+            if(endingAt == 4) choosedPattern = 4;
+        }
+        else
+        {
+            choosedPattern = int(ofRandom(105,105));
+            cout << " !!!!!! RANDOM ???? WHYYY ????? !!!! " << endl;
+        }
+    
+        pmHexagonTile actualTilePattern = hexagonTilesDictionary[choosedPattern];
+        int numCucsActualHexagon = actualTilePattern.getConnections().size(); //int(ofRandom(0, 6));
+        cout << "Get number of cucs in this pattern id : " << choosedPattern << " :: Number of Connections = " << numCucsActualHexagon << endl;
+        
+        //int totalVerticesAddedToThisHexagon = 0;
+        for(int k=0;k<numCucsActualHexagon;k++)
+        {
+            
+            vecTempVboGrow_Verts.resize(numSteps*2,ofVec3f(0,0,0));
+            vecTempVboGrow_Colors.resize(vecTempVboGrow_Verts.size(),ofFloatColor(0.0,1.0,1.0));
+            //                vecTempVboGrow_TexCoords.resize(vecTempVbo_Verts.size(),ofVec2f(0,0));
+            vecTempVboGrow_Faces.resize((numSteps-1)*2*3,0);
+            //vecTempVboGrow_HexagonId.resize(vecTempVboGrow_Verts.size());
+            
+            if(k<numCucsActualHexagon)
+            {
+                // this is a user defined cuc ... take it normally
+                sampledPoints.clear();
+                ribs.clear();
+                sampledPoints.resize(numSteps);
+                ribs.resize(numSteps);
+                for(int i=0;i<numSteps;i++)
+                {
+                    ribs[i].resize(2);
+                }
+                
+                startSide = actualTilePattern.getConnections()[k].startsAt;
+                endSide = actualTilePattern.getConnections()[k].endsAt;
+                
+                // STEPS
+                calculateStartEndPointsAndCurve();
+                calculateRibs();
+                calculateVboDataGrow();
+                
+            }
+            else
+            {
+                // fill with "void" cucs
+                lastFaceAddedToGrow=lastFaceAddedToGrow + ((numSteps)*2);
+                
+            }
+            // inserting calculated hexagon cuc into vectors that will feed the vboCucs
+            vecVboGrow_Verts.insert(vecVboGrow_Verts.end(), vecTempVboGrow_Verts.begin(), vecTempVboGrow_Verts.end());
+            vecVboGrow_Faces.insert(vecVboGrow_Faces.end(), vecTempVboGrow_Faces.begin(), vecTempVboGrow_Faces.end());
+            vecVboGrow_Colors.insert(vecVboGrow_Colors.end(), vecTempVboGrow_Colors.begin(), vecTempVboGrow_Colors.end());
+            vecVboGrow_HexagonId.insert(vecVboGrow_HexagonId.end(),numSteps*2,float(i));
+            cout << "Hexagon id : " << i << " we've added " << numSteps << " vertexs to the HexagonId" << endl;
+            
+            //totalVerticesAddedToThisHexagon = totalVerticesAddedToThisHexagon + ((numSteps-1)*2*3) ;
+            
+            //matricesNumElements.insert(matricesNumElements.end(),totalVerticesAddedToThisHexagon,100);
+            
+            //                for(int m=0;m<totalVerticesAddedToThisHexagon;m++)
+            //                {
+            //                    matricesNumElements.insert(matricesNumElements.end(),totalVerticesAddedToThisHexagon,ofFloatColor(1,1,1,1));
+            //                    matricesNumElements.push_back(ofFloatColor(0,0,0,0));
+            //                }
+        }
+        cout << "Hexagon num = " << i << " _ Total vertices added to hexagon : " << vecTempVboGrow_Verts.size() <<  endl;
+        cout << " -.-.-.-.-.- " << endl;
     }
     // FILL DATA INTO VBO CUCS
     vboGrow.setVertexData(vecVboGrow_Verts.data(), vecVboGrow_Verts.size(),GL_DYNAMIC_DRAW);
@@ -2455,21 +2510,23 @@ void ofApp::calculateVboDataGrow()
         //            }
         
         //        vecTempVbo_Colors[i] = ofFloatColor(1.0,1.0*factor,0.0,1.0);
-        if(int(i/numSteps)%2)
-        {
-            vecTempVboGrow_Colors[i] = ofFloatColor(1.0,1.0,1.0,1.0);
-        }
-        else
-        {
-            vecTempVboGrow_Colors[i] = ofFloatColor(0.0,0.0,0.0,1.0);
-        }
+//        if(int(i/numSteps)%2)
+//        {
+//            vecTempVboGrow_Colors[i] = ofFloatColor(1.0,1.0,1.0,1.0);
+//        }
+//        else
+//        {
+//            vecTempVboGrow_Colors[i] = ofFloatColor(0.0,0.0,0.0,1.0);
+//        }
         //        vecTempVboGrow_TexCoords[i] = ofVec2f(vecTempVboGrow_Verts[i].x,vecTempVboGrow_Verts[i].y);
+                    vecTempVboGrow_Colors[i] = ofFloatColor(1.0,1.0,1.0,1.0);
+
     }
     
 }
 
 //---------------------------------------------------------------------------
-void ofApp::occupyOneHexagon(ofVec2f startingHexagon, int startingSide)
+bool ofApp::occupyOneHexagon(ofVec2f startingHexagon, int startingSide)
 {
     
     vector<vector<int>> vIndexData = hexagonCanvas.getHexagonsIndexData();
@@ -2486,31 +2543,59 @@ void ofApp::occupyOneHexagon(ofVec2f startingHexagon, int startingSide)
     // [0] or .x is RING 0 .. 35
     // [1] or .y is INDEX 0 .. 64
     
-    hexagonNeighbours[0].y = (int(startingHexagon.y) + 1)%64;
-    hexagonNeighbours[0].x = startingHexagon.x - 1;
-    
-    hexagonNeighbours[1].y = (int(startingHexagon.y) + 1)%64;
-    hexagonNeighbours[1].x = startingHexagon.x + 0;
-    
-    hexagonNeighbours[2].y = (int(startingHexagon.y) + 1)%64;
-    hexagonNeighbours[2].x = startingHexagon.x + 1;
-    
-    hexagonNeighbours[3].y = startingHexagon.y + 0;
-    hexagonNeighbours[3].x = startingHexagon.x + 1;
-    
-    hexagonNeighbours[4].y = startingHexagon.y -1;
-    if(hexagonNeighbours[4].y<0) hexagonNeighbours[4].y = 64 + hexagonNeighbours[4].y;
-    hexagonNeighbours[4].x = startingHexagon.x +0;
-    
-    hexagonNeighbours[5].y = startingHexagon.y + 0;
-    hexagonNeighbours[5].x = startingHexagon.x - 1;
+    if(int(startingHexagon.x)%2==0)
+    {
+        hexagonNeighbours[0].y = (int(startingHexagon.y) + 1)%64;
+        hexagonNeighbours[0].x = startingHexagon.x - 1;
+        
+        hexagonNeighbours[1].y = (int(startingHexagon.y) + 1)%64;
+        hexagonNeighbours[1].x = startingHexagon.x + 0;
+        
+        hexagonNeighbours[2].y = (int(startingHexagon.y) + 1)%64;
+        hexagonNeighbours[2].x = startingHexagon.x + 1;
+        
+        hexagonNeighbours[3].y = startingHexagon.y + 0;
+        hexagonNeighbours[3].x = startingHexagon.x + 1;
+        
+        hexagonNeighbours[4].y = startingHexagon.y -1;
+        if(hexagonNeighbours[4].y<0) hexagonNeighbours[4].y = 64 + hexagonNeighbours[4].y;
+        hexagonNeighbours[4].x = startingHexagon.x +0;
+        
+        hexagonNeighbours[5].y = startingHexagon.y + 0;
+        hexagonNeighbours[5].x = startingHexagon.x - 1;
+        
+    }
+    else
+    {
+        hexagonNeighbours[0].y = (int(startingHexagon.y) +0 )%64;
+        hexagonNeighbours[0].x = startingHexagon.x - 1;
+        
+        hexagonNeighbours[1].y = (int(startingHexagon.y) + 1)%64;
+        hexagonNeighbours[1].x = startingHexagon.x + 0;
+        
+        hexagonNeighbours[2].y = (int(startingHexagon.y) + 0)%64;
+        hexagonNeighbours[2].x = startingHexagon.x + 1;
+        
+        hexagonNeighbours[3].y = startingHexagon.y -1;
+        if(hexagonNeighbours[3].y<0) hexagonNeighbours[3].y = 64 + hexagonNeighbours[3].y;
+        hexagonNeighbours[3].x = startingHexagon.x + 1;
+        
+        hexagonNeighbours[4].y = startingHexagon.y -1;
+        if(hexagonNeighbours[4].y<0) hexagonNeighbours[4].y = 64 + hexagonNeighbours[4].y;
+        hexagonNeighbours[4].x = startingHexagon.x +0;
+        
+        hexagonNeighbours[5].y = startingHexagon.y -1;
+        if(hexagonNeighbours[5].y<0) hexagonNeighbours[5].y = 64 + hexagonNeighbours[5].y;
+        hexagonNeighbours[5].x = startingHexagon.x - 1;
+        
+    }
     
     vector<ofVec2f> possibleNextHexagons;
     vector<int> possibleNumNexHexagons;
     
     for(int i=0;i<6;i++)
     {
-        if( (hexagonNeighbours[i].x>=0) && (hexagonNeighbours[i].y>=0) && (hexagonNeighbours[i].y<35) )
+        if( (hexagonNeighbours[i].x>=0) && (hexagonNeighbours[i].y>=0) && (hexagonNeighbours[i].x<35) )
         {
             int whichHexagonDoYouWantToGo = vIndexData[hexagonNeighbours[i].x][hexagonNeighbours[i].y];
             if(whichHexagonDoYouWantToGo!=-1)
@@ -2527,8 +2612,12 @@ void ofApp::occupyOneHexagon(ofVec2f startingHexagon, int startingSide)
     
     if(possibleNextHexagons.size()>0)
     {
+        int optionChoosed;
         // choose an option from the possible neighbours.
-        int optionChoosed = ofRandom(0,possibleNextHexagons.size());
+//        if(possibleNumNexHexagons.size()>2) optionChoosed = 2 ; //ofRandom(0,possibleNextHexagons.size());
+//        else optionChoosed=0;
+        
+        optionChoosed = ofRandom(0,possibleNextHexagons.size());
         
         cout << "Random choosed to go to : " << optionChoosed << endl;
         
@@ -2536,9 +2625,32 @@ void ofApp::occupyOneHexagon(ofVec2f startingHexagon, int startingSide)
         int whichSideItStarts = (possibleNumNexHexagons[optionChoosed]+3)%6;
         
         // add the next hexagon to the vector of hexagons in order to reconstruct the worm...
-        growingHexagons.push_back(ofVec3f(nextHexagon.x,nextHexagon.y,float(whichSideItStarts)));
+        growTileInfo g;
+        g._num = hexagonCanvas.getHexagonNumberFromIdAndRing(startingHexagon);
+        g._id = startingHexagon.x;
+        g._ring = startingHexagon.y;
+        g._startingAtSide = startingSide;
+        g._endingAtSide = possibleNumNexHexagons[optionChoosed];
         
-        occupyOneHexagon(nextHexagon,whichSideItStarts);
+        growingHexagons.push_back(g);
+        
+        if(occupyOneHexagon(nextHexagon,whichSideItStarts)==false)
+        {
+            possibleNextHexagons.erase(possibleNextHexagons.begin()+optionChoosed);
+            if(possibleNextHexagons.size() > 0){
+                optionChoosed = ofRandom(0,possibleNextHexagons.size());
+                return occupyOneHexagon(nextHexagon, whichSideItStarts);
+            }else{
+                growingHexagons.pop_back();
+                usedHexagons[vIndexData[startingHexagon.x][startingHexagon.y]] = true;
+                return false;
+            }
+        }
+    }
+    else
+    {
+        if(usedHexagons.size()>5) return true;
+        else return false;
     }
     
     

@@ -38,6 +38,7 @@ class pmHexagonCanvas
         vector<ofPoint>             getCentroidData();
         ofVec2f                     getHexagonIdAndRing(int _index){return ofVec2f(hexagonsData[_index].whichIdInRing , hexagonsData[_index].whichRing );};
         vector<vector<int>>         getHexagonsIndexData(){return hexagonsIndexData;};
+        int                         getHexagonNumberFromIdAndRing(ofVec2f idRing);
 //        void                        setHexagonScale(int _index, float _f){hexagonsData[_index].scale=_f;};
 //        float                       getHexagonScale(int _index){return hexagonsData[_index].scale;};
     

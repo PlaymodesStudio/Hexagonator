@@ -40,6 +40,16 @@ typedef struct
     
 } hexagonPixel;
 
+typedef struct
+{
+    int _num;
+    int _id;
+    int _ring;
+    int _startingAtSide;
+    int _endingAtSide;
+    
+} growTileInfo;
+
 class ofApp : public ofBaseApp{
 
 	public:
@@ -204,7 +214,7 @@ class ofApp : public ofBaseApp{
 
     // GROWING CUCS
     
-    void occupyOneHexagon(ofVec2f startingHexagon, int startingSide);
+    bool occupyOneHexagon(ofVec2f startingHexagon, int startingSide);
     int hexagonIdCustomLocation;
     
     void                    calculateStartEndPointsAndCurve();
@@ -216,7 +226,7 @@ class ofApp : public ofBaseApp{
     
     // CUCS GROW
     vector<bool>            usedHexagons;
-    vector<ofVec3f>         growingHexagons;
+    vector<growTileInfo>    growingHexagons;
     
     /// RANDOM
     float                   lastRandomTime;

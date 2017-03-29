@@ -351,4 +351,8 @@ ofPoint pmHexagonCanvas::projectPointToLine(ofPoint Point,ofPoint LineStart,ofPo
     
     return Intersection;//.length();
 }
-
+//--------------------------------------------------------------
+int pmHexagonCanvas::getHexagonNumberFromIdAndRing(ofVec2f idRing)
+{
+    return hexagonsIndexData[idRing.x][idRing.y];
+}
