@@ -39,3 +39,8 @@ vector<pmHexagonTile> pmHexagonTileCanvas::searchForStartingOn(vector<pmHexagonT
     return resultTiles;
 }
 
+void searchForAvailableHexagons(int id, int ring)
+{
+    
+}
+

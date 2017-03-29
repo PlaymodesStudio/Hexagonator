@@ -42,7 +42,7 @@ void ofApp::setup(){
     parametersGraphics.add(toggle_showVertices.set("Show Vertices",false));
     parametersGraphics.add(toggle_drawMask.set("Draw Mask",true));
     parametersControl::addDropdownToParameterGroupFromParameters(parametersGraphics,"Texture Coordinates",{"64x35","1200x1200"},dropdown_whichTexCoord);
-    parametersControl::addDropdownToParameterGroupFromParameters(parametersGraphics,"Source",{"Texture","Quads","Cucs","Random"},dropdown_whichSource);
+    parametersControl::addDropdownToParameterGroupFromParameters(parametersGraphics,"Source",{"Texture","Quads","Cucs","Random","Grow"},dropdown_whichSource);
     parametersControl::addDropdownToParameterGroupFromParameters(parametersGraphics,"Texture Source",{"Image","Video","Syphon","Syph.Max","Cubes","Colors AB"},dropdown_whichTextureSource);
     parametersGraphics.add(color_shaderColorA.set("Color A", ofColor::white, ofColor::white, ofColor::black));
     parametersGraphics.add(color_shaderColorB.set("Color B", ofColor::white, ofColor::white, ofColor::black));
@@ -232,7 +232,43 @@ void ofApp::setup(){
     ///////////////////
 
     prepareCucs();
+    
+    ///////////////////
+    // RECURSIVE CUCS
+    ///////////////////
 
+    
+    
+//    vector<vector<int>> vIndexData = hexagonCanvas.getHexagonsIndexData();
+//    cout << "V Index Data sizes : " << vIndexData.size() << " , " << vIndexData[0].size() << endl;
+//    
+//        for(int i=0;i<vIndexData.size();i++)
+//        {
+//            for(int j=0;j<vIndexData[i].size();j++)
+//            {
+//                cout << "index : " << i << " , " << j << " = " << vIndexData[i][j] << endl;
+//            }
+//    
+//        }
+
+    usedHexagons.resize(hexagonCanvas.getNumHexagons(),false);
+
+    occupyOneHexagon(ofVec2f(0,0),0);
+
+    int howManyHexagonsOccupied = 0;
+    for(int i=0;i<usedHexagons.size();i++)
+    {
+        if(usedHexagons[i]==true)
+        {
+            howManyHexagonsOccupied = howManyHexagonsOccupied +1 ;
+        }
+    }
+    cout << " Occupation done ... Used : " << howManyHexagonsOccupied << endl;
+
+    buildNumElementsTBO();
+    prepareGrow();
+
+    
     ///////////////////
     // VBO CUCS RANDOM
     ///////////////////
@@ -251,6 +287,8 @@ void ofApp::setup(){
         shader.begin();
         shader.setUniformTexture("texTransform",texTransform,0);
         shader.setUniformTexture("texCubeColors",texCubeColors,1);
+        //shader.setUniformTexture("texNumElements",texNumElements,1);
+        
         shader.setUniform1i("u_numHexags",hexagonCanvas.getNumHexagons());
         shader.setUniform4f("u_color", ofFloatColor(0.5,0.5,0.5,1.0));
         shader.setUniform1i("u_source", 0);
@@ -258,7 +296,7 @@ void ofApp::setup(){
         shader.end();
     }
     
-    updateMatrices();
+    updateTransformMatrices();
 
     
 }
@@ -306,7 +344,7 @@ void ofApp::updateOsc()
 }
 
 //--------------------------------------------------------------
-void ofApp::updateMatrices()
+void ofApp::updateTransformMatrices()
 {
     vector<ofPoint> centr = hexagonCanvas.getCentroidData();
     
@@ -334,7 +372,16 @@ void ofApp::updateMatrices()
     
 }
 //--------------------------------------------------------------
-void ofApp::updateCubeColors()
+void ofApp::updateNumElementsMatrices()
+{
+    // and upload them to the texture buffer
+
+    bufferNumElements.updateData(0,matricesNumElements);
+    
+    
+}
+//--------------------------------------------------------------
+void ofApp::updateCubeColorsMatrices()
 {
     // TRANSFORM CUBE COLORS
     for(size_t i=0;i<hexagonCanvas.getNumHexagons();i++)
@@ -479,7 +526,7 @@ void ofApp::updateVertexsForQuad()
 void ofApp::update()
 {
     updateOsc();
-    updateMatrices();
+    updateTransformMatrices();
     
     if(dropdown_whichSource == HEX_SOURCE_QUADS )
     {
@@ -489,11 +536,15 @@ void ofApp::update()
     else if(dropdown_whichSource == HEX_SOURCE_TEXTURE)
     {
         // HEX_SOURCE_TEXTURE
-        updateCubeColors();
+        updateCubeColorsMatrices();
     }
     else if(dropdown_whichSource == HEX_SOURCE_RANDOM)
     {
         updateRandom();
+    }
+    else if(dropdown_whichSource == HEX_SOURCE_GROW)
+    {
+        updateNumElementsMatrices();
     }
     
     if(dropdown_whichSource==HEX_SOURCE_TEXTURE && dropdown_whichTextureSource==HEX_TEXTURE_VIDEO && videoPlayer.isLoaded())
@@ -568,6 +619,12 @@ void ofApp::draw()
             {
                 shader.setUniform1i("u_modulo",7);
             }
+            else if(dropdown_whichSource == HEX_SOURCE_GROW)
+            {
+                shader.setUniform1i("u_modulo",7);
+            }
+            
+            
             //                shader.setUniformTexture("uTexture", videoPlayer, 2);
             //                shader.setUniformTexture("uTexture", image, 2);
             //                image.bind();
@@ -613,8 +670,14 @@ void ofApp::draw()
                 }
                 case HEX_SOURCE_RANDOM :
                 {
-                    int numVertexsPerOneFace = 18;
-                    vboRandom.drawElements(GL_TRIANGLES,hexagonCanvas.getNumHexagons()*numVertexsPerOneFace );
+                    int numFacesPerOneHexagon = 18;
+                    vboRandom.drawElements(GL_TRIANGLES,hexagonCanvas.getNumHexagons()*numFacesPerOneHexagon );
+                    break;
+                }
+                case HEX_SOURCE_GROW :
+                {
+                    int numVertexsPerOneHexagon = 14;
+                    vboGrow.drawElements(GL_TRIANGLES, vecVboCucs_Faces.size());
                     break;
                 }
 
@@ -762,6 +825,11 @@ void ofApp::draw()
     else if(dropdown_whichSource==HEX_SOURCE_RANDOM)
     {
         ofDrawBitmapString("RANDOM" ,stringPosition);
+        ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), stringPosition + ofVec2f(0,15));
+    }
+    else if(dropdown_whichSource==HEX_SOURCE_GROW)
+    {
+        ofDrawBitmapString("GROW" ,stringPosition);
         ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), stringPosition + ofVec2f(0,15));
     }
 
@@ -1175,6 +1243,9 @@ void ofApp::changedSource(int &i)
         case HEX_SOURCE_RANDOM:
             source = 3;
             break;
+        case HEX_SOURCE_GROW:
+            source = 4;
+            break;
 
         default:
             break;
@@ -1375,7 +1446,7 @@ void ofApp::calculateTilePatterns()
     {
         pmHexagonTile t;
         t.addConnection(i%6, (i+1)%6);
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 2 CONNECTION JUMP 1 +1
     for(int i=0;i<6;i++)
@@ -1383,7 +1454,7 @@ void ofApp::calculateTilePatterns()
         pmHexagonTile t;
         t.addConnection(i%6, (i+1)%6);
         t.addConnection((i+1)%6, (i+2)%6);
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 2 CONNECTION JUMP 1 +2
     for(int i=0;i<6;i++)
@@ -1391,7 +1462,7 @@ void ofApp::calculateTilePatterns()
         pmHexagonTile t;
         t.addConnection(i%6, (i+1)%6);
         t.addConnection((i+2)%6, (i+3)%6);
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 2 CONNECTION JUMP 1 +3
     for(int i=0;i<6;i++)
@@ -1399,7 +1470,7 @@ void ofApp::calculateTilePatterns()
         pmHexagonTile t;
         t.addConnection(i%6, (i+1)%6);
         t.addConnection((i+3)%6, (i+4)%6);
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 3 CONNECTION JUMP 1
     for(int i=0;i<6;i++)
@@ -1408,7 +1479,7 @@ void ofApp::calculateTilePatterns()
         t.addConnection(i%6, (i+1)%6);
         t.addConnection((i+1)%6, (i+2)%6);
         t.addConnection((i+2)%6, (i+3)%6);
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 3 CONNECTION JUMP 1'
     for(int i=0;i<6;i++)
@@ -1417,7 +1488,7 @@ void ofApp::calculateTilePatterns()
         t.addConnection(i%6, (i+1)%6);
         t.addConnection((i+1)%6, (i+2)%6);
         t.addConnection((i+3)%6, (i+4)%6);
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 3 CONNECTION JUMP 1''
     for(int i=0;i<6;i++)
@@ -1426,7 +1497,7 @@ void ofApp::calculateTilePatterns()
         t.addConnection(i%6, (i+1)%6);
         t.addConnection((i+2)%6, (i+3)%6);
         t.addConnection((i+3)%6, (i+4)%6);
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 3 CONNECTION JUMP 1'''
     for(int i=0;i<6;i++)
@@ -1435,7 +1506,7 @@ void ofApp::calculateTilePatterns()
         t.addConnection(i%6, (i+1)%6);
         t.addConnection((i+2)%6, (i+3)%6);
         t.addConnection((i+4)%6, (i+5)%6);
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 4 CONNECTION JUMP 1
     for(int i=0;i<6;i++)
@@ -1445,7 +1516,7 @@ void ofApp::calculateTilePatterns()
         t.addConnection((i+1)%6, (i+2)%6);
         t.addConnection((i+2)%6, (i+3)%6);
         t.addConnection((i+3)%6, (i+4)%6);
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 4 CONNECTION JUMP 1'
     for(int i=0;i<6;i++)
@@ -1455,7 +1526,7 @@ void ofApp::calculateTilePatterns()
         t.addConnection((i+2)%6, (i+3)%6);
         t.addConnection((i+3)%6, (i+4)%6);
         t.addConnection((i+4)%6, (i+5)%6);
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 4 CONNECTION JUMP 1''
     for(int i=0;i<6;i++)
@@ -1465,7 +1536,7 @@ void ofApp::calculateTilePatterns()
         t.addConnection((i+1)%6, (i+2)%6);
         t.addConnection((i+3)%6, (i+4)%6);
         t.addConnection((i+4)%6, (i+5)%6);
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 5 CONNECTION JUMP 1
     for(int i=0;i<6;i++)
@@ -1476,7 +1547,7 @@ void ofApp::calculateTilePatterns()
         t.addConnection((i+2)%6, (i+3)%6);
         t.addConnection((i+3)%6, (i+4)%6);
         t.addConnection((i+4)%6, (i+5)%6);
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 6 CONNECTION JUMP 1'
     for(int i=0;i<6;i++)
@@ -1488,14 +1559,14 @@ void ofApp::calculateTilePatterns()
         t.addConnection((i+3)%6, (i+4)%6);
         t.addConnection((i+4)%6, (i+5)%6);
         t.addConnection((i+5)%6, (i+6)%6);
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 1 CONNECTION JUMP 2
     for(int i=0;i<6;i++)
     {
         pmHexagonTile t;
         t.addConnection(i%6, (i+2)%6);
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 2 CONNECTION JUMP 2
     for(int i=0;i<6;i++)
@@ -1503,7 +1574,7 @@ void ofApp::calculateTilePatterns()
         pmHexagonTile t;
         t.addConnection(i%6, (i+2)%6);
         t.addConnection((i+2)%6, (i+4)%6);
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 2 CONNECTION JUMP 2'
     for(int i=0;i<6;i++)
@@ -1511,7 +1582,7 @@ void ofApp::calculateTilePatterns()
         pmHexagonTile t;
         t.addConnection(i%6, (i+2)%6);
         t.addConnection((i+3)%6, (i+5)%6);
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 2 CONNECTION JUMP 2''
     for(int i=0;i<6;i++)
@@ -1519,7 +1590,7 @@ void ofApp::calculateTilePatterns()
         pmHexagonTile t;
         t.addConnection(i%6, (i+2)%6);
         t.addConnection((i+1)%6, (i+3)%6);
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 3 CONNECTION JUMP 2
     for(int i=0;i<6;i++)
@@ -1528,7 +1599,7 @@ void ofApp::calculateTilePatterns()
         t.addConnection(i%6, (i+2)%6);
         t.addConnection((i+2)%6, (i+4)%6);
         t.addConnection((i+4)%6, (i+6)%6);
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 3 CONNECTION JUMP 2
     for(int i=0;i<6;i++)
@@ -1537,7 +1608,7 @@ void ofApp::calculateTilePatterns()
         t.addConnection(i%6, (i+2)%6);
         t.addConnection((i+3)%6, (i+5)%6);
         t.addConnection((i+5)%6, (i+7)%6);
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 3 CONNECTION JUMP 2
     for(int i=0;i<6;i++)
@@ -1546,7 +1617,7 @@ void ofApp::calculateTilePatterns()
         t.addConnection(i%6, (i+2)%6);
         t.addConnection((i+1)%6, (i+3)%6);
         t.addConnection((i+3)%6, (i+5)%6);
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 3 CONNECTION JUMP 2
     for(int i=0;i<6;i++)
@@ -1555,14 +1626,14 @@ void ofApp::calculateTilePatterns()
         t.addConnection(i%6, (i+2)%6);
         t.addConnection((i+1)%6, (i+3)%6);
         t.addConnection((i+2)%6, (i+4)%6);
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 1 CONNECTION JUMP 3
     for(int i=0;i<6;i++)
     {
         pmHexagonTile t;
         t.addConnection(i%6, (i+3)%6);
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 2 CONNECTION JUMP 3
     for(int i=0;i<6;i++)
@@ -1570,7 +1641,7 @@ void ofApp::calculateTilePatterns()
         pmHexagonTile t;
         t.addConnection(i%6, (i+3)%6);
         t.addConnection((i+1)%6, (i+4)%6);
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 3 CONNECTION JUMP 3
     for(int i=0;i<6;i++)
@@ -1579,7 +1650,7 @@ void ofApp::calculateTilePatterns()
         t.addConnection(i%6, (i+3)%6);
         t.addConnection((i+1)%6, (i+4)%6);
         t.addConnection((i+2)%6, (i+5)%6);
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     
     // COMBOS
@@ -1589,7 +1660,7 @@ void ofApp::calculateTilePatterns()
         t.addConnection(i%6, (i+1)%6);
         t.addConnection((i)%6, (i+2)%6);
         t.addConnection((i)%6, (i+3)%6);
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // COMBOS '
     for(int i=0;i<6;i++)
@@ -1598,7 +1669,7 @@ void ofApp::calculateTilePatterns()
         t.addConnection(i%6, (i+1)%6);
         t.addConnection(i%6, (i+2)%6);
         t.addConnection((i+1)%6, (i+4)%6);
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // COMBOS '
     for(int i=0;i<6;i++)
@@ -1607,7 +1678,7 @@ void ofApp::calculateTilePatterns()
         t.addConnection(i%6, (i+1)%6);
         t.addConnection((i+1)%6, (i+2)%6);
         t.addConnection((i+1)%6, (i+4)%6);
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // COMBOS '
     for(int i=0;i<6;i++)
@@ -1619,7 +1690,7 @@ void ofApp::calculateTilePatterns()
         t.addConnection((i+0)%6, (i+3)%6);
         t.addConnection((i+0)%6, (i+4)%6);
         t.addConnection((i+0)%6, (i+5)%6);
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     
     // DR KING HEXAGONAL STUDY
@@ -1630,7 +1701,7 @@ void ofApp::calculateTilePatterns()
         t.addConnection(1,3);
         t.addConnection(4,5);
         
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 0,1
     {
@@ -1639,7 +1710,7 @@ void ofApp::calculateTilePatterns()
         t.addConnection(5,1);
         t.addConnection(3,4);
         
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 0,2
     {
@@ -1648,7 +1719,7 @@ void ofApp::calculateTilePatterns()
         t.addConnection(0,4);
         t.addConnection(2,3);
         
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 0,3
     {
@@ -1657,7 +1728,7 @@ void ofApp::calculateTilePatterns()
         t.addConnection(0,4);
         t.addConnection(1,2);
         
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 0,4
     {
@@ -1666,7 +1737,7 @@ void ofApp::calculateTilePatterns()
         t.addConnection(3,5);
         t.addConnection(0,1);
         
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 0,5
     {
@@ -1675,7 +1746,7 @@ void ofApp::calculateTilePatterns()
         t.addConnection(2,4);
         t.addConnection(5,0);
         
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 0,5
     {
@@ -1684,7 +1755,7 @@ void ofApp::calculateTilePatterns()
         t.addConnection(2,4);
         t.addConnection(5,0);
         
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 1,0
     {
@@ -1693,7 +1764,7 @@ void ofApp::calculateTilePatterns()
         t.addConnection(4,5);
         t.addConnection(0,1);
         
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 1,1
     {
@@ -1702,7 +1773,7 @@ void ofApp::calculateTilePatterns()
         t.addConnection(3,4);
         t.addConnection(5,0);
         
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 2,0
     {
@@ -1711,7 +1782,7 @@ void ofApp::calculateTilePatterns()
         t.addConnection(1,3);
         t.addConnection(0,4);
         
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 2,1
     {
@@ -1720,7 +1791,7 @@ void ofApp::calculateTilePatterns()
         t.addConnection(0,2);
         t.addConnection(3,5);
         
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 2,2
     {
@@ -1729,7 +1800,7 @@ void ofApp::calculateTilePatterns()
         t.addConnection(1,5);
         t.addConnection(2,4);
         
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 3,0
     {
@@ -1738,7 +1809,7 @@ void ofApp::calculateTilePatterns()
         t.addConnection(3,4);
         t.addConnection(0,1);
         
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 3,1
     {
@@ -1747,7 +1818,7 @@ void ofApp::calculateTilePatterns()
         t.addConnection(2,3);
         t.addConnection(5,0);
         
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 3,2
     {
@@ -1756,7 +1827,7 @@ void ofApp::calculateTilePatterns()
         t.addConnection(1,2);
         t.addConnection(4,5);
         
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // 4,0
     {
@@ -1765,24 +1836,24 @@ void ofApp::calculateTilePatterns()
         t.addConnection(1,4);
         t.addConnection(0,3);
         
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // fill 2 void
     {
         pmHexagonTile t;
         
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     // fill 2 void
     {
         pmHexagonTile t;
         
-        hexagonTiles.push_back(t);
+        hexagonTilesDictionary.push_back(t);
     }
     
 
     // MERGING sample
-    hexagonTiles.push_back(hexagonTiles[0].mergeTileData(hexagonTiles[1]));
+    hexagonTilesDictionary.push_back(hexagonTilesDictionary[0].mergeTileData(hexagonTilesDictionary[1]));
 }
 
 //--------------------------------------------------------------
@@ -1838,7 +1909,6 @@ void ofApp::buildTBOs()
 {
     
     matricesTransform.resize(hexagonCanvas.getNumHexagons());
-    
     // upload the transformation for each box using a
     // texture buffer.
     // for that we need to upload the matrices to the buffer
@@ -1853,11 +1923,12 @@ void ofApp::buildTBOs()
     // https://www.opengl.org/wiki/Buffer_Texture
     texTransform.allocateAsBufferTexture(bufferTransform,GL_RGBA32F);
     
+    
+    
     /// CUBIC COLORS TBO STUFF (Texture Buffer Object)
     //////////////////////////////////////////////////
     
     matricesCubeColors.resize(hexagonCanvas.getNumHexagons() * 3);
-    
     // upload the
     // texture buffer.
     // for that we need to upload the matrices to the buffer
@@ -1871,6 +1942,27 @@ void ofApp::buildTBOs()
     // Note that we're allocating the texture as a Buffer Texture:
     // https://www.opengl.org/wiki/Buffer_Texture
     texCubeColors.allocateAsBufferTexture(bufferCubeColors,GL_RGBA32F);
+    
+}
+
+//---------------------------------------------------------------------------
+void ofApp::buildNumElementsTBO()
+{
+    matricesNumElements.resize(hexagonCanvas.getNumHexagons()*1000);
+    cout << "BuildingNumElem.TBO : size of matrices : " << hexagonCanvas.getNumHexagons()*256 << endl;
+    // upload the
+    // texture buffer.
+    // for that we need to upload the matrices to the buffer
+    // and allocate the texture using it
+    bufferNumElements.allocate();
+    bufferNumElements.bind(GL_TEXTURE_BUFFER);
+    bufferNumElements.setData(matricesNumElements,GL_STREAM_DRAW);
+    
+    // using GL_RGBA32F allows to read each row of each matrix
+    // as a float vec4 from the shader.
+    // Note that we're allocating the texture as a Buffer Texture:
+    // https://www.opengl.org/wiki/Buffer_Texture
+    texNumElements.allocateAsBufferTexture(bufferNumElements,GL_R32UI);
     
 }
 
@@ -1975,6 +2067,7 @@ void ofApp::prepareCucs()
         ofVec2f idRing = hexagonCanvas.getHexagonIdAndRing(i);
         
         int choosedPattern = int(ofRandom(168,183));
+        
         //        if(int(idRing.y)%3==0)
         //        {
         //            if(int(idRing.x)%2==0)
@@ -1991,9 +2084,7 @@ void ofApp::prepareCucs()
         //            choosedPattern = 90;
         //        }
         
-        
-        
-        pmHexagonTile actualTilePattern = hexagonTiles[choosedPattern];
+        pmHexagonTile actualTilePattern = hexagonTilesDictionary[choosedPattern];
         int numCucsActualHexagon = actualTilePattern.getConnections().size(); //int(ofRandom(0, 6));
         //cout << "Get number of cucs in pattern : " << choosedPattern << " :: " << actualTilePattern.getConnections().size() << endl;
         
@@ -2084,7 +2175,7 @@ void ofApp::prepareRandom()
     vboRandom.setIndexData(vecVboTex_Faces.data(), vecVboTex_Faces.size(), GL_DYNAMIC_DRAW);
     vboRandom.setColorData(vecVboRandom_Colors.data(),vecVboRandom_Colors.size(),GL_DYNAMIC_DRAW);
     
-    pmHexagonTileCanvas::searchForStartingOn(hexagonTiles, 0);
+    //pmHexagonTileCanvas::searchForStartingOn(hexagonTilesDictionary, 0);
 }
 
 
@@ -2120,3 +2211,295 @@ void ofApp::updateRandom()
     
 
 }
+
+//---------------------------------------------------------------------------
+void ofApp::prepareGrow()
+{
+    
+    vecVboGrow_Verts.clear();
+    vecVboGrow_Faces.clear();
+    vecVboGrow_Colors.clear();
+    vecVboGrow_HexagonId.clear();
+    
+    // inits
+    int numCucs = hexagonCanvas.getNumHexagons();
+    startSide = 0;
+    endSide = 1;
+    numSteps = 16;
+    cucWidth = 0.125;
+    lastFaceAddedToGrow=0;
+    
+    
+    // TILES
+    calculateTilePatterns();
+    
+    // we put the vbo data of each hexagon cuc into a temp vector that will be inserted(appended) on the vecVboCucs_Verts
+    // resize temp vectors that are recalculated for each hexaogn cuc
+    int numMaxOfCucsInOneHexagon = 6;
+    
+    for(int i=0;i<hexagonCanvas.getNumHexagons();i++)
+    {
+        if(usedHexagons[i]==true)
+        {
+            // for each hexagon ....
+            // clear and resizing data
+            hexaPoints.clear();
+            hexaSides.clear();
+            hexaPoints.resize(6,ofVec3f(0,0,0));
+            hexaSides.resize(6);
+            
+            // define HEXAGON POINTS
+            // add them to the hexagon
+            for(int j=0;j<6;j++)
+            {
+                hexaPoints[j] = vecVboTex_Verts[(i*7)+j+1]; //+1 because vecVbo[0s] are centroids?
+            }
+            // CALCULATE SIDES (SAME FOR EVERY HEXAGON)
+            calculateSides();
+            ofVec2f idRing = hexagonCanvas.getHexagonIdAndRing(i);
+            
+            int choosedPattern = int(ofRandom(0,183));
+            
+            pmHexagonTile actualTilePattern = hexagonTilesDictionary[choosedPattern];
+            int numCucsActualHexagon = actualTilePattern.getConnections().size(); //int(ofRandom(0, 6));
+            cout << "Get number of cucs in pattern : " << choosedPattern << " :: " << actualTilePattern.getConnections().size() << endl;
+            
+            int totalVerticesAddedToThisHexagon = 0;
+            for(int k=0;k<numCucsActualHexagon;k++)
+            {
+                
+                vecTempVboGrow_Verts.resize(numSteps*2,ofVec3f(0,0,0));
+                vecTempVboGrow_Colors.resize(vecTempVboGrow_Verts.size()),ofFloatColor(0.0,1.0,1.0);
+//                vecTempVboGrow_TexCoords.resize(vecTempVbo_Verts.size(),ofVec2f(0,0));
+                vecTempVboGrow_Faces.resize((numSteps-1)*2*3,0);
+                
+                if(k<numCucsActualHexagon)
+                {
+                    // this is a user defined cuc ... take it normally
+                    sampledPoints.clear();
+                    ribs.clear();
+                    sampledPoints.resize(numSteps);
+                    ribs.resize(numSteps);
+                    for(int i=0;i<numSteps;i++)
+                    {
+                        ribs[i].resize(2);
+                    }
+                    
+                    startSide = actualTilePattern.getConnections()[k].startsAt;
+                    endSide = actualTilePattern.getConnections()[k].endsAt;
+                    
+                    // STEPS
+                    calculateStartEndPointsAndCurve();
+                    calculateRibs();
+                    calculateVboDataGrow();
+                    
+                }
+                else
+                {
+                    // fill with "void" cucs
+                    lastFaceAddedToGrow=lastFaceAddedToGrow + ((numSteps)*2);
+                    
+                }
+                // inserting calculated hexagon cuc into vectors that will feed the vboCucs
+                vecVboGrow_Verts.insert(vecVboGrow_Verts.end(), vecTempVboGrow_Verts.begin(), vecTempVboGrow_Verts.end());
+                vecVboGrow_Faces.insert(vecVboGrow_Faces.end(), vecTempVboGrow_Faces.begin(), vecTempVboGrow_Faces.end());
+                vecVboGrow_Colors.insert(vecVboGrow_Colors.end(), vecTempVboGrow_Colors.begin(), vecTempVboGrow_Colors.end());
+                vecVboGrow_HexagonId.insert(vecVboGrow_HexagonId.end(), vecVboGrow_HexagonId.begin(),vecVboGrow_HexagonId.end());
+                
+                totalVerticesAddedToThisHexagon = totalVerticesAddedToThisHexagon + ((numSteps-1)*2*3) ;
+                
+                //matricesNumElements.insert(matricesNumElements.end(),totalVerticesAddedToThisHexagon,100);
+
+//                for(int m=0;m<totalVerticesAddedToThisHexagon;m++)
+//                {
+//                    matricesNumElements.insert(matricesNumElements.end(),totalVerticesAddedToThisHexagon,ofFloatColor(1,1,1,1));
+//                    matricesNumElements.push_back(ofFloatColor(0,0,0,0));
+//                }
+            }
+            cout << "Hexagon num = " << i << " _ Total vertices added to hexagon : " << totalVerticesAddedToThisHexagon <<  endl;
+        }
+    }
+    // FILL DATA INTO VBO CUCS
+    vboGrow.setVertexData(vecVboGrow_Verts.data(), vecVboGrow_Verts.size(),GL_DYNAMIC_DRAW);
+    vboGrow.setIndexData(vecVboGrow_Faces.data(), vecVboGrow_Faces.size(),GL_DYNAMIC_DRAW);
+    vboGrow.setColorData(vecVboGrow_Colors.data(), vecVboGrow_Colors.size(),GL_DYNAMIC_DRAW);
+    
+    //int customLocation = 5; //
+    //while(hasAttribute(customLocation++));
+    //vboGrow.setAttributeData(<#int location#>, <#const float *vert0x#>, <#int numCoords#>, <#int total#>, <#int usage#>)
+    
+    cout << "!!! vboGrow sizes _ Verts = " << vecVboGrow_Verts.size() << " Faces = " << vecVboGrow_Faces.size() << endl;
+    cout << "!!! matricesNumElements size  = " << matricesNumElements.size() << endl;
+    
+}
+
+//--------------------------------------------------------------
+void ofApp::calculateVboDataGrow()
+{
+    
+    // DEFINE VBO DATA
+    
+    // VERTEXS
+    for(int i=0;i<vecTempVboGrow_Verts.size();i++)
+    {
+        int half = (vecTempVboGrow_Verts.size()/2)-1;
+        if(i<=half)
+        {
+            vecTempVboGrow_Verts[i] = ribs[i][0];
+        }
+        else
+        {
+            vecTempVboGrow_Verts[i] = ribs[(numSteps-1)-(i-numSteps)][1];
+        }
+    }
+    // FACES
+    int totalVertexs = numSteps*2;
+    for(int i=0;i<(numSteps-1);i++)
+    {
+        vecTempVboGrow_Faces[(i*6)+0] = i + lastFaceAddedToGrow;
+        vecTempVboGrow_Faces[(i*6)+1] = i+1 + lastFaceAddedToGrow;
+        vecTempVboGrow_Faces[(i*6)+2] = (totalVertexs-1)-i + lastFaceAddedToGrow;
+        
+        vecTempVboGrow_Faces[(i*6)+3] = i+1 + lastFaceAddedToGrow;
+        vecTempVboGrow_Faces[(i*6)+4] = (totalVertexs-1)-i-1 + lastFaceAddedToGrow;
+        vecTempVboGrow_Faces[(i*6)+5] = (totalVertexs-1)-i + lastFaceAddedToGrow;
+        
+    }
+    lastFaceAddedToGrow=lastFaceAddedToGrow + ((numSteps)*2);
+//    single element (1)
+//    iterator insert (iterator position, const value_type& val);
+//    fill (2)
+//    void insert (iterator position, size_type n, const value_type& val);
+//    range (3)
+//    template <class InputIterator>
+//    void insert (iterator position, InputIterator first, InputIterator last);
+    
+    //    for(int i=0;i<vecTempVbo_Faces.size();i++)
+    //    {
+    //        //                cout << "Face : " << i << " :: " << vecVboCucs_faces[(i*3)] << " , " << vecVboCucs_faces[(i*3)+1] << " , " << vecVboCucs_faces[(i*3)+2] << endl;
+    //        //        cout << "FaceTemp " << i << ": " << vecTempVbo_Faces[i] << endl;
+    //    }
+    
+    // COLORS and TEXCOORDS
+    float factor;
+    for(int i=0;i<vecTempVboGrow_Verts.size();i++)
+    {
+        factor = ofMap(i,0,numSteps*2,0.0,1.0);
+        //            if(i<8)
+        //            {
+        //                vecVboCucs_colors[i] = ofFloatColor(1.0,1.0,1.0,1.0);
+        //            }
+        //            else
+        //            {
+        //                vecVboCucs_colors[i] = ofFloatColor(1.0,1.0,1.0,1.0);
+        //            }
+        
+        //        vecTempVbo_Colors[i] = ofFloatColor(1.0,1.0*factor,0.0,1.0);
+        if(int(i/numSteps)%2)
+        {
+            vecTempVboGrow_Colors[i] = ofFloatColor(1.0,1.0,1.0,1.0);
+        }
+        else
+        {
+            vecTempVboGrow_Colors[i] = ofFloatColor(0.0,0.0,0.0,1.0);
+        }
+//        vecTempVboGrow_TexCoords[i] = ofVec2f(vecTempVboGrow_Verts[i].x,vecTempVboGrow_Verts[i].y);
+    }
+    
+}
+
+//---------------------------------------------------------------------------
+void ofApp::occupyOneHexagon(ofVec2f startingHexagon, int startingSide)
+{
+
+    vector<vector<int>> vIndexData = hexagonCanvas.getHexagonsIndexData();
+
+    // we set it the origin as "used" on the usedHexagons
+    int whichNumberOfHexagon = vIndexData[startingHexagon.x][startingHexagon.y];
+    usedHexagons[vIndexData[startingHexagon.x][startingHexagon.y]] = true;
+    cout << "Marked hexagon " << whichNumberOfHexagon << " :: " << startingHexagon.x << " , " << startingHexagon.y << " as used !" <<endl;
+
+    // NEIGHBOURS
+    vector<ofVec2f> hexagonNeighbours;
+    hexagonNeighbours.resize(6,ofVec2f(-1,-1));
+    
+    // [0] or .x is RING 0 .. 35
+    // [1] or .y is INDEX 0 .. 64
+    
+    hexagonNeighbours[0].y = (int(startingHexagon.y) + 1)%64;
+    hexagonNeighbours[0].x = startingHexagon.x - 1;
+    
+    hexagonNeighbours[1].y = (int(startingHexagon.y) + 1)%64;
+    hexagonNeighbours[1].x = startingHexagon.x + 0;
+    
+    hexagonNeighbours[2].y = (int(startingHexagon.y) + 1)%64;
+    hexagonNeighbours[2].x = startingHexagon.x + 1;
+    
+    hexagonNeighbours[3].y = startingHexagon.y + 0;
+    hexagonNeighbours[3].x = startingHexagon.x + 1;
+    
+    hexagonNeighbours[4].y = startingHexagon.y -1;
+    if(hexagonNeighbours[4].y<0) hexagonNeighbours[4].y = 64 + hexagonNeighbours[4].y;
+    hexagonNeighbours[4].x = startingHexagon.x +0;
+    
+    hexagonNeighbours[5].y = startingHexagon.y + 0;
+    hexagonNeighbours[5].x = startingHexagon.x - 1;
+
+    vector<ofVec2f> possibleNextHexagons;
+    vector<int> possibleNumNexHexagons;
+    
+    for(int i=0;i<6;i++)
+    {
+        if( (hexagonNeighbours[i].x>=0) && (hexagonNeighbours[i].y>=0) && (hexagonNeighbours[i].y<35) )
+        {
+            int whichHexagonDoYouWantToGo = vIndexData[hexagonNeighbours[i].x][hexagonNeighbours[i].y];
+            if(whichHexagonDoYouWantToGo!=-1)
+            {
+                if(usedHexagons[whichHexagonDoYouWantToGo]==false)
+                {
+                    cout << "Seems like you could go to neighbour : " << i << " :: Ring " << hexagonNeighbours[i].x << " Id :: " << hexagonNeighbours[i].y << endl;
+                    possibleNextHexagons.push_back(hexagonNeighbours[i]);
+                    possibleNumNexHexagons.push_back(i);
+                }
+            }
+        }
+    }
+    
+    if(possibleNextHexagons.size()>0)
+    {
+        // choose an option from the possible neighbours.
+        int optionChoosed = ofRandom(0,possibleNextHexagons.size());
+        
+        cout << "Random choosed to go to : " << optionChoosed << endl;
+        
+        ofVec2f nextHexagon = ofVec2f(possibleNextHexagons[optionChoosed].x,possibleNextHexagons[optionChoosed].y);
+        int whichSideItStarts = (possibleNumNexHexagons[optionChoosed]+3)%6;
+
+        
+        occupyOneHexagon(nextHexagon,whichSideItStarts);
+    }
+    
+    
+    
+}
+
+/*
+// print hexagon index data
+// looking for the closer hexagons of hexagons with id = 0 ring = 0 ;
+vector<vector<int>> vIndexData = hexagonCanvas.getHexagonsIndexData();
+cout << "V Index Data sizes : " << vIndexData.size() << " , " << vIndexData[0].size() << endl;
+//
+//    for(int i=0;i<vIndexData.size();i++)
+//    {
+//        for(int j=0;j<vIndexData[i].size();j++)
+//        {
+//            cout << "index : " << i << " , " << j << " = " << vIndexData[i][j] << endl;
+//        }
+//
+//    }
+//
+
+
+
+
+*/

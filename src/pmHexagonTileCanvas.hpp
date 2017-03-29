@@ -13,6 +13,13 @@
 #include "pmHexagonTile.hpp"
 #include "ofMain.h"
 
+typedef struct
+{
+    int ring;
+    int pathId;
+    bool available;
+    
+} tileInfo;
 
 class pmHexagonTileCanvas
 {
@@ -21,6 +28,7 @@ class pmHexagonTileCanvas
     pmHexagonTileCanvas();
     
     static vector<pmHexagonTile> searchForStartingOn(vector<pmHexagonTile> inTiles , int startingAtSide);
+    static void searchForAvailableHexagons(int id, int ring);
     
     private :
     

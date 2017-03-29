@@ -7,6 +7,8 @@
 
 uniform samplerBuffer texTransform;
 uniform samplerBuffer texCubeColors;
+//uniform usamplerBuffer texNumElements;
+
 uniform int u_numHexags;
 uniform int u_modulo;
 uniform vec4 u_colorA;
@@ -53,7 +55,7 @@ void main()
     {
         int numVerts = u_modulo * u_numHexags;
         int faceOnHexa = int(gl_VertexID)%7;
-              
+        hexColor = vec4(1.0,0.0,0.0,1.0);
         // COLOR for ISO cube color !! remember about "FLAT" on color definition (vert + frag) ""
         if((faceOnHexa==1)||(faceOnHexa==2))
         {
@@ -100,6 +102,22 @@ void main()
         }
         
     }
+    else if(u_source==4)
+    {
+        if((gl_VertexID%u_modulo)<(u_modulo/8))
+        {
+            out_colorMix = u_colorA;
+        }
+        else
+        {
+            out_colorMix = u_colorB;
+        }
+        //hexagonId = int(texelFetch(texNumElements,gl_VertexID).r);
+        
+    }
+    
+    
+
     out_colorA = u_colorA;
     //out_colorA = color;
     

@@ -26,7 +26,8 @@ enum sourceType
     HEX_SOURCE_TEXTURE = 0,
     HEX_SOURCE_QUADS = 1,
     HEX_SOURCE_CUCS = 2,
-    HEX_SOURCE_RANDOM = 3
+    HEX_SOURCE_RANDOM = 3,
+    HEX_SOURCE_GROW = 4
 };
 
 
@@ -36,6 +37,7 @@ typedef struct
     int _num;
     int _pathId;
     float _scale;
+    
 } hexagonPixel;
 
 class ofApp : public ofBaseApp{
@@ -63,11 +65,15 @@ class ofApp : public ofBaseApp{
     void prepareCucs();
     void prepareHexagons();
     void prepareRandom();
+    void prepareGrow();
+    
     void buildTBOs();
+    void buildNumElementsTBO();
     
     // MATRIX DATA UPDATE
-    void                    updateMatrices();
-    void                    updateCubeColors();
+    void                    updateTransformMatrices();
+    void                    updateCubeColorsMatrices();
+    void                    updateNumElementsMatrices();
     void                    updateVertexsForQuad();
     void                    updateCucs();
     void                    updateRandom();
@@ -131,6 +137,7 @@ class ofApp : public ofBaseApp{
     ofVbo vboQuads;
     ofVbo vboCucs;
     ofVbo vboRandom;
+    ofVbo vboGrow;
     
     // VBO DATA
     vector<ofVec3f>                 vecVboTex_Verts;
@@ -146,10 +153,16 @@ class ofApp : public ofBaseApp{
     vector<ofIndexType>             vecVboCucs_Faces;
     vector<ofFloatColor>            vecVboCucs_Colors;
     vector<ofVec2f>                 vecVboCucs_TexCoords;
+    vector<uint32>                  vecVboCucs_HexagonId;
 
     vector<ofVec3f>                 vecVboRandom_Verts;
     vector<ofIndexType>             vecVboRandom_Faces;
     vector<ofFloatColor>            vecVboRandom_Colors;
+
+    vector<ofVec3f>                 vecVboGrow_Verts;
+    vector<ofIndexType>             vecVboGrow_Faces;
+    vector<ofFloatColor>            vecVboGrow_Colors;
+    vector<float>                   vecVboGrow_HexagonId;
 
     
     // VBO CUCS STUFF
@@ -173,16 +186,25 @@ class ofApp : public ofBaseApp{
     // init ribs vector
     // each "rib" is 2 x ofVec2f with the coordinates of the segment of each rib [Vert.Left , Vert.Right]
     vector<vector<ofVec3f>> ribs;
-    vector<pmHexagonTile>   hexagonTiles;
+    vector<pmHexagonTile>   hexagonTilesDictionary;
     
     int numSteps;
     int lastFaceAddedToCucs;
+    int lastFaceAddedToGrow;
     
     vector<ofVec3f>         vecTempVbo_Verts;
     vector<ofFloatColor>    vecTempVbo_Colors;
     vector<ofIndexType>     vecTempVbo_Faces;
     vector<ofVec2f>         vecTempVbo_TexCoords;
+
+    vector<ofVec3f>         vecTempVboGrow_Verts;
+    vector<ofFloatColor>    vecTempVboGrow_Colors;
+    vector<ofIndexType>     vecTempVboGrow_Faces;
+//    vector<float>           vecTempVboGrow_HexagonId;
+
+    // GROWING CUCS
     
+    void occupyOneHexagon(ofVec2f startingHexagon, int startingSide);
 
     
     void                    calculateStartEndPointsAndCurve();
@@ -190,6 +212,10 @@ class ofApp : public ofBaseApp{
     void                    calculateVboData();
     void                    calculateSides();
     void                    calculateTilePatterns();
+    void                    calculateVboDataGrow();
+    
+    // CUCS GROW
+    vector<bool>            usedHexagons;
     
     /// RANDOM
     float                   lastRandomTime;
@@ -210,7 +236,14 @@ class ofApp : public ofBaseApp{
     ofTexture               texCubeColors;
     ofBufferObject          bufferCubeColors;
     vector<ofFloatColor>    matricesCubeColors;
-    
+    // TBO : Texture Buffer Object used to give modulo of elements to be drawn
+    ofTexture               texNumElements;
+    ofBufferObject          bufferNumElements;
+    vector<uint32>          matricesNumElements;
+
+    ofBufferObject          bufferHexagonId;
+    vector<uint32>          matricesHexagonId;
+
     
     /// ORDERS AND LOAD OPERATIONS
     ofPoint                 projectPointToLine(ofPoint Point,ofPoint LineStart,ofPoint LineEnd);

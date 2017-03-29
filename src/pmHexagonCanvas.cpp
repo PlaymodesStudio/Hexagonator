@@ -36,7 +36,7 @@ void pmHexagonCanvas::setup(string _filename)
     hexagonsIndexData.resize(numRings);
     for(int i=0;i<numRings;i++)
     {
-        hexagonsIndexData[i].resize(numIdsPerRing);
+        hexagonsIndexData[i].resize(numIdsPerRing,-1);
     }
     // resize hexagonsData to num hexagons
     hexagonsData.resize(numHexagons);
