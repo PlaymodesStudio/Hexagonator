@@ -32,7 +32,7 @@ void ofApp::setup(){
     /// GUI
     /////////////////////////////
     
-
+    
     // GRAPHICS
     dropdown_whichTextureSource = HEX_TEXTURE_VIDEO; // image as initial texture source
     dropdown_whichTexCoord = 0 ;
@@ -51,7 +51,7 @@ void ofApp::setup(){
     dropdown_whichTexCoord.addListener(this,&ofApp::changedTexCoord);
     dropdown_whichTextureSource.addListener(this,&ofApp::changedTexSource);
     dropdown_whichSource.addListener(this,&ofApp::changedSource);
-
+    
     // RANDOM GUI
     slider_howManyRandomHexagons = 1;
     slider_decreaseRate = 0.10;
@@ -204,7 +204,7 @@ void ofApp::setup(){
     
     //svgFilename = "./svg/test_svg_part.svg";
     svgFilename = "./svg/santi3_App.svg";
-//    svgFilename = "./svg/testSVG9Hexagons.svg";
+    //    svgFilename = "./svg/testSVG9Hexagons.svg";
     //        svgFilename = "./svg/testSVG3Hexagons.svg";
     //    svgFilename = "./svg/test_svg_part_nomes2.svg";
     //    svgFilename = "./svg/testOrdreRadial.svg";
@@ -230,31 +230,35 @@ void ofApp::setup(){
     ///////////////////
     // VBO CUCS STUFF
     ///////////////////
-
+    
     prepareCucs();
     
     ///////////////////
     // RECURSIVE CUCS
     ///////////////////
-
     
     
-//    vector<vector<int>> vIndexData = hexagonCanvas.getHexagonsIndexData();
-//    cout << "V Index Data sizes : " << vIndexData.size() << " , " << vIndexData[0].size() << endl;
-//    
-//        for(int i=0;i<vIndexData.size();i++)
-//        {
-//            for(int j=0;j<vIndexData[i].size();j++)
-//            {
-//                cout << "index : " << i << " , " << j << " = " << vIndexData[i][j] << endl;
-//            }
-//    
-//        }
-
+    
+    //    vector<vector<int>> vIndexData = hexagonCanvas.getHexagonsIndexData();
+    //    cout << "V Index Data sizes : " << vIndexData.size() << " , " << vIndexData[0].size() << endl;
+    //
+    //        for(int i=0;i<vIndexData.size();i++)
+    //        {
+    //            for(int j=0;j<vIndexData[i].size();j++)
+    //            {
+    //                cout << "index : " << i << " , " << j << " = " << vIndexData[i][j] << endl;
+    //            }
+    //
+    //        }
+    
+    // CREATE A GROW PATH ...
+    ///////////////////////////////////////////
+    ///////////////////////////////////////////
+    
     usedHexagons.resize(hexagonCanvas.getNumHexagons(),false);
-
+    growingHexagons.push_back(ofVec2f(0,0));
     occupyOneHexagon(ofVec2f(0,0),0);
-
+    
     int howManyHexagonsOccupied = 0;
     for(int i=0;i<usedHexagons.size();i++)
     {
@@ -265,9 +269,32 @@ void ofApp::setup(){
     }
     cout << " Occupation done ... Used : " << howManyHexagonsOccupied << endl;
 
-    buildNumElementsTBO();
+//    // CREATE A GROW PATH ... MANUAL
+//    ///////////////////////////////////////////
+//    ///////////////////////////////////////////
+//    
+//    int howManyHexagonsOccupied = 0;
+//    usedHexagons.resize(hexagonCanvas.getNumHexagons(),false);
+//    //occupyOneHexagon(ofVec2f(0,0),0);
+//    for(int i=0;i<hexagonCanvas.getNumHexagons();i++)
+//    {
+//        if(hexagonCanvas.getHexagonIdAndRing(i)[0] == 0)
+//        {
+//            // we are in id = 0 ... select this hexagon !!
+//            usedHexagons[i] = true;
+//            howManyHexagonsOccupied = howManyHexagonsOccupied +1 ;
+//        }
+//    }
+//    cout << " Occupation done ... Used : " << howManyHexagonsOccupied << endl;
+//
+    
+    
+    ///////////////////////////////////////////
+    ///////////////////////////////////////////
+    
+    //buildNumElementsTBO();
     prepareGrow();
-
+    
     
     ///////////////////
     // VBO CUCS RANDOM
@@ -293,11 +320,28 @@ void ofApp::setup(){
         shader.setUniform4f("u_color", ofFloatColor(0.5,0.5,0.5,1.0));
         shader.setUniform1i("u_source", 0);
         shader.setUniform1i("u_textureSource", 1);
+        
+
         shader.end();
+        
+        /// 
+//
+//        shader.begin();
+//            shader.bindAttribute(5, "u_vertexHexagonId");
+//        shader.linkProgram();
+//        shader.end();
+//        shader.setupShaderFromSource(GL_FRAGMENT_SHADER, shaderProgram);
+//        shader.linkProgram();
+
+//        shader.setupShaderFromSource(<#GLenum type#>, <#string source#>)
+//        ofShader::setupShaderFromSource(...)
+//        ofShader::bindAttribute(customLocation, "myattribute");
+//        ofShader::linkProgram()
+        
     }
     
     updateTransformMatrices();
-
+    
     
 }
 
@@ -375,7 +419,7 @@ void ofApp::updateTransformMatrices()
 void ofApp::updateNumElementsMatrices()
 {
     // and upload them to the texture buffer
-
+    
     bufferNumElements.updateData(0,matricesNumElements);
     
     
@@ -591,20 +635,20 @@ void ofApp::draw()
                 switch (dropdown_whichTextureSource)
                 {
                     case HEX_TEXTURE_IMAGE:
-                        shader.setUniformTexture("uTexture", image, 2);
-                        break;
+                    shader.setUniformTexture("uTexture", image, 2);
+                    break;
                     case HEX_TEXTURE_VIDEO:
-                        shader.setUniformTexture("uTexture", videoPlayer, 2);
-                        break;
+                    shader.setUniformTexture("uTexture", videoPlayer, 2);
+                    break;
                     case HEX_TEXTURE_SYPHON:
-                        shader.setUniformTexture("uTexture", fboSyphon.getTexture(), 2);
-                        break;
+                    shader.setUniformTexture("uTexture", fboSyphon.getTexture(), 2);
+                    break;
                     case HEX_TEXTURE_SYPHON_MAX:
-                        shader.setUniformTexture("uTexture", fboSyphon.getTexture(), 2);
-                        break;
-                        
+                    shader.setUniformTexture("uTexture", fboSyphon.getTexture(), 2);
+                    break;
+                    
                     default:
-                        break;
+                    break;
                 }
             }
             else if(dropdown_whichSource == HEX_SOURCE_QUADS)
@@ -621,7 +665,7 @@ void ofApp::draw()
             }
             else if(dropdown_whichSource == HEX_SOURCE_GROW)
             {
-                shader.setUniform1i("u_modulo",7);
+                shader.setUniform1i("u_modulo",numSteps*2*6);
             }
             
             
@@ -638,7 +682,7 @@ void ofApp::draw()
             ofSetColor(255);
             shader.setUniform4f("u_colorA", ofFloatColor(color_shaderColorA->r/255.0,color_shaderColorA->g/255.0,color_shaderColorA->b/255.0,color_shaderColorA->a/255.0));
             shader.setUniform4f("u_colorB", ofFloatColor(color_shaderColorB->r/255.0,color_shaderColorB->g/255.0,color_shaderColorB->b/255.0,color_shaderColorB->a/255.0));
-                                
+            
             if(toggle_useTBOMatrix) shader.setUniform1i("u_useMatrix", 1);
             else shader.setUniform1i("u_useMatrix", 0);
             
@@ -677,10 +721,10 @@ void ofApp::draw()
                 case HEX_SOURCE_GROW :
                 {
                     int numVertexsPerOneHexagon = 14;
-                    vboGrow.drawElements(GL_TRIANGLES, vecVboCucs_Faces.size());
+                    vboGrow.drawElements(GL_TRIANGLES, vecVboGrow_Faces.size());
                     break;
                 }
-
+                
             }
             
             
@@ -794,27 +838,27 @@ void ofApp::draw()
         switch (dropdown_whichTextureSource)
         {
             case HEX_TEXTURE_IMAGE:
-                ofDrawBitmapString(imageFilename + " : " + ofToString(videoPlayer.getCurrentFrame()),stringPosition);
-                ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), stringPosition + ofVec2f(0,15));
-                break;
+            ofDrawBitmapString(imageFilename + " : " + ofToString(videoPlayer.getCurrentFrame()),stringPosition);
+            ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), stringPosition + ofVec2f(0,15));
+            break;
             case HEX_TEXTURE_VIDEO:
-                if(videoPlayer.isLoaded())
-                {
-                    ofDrawBitmapString(videoFilename + " // Current Frame :  " + ofToString(videoPlayer.getCurrentFrame()),stringPosition);
-                }
-                ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), stringPosition + ofVec2f(0,15));
-                break;
+            if(videoPlayer.isLoaded())
+            {
+                ofDrawBitmapString(videoFilename + " // Current Frame :  " + ofToString(videoPlayer.getCurrentFrame()),stringPosition);
+            }
+            ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), stringPosition + ofVec2f(0,15));
+            break;
             case HEX_TEXTURE_SYPHON:
-                ofDrawBitmapString("Syhpon",stringPosition);
-                ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), stringPosition + ofVec2f(0,15));
-                break;
+            ofDrawBitmapString("Syhpon",stringPosition);
+            ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), stringPosition + ofVec2f(0,15));
+            break;
             case HEX_TEXTURE_SYPHON_MAX:
-                ofDrawBitmapString("Syhpon Max",stringPosition);
-                ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), stringPosition + ofVec2f(0,15));
-                break;
-                
+            ofDrawBitmapString("Syhpon Max",stringPosition);
+            ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), stringPosition + ofVec2f(0,15));
+            break;
+            
             default:
-                break;
+            break;
         }
     }
     else if(dropdown_whichSource==HEX_SOURCE_CUCS)
@@ -832,7 +876,7 @@ void ofApp::draw()
         ofDrawBitmapString("GROW" ,stringPosition);
         ofDrawBitmapString("FPS : " + ofToString(int(ofGetFrameRate())), stringPosition + ofVec2f(0,15));
     }
-
+    
     if(isRecording)
     {
         ofDrawBitmapString("REC : Recorded Frame : " + ofToString(recordedFrame) + " // Time : " +ofToString(ofGetElapsedTimef()), stringPosition + ofVec2f(0,30) );
@@ -1221,7 +1265,7 @@ void ofApp::changedTexSource(int &i)
     shader.begin();
     shader.setUniform1i("u_textureSource", dropdown_whichTextureSource);
     shader.end();
-
+    
     cout <<"Changed Texture source to " << dropdown_whichTextureSource <<endl;
 }
 
@@ -1232,23 +1276,23 @@ void ofApp::changedSource(int &i)
     
     switch (i) {
         case HEX_SOURCE_TEXTURE:
-            source = 0;
-            break;
+        source = 0;
+        break;
         case HEX_SOURCE_QUADS:
-            source = 1;
-            break;
+        source = 1;
+        break;
         case HEX_SOURCE_CUCS:
-            source = 2;
-            break;
+        source = 2;
+        break;
         case HEX_SOURCE_RANDOM:
-            source = 3;
-            break;
+        source = 3;
+        break;
         case HEX_SOURCE_GROW:
-            source = 4;
-            break;
-
+        source = 4;
+        break;
+        
         default:
-            break;
+        break;
     }
     shader.begin();
     shader.setUniform1i("u_source", source);
@@ -1383,11 +1427,11 @@ void ofApp::calculateVboData()
     lastFaceAddedToCucs=lastFaceAddedToCucs + ((numSteps)*2);
     
     
-//    for(int i=0;i<vecTempVbo_Faces.size();i++)
-//    {
-//        //                cout << "Face : " << i << " :: " << vecVboCucs_faces[(i*3)] << " , " << vecVboCucs_faces[(i*3)+1] << " , " << vecVboCucs_faces[(i*3)+2] << endl;
-//        //        cout << "FaceTemp " << i << ": " << vecTempVbo_Faces[i] << endl;
-//    }
+    //    for(int i=0;i<vecTempVbo_Faces.size();i++)
+    //    {
+    //        //                cout << "Face : " << i << " :: " << vecVboCucs_faces[(i*3)] << " , " << vecVboCucs_faces[(i*3)+1] << " , " << vecVboCucs_faces[(i*3)+2] << endl;
+    //        //        cout << "FaceTemp " << i << ": " << vecTempVbo_Faces[i] << endl;
+    //    }
     
     // COLORS and TEXCOORDS
     float factor;
@@ -1403,7 +1447,7 @@ void ofApp::calculateVboData()
         //                vecVboCucs_colors[i] = ofFloatColor(1.0,1.0,1.0,1.0);
         //            }
         
-//        vecTempVbo_Colors[i] = ofFloatColor(1.0,1.0*factor,0.0,1.0);
+        //        vecTempVbo_Colors[i] = ofFloatColor(1.0,1.0*factor,0.0,1.0);
         if(int(i/numSteps)%2)
         {
             vecTempVbo_Colors[i] = ofFloatColor(1.0,1.0,1.0,1.0);
@@ -1851,7 +1895,7 @@ void ofApp::calculateTilePatterns()
         hexagonTilesDictionary.push_back(t);
     }
     
-
+    
     // MERGING sample
     hexagonTilesDictionary.push_back(hexagonTilesDictionary[0].mergeTileData(hexagonTilesDictionary[1]));
 }
@@ -1859,49 +1903,49 @@ void ofApp::calculateTilePatterns()
 //--------------------------------------------------------------
 void ofApp::prepareQuads()
 {
-        
-        int numRibbons = hexagonCanvas.getNumHexagons();
-        int numRibbonVertexs = hexagonCanvas.getNumHexagons()*4;
-        
-        // VERTEXS
-        vecVboQuads_Verts.resize(numRibbonVertexs);
-        vboQuads.setVertexData(vecVboQuads_Verts.data(),vecVboQuads_Verts.size(),GL_DYNAMIC_DRAW);
-        
-        // TEXTURE COORDS
-        //    vector<ofVec2f> ribbonTexCoords;
-        //    ribbonTexCoords.resize(numRibbons*4);
-        //    for(int i=0;i<numRibbons;i++)
-        //    {
-        //        for(int j=0;j<4;j++)
-        //        {
-        //            ribbonTexCoords[(i*4)+j] = vCentroidPoints[i] / 1200.0 ;
-        //        }
-        //    }
-        //    pmVboRibbon.setTexCoordsData(vecCentroidTexCoord,1);
-        
-        // COLORS
-        vecVboQuads_Colors.resize(numRibbonVertexs);
-        for(int i=0;i<vecVboQuads_Colors.size();i++)
-        {
-            vecVboQuads_Colors[i] = ofFloatColor(1.0,1.0,1.0,1.0);
-        }
-        vboQuads.setColorData(vecVboQuads_Colors.data(), vecVboQuads_Colors.size(), GL_DYNAMIC_DRAW);
-        
-        // INDEXS
-        vecVboQuads_Indexs.resize(numRibbons*6);
-        for(int i=0;i<numRibbons;i++)
-        {
-            vecVboQuads_Indexs[(i*6)+0] = (i*4)+0;
-            vecVboQuads_Indexs[(i*6)+1] = (i*4)+1;
-            vecVboQuads_Indexs[(i*6)+2] = (i*4)+2;
-            vecVboQuads_Indexs[(i*6)+3] = (i*4)+0;
-            vecVboQuads_Indexs[(i*6)+4] = (i*4)+2;
-            vecVboQuads_Indexs[(i*6)+5] = (i*4)+3;
-        }
-        vboQuads.setIndexData(vecVboQuads_Indexs.data(), vecVboQuads_Indexs.size(), GL_DYNAMIC_DRAW);
-        
-
-   
+    
+    int numRibbons = hexagonCanvas.getNumHexagons();
+    int numRibbonVertexs = hexagonCanvas.getNumHexagons()*4;
+    
+    // VERTEXS
+    vecVboQuads_Verts.resize(numRibbonVertexs);
+    vboQuads.setVertexData(vecVboQuads_Verts.data(),vecVboQuads_Verts.size(),GL_DYNAMIC_DRAW);
+    
+    // TEXTURE COORDS
+    //    vector<ofVec2f> ribbonTexCoords;
+    //    ribbonTexCoords.resize(numRibbons*4);
+    //    for(int i=0;i<numRibbons;i++)
+    //    {
+    //        for(int j=0;j<4;j++)
+    //        {
+    //            ribbonTexCoords[(i*4)+j] = vCentroidPoints[i] / 1200.0 ;
+    //        }
+    //    }
+    //    pmVboRibbon.setTexCoordsData(vecCentroidTexCoord,1);
+    
+    // COLORS
+    vecVboQuads_Colors.resize(numRibbonVertexs);
+    for(int i=0;i<vecVboQuads_Colors.size();i++)
+    {
+        vecVboQuads_Colors[i] = ofFloatColor(1.0,1.0,1.0,1.0);
+    }
+    vboQuads.setColorData(vecVboQuads_Colors.data(), vecVboQuads_Colors.size(), GL_DYNAMIC_DRAW);
+    
+    // INDEXS
+    vecVboQuads_Indexs.resize(numRibbons*6);
+    for(int i=0;i<numRibbons;i++)
+    {
+        vecVboQuads_Indexs[(i*6)+0] = (i*4)+0;
+        vecVboQuads_Indexs[(i*6)+1] = (i*4)+1;
+        vecVboQuads_Indexs[(i*6)+2] = (i*4)+2;
+        vecVboQuads_Indexs[(i*6)+3] = (i*4)+0;
+        vecVboQuads_Indexs[(i*6)+4] = (i*4)+2;
+        vecVboQuads_Indexs[(i*6)+5] = (i*4)+3;
+    }
+    vboQuads.setIndexData(vecVboQuads_Indexs.data(), vecVboQuads_Indexs.size(), GL_DYNAMIC_DRAW);
+    
+    
+    
 }
 
 //---------------------------------------------------------------------------
@@ -2030,13 +2074,11 @@ void ofApp::prepareCucs()
     vecVboCucs_TexCoords.clear();
     
     // inits
-    int numCucs = hexagonCanvas.getNumHexagons();
     startSide = 0;
     endSide = 1;
-    numSteps = 16;
+    numSteps = 8;
     cucWidth = 0.125;
     lastFaceAddedToCucs=0;
-    
     
     // TILES
     calculateTilePatterns();
@@ -2151,7 +2193,7 @@ void ofApp::prepareRandom()
 {
     vecVboRandom_Verts.clear();
     vecVboRandom_Faces.clear();
- 
+    
     // in Random mode we use the same ammount of data ... we just change the colors to hide/show hexagons
     vecVboRandom_Verts.resize(vecVboTex_Verts.size());
     vecVboRandom_Faces.resize(vecVboTex_Faces.size());
@@ -2187,8 +2229,8 @@ void ofApp::updateRandom()
     for(int i=0;i<vecVboRandom_Verts.size();i++)
     {
         vecVboRandom_Colors[i] = vecVboRandom_Colors[i] - slider_decreaseRate; //*((1-(vecVboRandom_Colors[i].r))*(1-(vecVboRandom_Colors[i].r)));
-//        if(vecVboRandom_Colors[i].r!=0.0) cout << slider_decreaseRate*((1-(vecVboRandom_Colors[i].r))*(1-(vecVboRandom_Colors[i].r))) << endl;
-
+        //        if(vecVboRandom_Colors[i].r!=0.0) cout << slider_decreaseRate*((1-(vecVboRandom_Colors[i].r))*(1-(vecVboRandom_Colors[i].r))) << endl;
+        
     }
     
     if(ofGetElapsedTimeMillis()-lastRandomTime >=slider_randomPeriod)
@@ -2205,11 +2247,11 @@ void ofApp::updateRandom()
         }
         lastRandomTime = ofGetElapsedTimeMillis();
     }
-
-    vboRandom.updateColorData(vecVboRandom_Colors.data(),vecVboRandom_Colors.size());
-
     
-
+    vboRandom.updateColorData(vecVboRandom_Colors.data(),vecVboRandom_Colors.size());
+    
+    
+    
 }
 
 //---------------------------------------------------------------------------
@@ -2225,15 +2267,16 @@ void ofApp::prepareGrow()
     int numCucs = hexagonCanvas.getNumHexagons();
     startSide = 0;
     endSide = 1;
-    numSteps = 16;
+    numSteps = 8;
     cucWidth = 0.125;
     lastFaceAddedToGrow=0;
     
     
+    // TODO: already done ?
     // TILES
-    calculateTilePatterns();
+    //calculateTilePatterns();
     
-    // we put the vbo data of each hexagon cuc into a temp vector that will be inserted(appended) on the vecVboCucs_Verts
+    // we put the vbo data of each hexagon cuc into a temp vector that will be inserted(appended) on the vecVboGrow_Verts
     // resize temp vectors that are recalculated for each hexaogn cuc
     int numMaxOfCucsInOneHexagon = 6;
     
@@ -2241,10 +2284,11 @@ void ofApp::prepareGrow()
     {
         if(usedHexagons[i]==true)
         {
-            // for each hexagon ....
+            // for each hexagon if it's used on the grow path ....
             // clear and resizing data
             hexaPoints.clear();
             hexaSides.clear();
+            
             hexaPoints.resize(6,ofVec3f(0,0,0));
             hexaSides.resize(6);
             
@@ -2255,23 +2299,25 @@ void ofApp::prepareGrow()
                 hexaPoints[j] = vecVboTex_Verts[(i*7)+j+1]; //+1 because vecVbo[0s] are centroids?
             }
             // CALCULATE SIDES (SAME FOR EVERY HEXAGON)
+            // TODO : make this function return the vector ...
             calculateSides();
             ofVec2f idRing = hexagonCanvas.getHexagonIdAndRing(i);
             
-            int choosedPattern = int(ofRandom(0,183));
+            int choosedPattern = int(ofRandom(105,105));
             
             pmHexagonTile actualTilePattern = hexagonTilesDictionary[choosedPattern];
             int numCucsActualHexagon = actualTilePattern.getConnections().size(); //int(ofRandom(0, 6));
-            cout << "Get number of cucs in pattern : " << choosedPattern << " :: " << actualTilePattern.getConnections().size() << endl;
+            cout << "Get number of cucs in this pattern id : " << choosedPattern << " :: Number of Connections = " << numCucsActualHexagon << endl;
             
-            int totalVerticesAddedToThisHexagon = 0;
+            //int totalVerticesAddedToThisHexagon = 0;
             for(int k=0;k<numCucsActualHexagon;k++)
             {
                 
                 vecTempVboGrow_Verts.resize(numSteps*2,ofVec3f(0,0,0));
-                vecTempVboGrow_Colors.resize(vecTempVboGrow_Verts.size()),ofFloatColor(0.0,1.0,1.0);
-//                vecTempVboGrow_TexCoords.resize(vecTempVbo_Verts.size(),ofVec2f(0,0));
+                vecTempVboGrow_Colors.resize(vecTempVboGrow_Verts.size(),ofFloatColor(0.0,1.0,1.0));
+                //                vecTempVboGrow_TexCoords.resize(vecTempVbo_Verts.size(),ofVec2f(0,0));
                 vecTempVboGrow_Faces.resize((numSteps-1)*2*3,0);
+                //vecTempVboGrow_HexagonId.resize(vecTempVboGrow_Verts.size());
                 
                 if(k<numCucsActualHexagon)
                 {
@@ -2304,26 +2350,40 @@ void ofApp::prepareGrow()
                 vecVboGrow_Verts.insert(vecVboGrow_Verts.end(), vecTempVboGrow_Verts.begin(), vecTempVboGrow_Verts.end());
                 vecVboGrow_Faces.insert(vecVboGrow_Faces.end(), vecTempVboGrow_Faces.begin(), vecTempVboGrow_Faces.end());
                 vecVboGrow_Colors.insert(vecVboGrow_Colors.end(), vecTempVboGrow_Colors.begin(), vecTempVboGrow_Colors.end());
-                vecVboGrow_HexagonId.insert(vecVboGrow_HexagonId.end(), vecVboGrow_HexagonId.begin(),vecVboGrow_HexagonId.end());
+                vecVboGrow_HexagonId.insert(vecVboGrow_HexagonId.end(),numSteps*2,float(i));
+                cout << "Hexagon id : " << i << " we've added " << numSteps << " vertexs to the HexagonId" << endl;
                 
-                totalVerticesAddedToThisHexagon = totalVerticesAddedToThisHexagon + ((numSteps-1)*2*3) ;
+                //totalVerticesAddedToThisHexagon = totalVerticesAddedToThisHexagon + ((numSteps-1)*2*3) ;
                 
                 //matricesNumElements.insert(matricesNumElements.end(),totalVerticesAddedToThisHexagon,100);
-
-//                for(int m=0;m<totalVerticesAddedToThisHexagon;m++)
-//                {
-//                    matricesNumElements.insert(matricesNumElements.end(),totalVerticesAddedToThisHexagon,ofFloatColor(1,1,1,1));
-//                    matricesNumElements.push_back(ofFloatColor(0,0,0,0));
-//                }
+                
+                //                for(int m=0;m<totalVerticesAddedToThisHexagon;m++)
+                //                {
+                //                    matricesNumElements.insert(matricesNumElements.end(),totalVerticesAddedToThisHexagon,ofFloatColor(1,1,1,1));
+                //                    matricesNumElements.push_back(ofFloatColor(0,0,0,0));
+                //                }
             }
-            cout << "Hexagon num = " << i << " _ Total vertices added to hexagon : " << totalVerticesAddedToThisHexagon <<  endl;
+            cout << "Hexagon num = " << i << " _ Total vertices added to hexagon : " << vecTempVboGrow_Verts.size() <<  endl;
+            cout << " -.-.-.-.-.- " << endl;
         }
     }
     // FILL DATA INTO VBO CUCS
     vboGrow.setVertexData(vecVboGrow_Verts.data(), vecVboGrow_Verts.size(),GL_DYNAMIC_DRAW);
     vboGrow.setIndexData(vecVboGrow_Faces.data(), vecVboGrow_Faces.size(),GL_DYNAMIC_DRAW);
     vboGrow.setColorData(vecVboGrow_Colors.data(), vecVboGrow_Colors.size(),GL_DYNAMIC_DRAW);
+    hexagonIdCustomLocation = 6;
+    while(vboGrow.hasAttribute(hexagonIdCustomLocation))
+    {
+        hexagonIdCustomLocation++;
+    }
+    cout << "Hexagon Id Custom Location : " << hexagonIdCustomLocation << endl;
+    cout << "Hexagon Id Custom data size : " << vecVboGrow_HexagonId.size() << endl;
+    cout << "While we had verts size  : " << vecVboGrow_Verts.size() << endl;
     
+    vboGrow.setAttributeData( hexagonIdCustomLocation, reinterpret_cast<float *>( vecVboGrow_HexagonId.data() ),  1, vecVboGrow_HexagonId.size(), GL_STATIC_DRAW, sizeof( vecVboGrow_HexagonId[0] ) );
+
+//    vboGrow.setAttributeData(hexagonIdCustomLocation, vecVboGrow_HexagonId.data(), 1, vecVboGrow_HexagonId.size(), GL_STATIC_DRAW);
+    //void ofVbo::setAttributeBuffer(int location, ofBufferObject & buffer, int numCoords, int stride, int offset){Á
     //int customLocation = 5; //
     //while(hasAttribute(customLocation++));
     //vboGrow.setAttributeData(<#int location#>, <#const float *vert0x#>, <#int numCoords#>, <#int total#>, <#int usage#>)
@@ -2366,13 +2426,13 @@ void ofApp::calculateVboDataGrow()
         
     }
     lastFaceAddedToGrow=lastFaceAddedToGrow + ((numSteps)*2);
-//    single element (1)
-//    iterator insert (iterator position, const value_type& val);
-//    fill (2)
-//    void insert (iterator position, size_type n, const value_type& val);
-//    range (3)
-//    template <class InputIterator>
-//    void insert (iterator position, InputIterator first, InputIterator last);
+    //    single element (1)
+    //    iterator insert (iterator position, const value_type& val);
+    //    fill (2)
+    //    void insert (iterator position, size_type n, const value_type& val);
+    //    range (3)
+    //    template <class InputIterator>
+    //    void insert (iterator position, InputIterator first, InputIterator last);
     
     //    for(int i=0;i<vecTempVbo_Faces.size();i++)
     //    {
@@ -2403,7 +2463,7 @@ void ofApp::calculateVboDataGrow()
         {
             vecTempVboGrow_Colors[i] = ofFloatColor(0.0,0.0,0.0,1.0);
         }
-//        vecTempVboGrow_TexCoords[i] = ofVec2f(vecTempVboGrow_Verts[i].x,vecTempVboGrow_Verts[i].y);
+        //        vecTempVboGrow_TexCoords[i] = ofVec2f(vecTempVboGrow_Verts[i].x,vecTempVboGrow_Verts[i].y);
     }
     
 }
@@ -2411,14 +2471,14 @@ void ofApp::calculateVboDataGrow()
 //---------------------------------------------------------------------------
 void ofApp::occupyOneHexagon(ofVec2f startingHexagon, int startingSide)
 {
-
+    
     vector<vector<int>> vIndexData = hexagonCanvas.getHexagonsIndexData();
-
+    
     // we set it the origin as "used" on the usedHexagons
     int whichNumberOfHexagon = vIndexData[startingHexagon.x][startingHexagon.y];
     usedHexagons[vIndexData[startingHexagon.x][startingHexagon.y]] = true;
     cout << "Marked hexagon " << whichNumberOfHexagon << " :: " << startingHexagon.x << " , " << startingHexagon.y << " as used !" <<endl;
-
+    
     // NEIGHBOURS
     vector<ofVec2f> hexagonNeighbours;
     hexagonNeighbours.resize(6,ofVec2f(-1,-1));
@@ -2444,7 +2504,7 @@ void ofApp::occupyOneHexagon(ofVec2f startingHexagon, int startingSide)
     
     hexagonNeighbours[5].y = startingHexagon.y + 0;
     hexagonNeighbours[5].x = startingHexagon.x - 1;
-
+    
     vector<ofVec2f> possibleNextHexagons;
     vector<int> possibleNumNexHexagons;
     
@@ -2474,7 +2534,9 @@ void ofApp::occupyOneHexagon(ofVec2f startingHexagon, int startingSide)
         
         ofVec2f nextHexagon = ofVec2f(possibleNextHexagons[optionChoosed].x,possibleNextHexagons[optionChoosed].y);
         int whichSideItStarts = (possibleNumNexHexagons[optionChoosed]+3)%6;
-
+        
+        // add the next hexagon to the vector of hexagons in order to reconstruct the worm...
+        growingHexagons.push_back(ofVec3f(nextHexagon.x,nextHexagon.y,float(whichSideItStarts)));
         
         occupyOneHexagon(nextHexagon,whichSideItStarts);
     }
@@ -2484,22 +2546,22 @@ void ofApp::occupyOneHexagon(ofVec2f startingHexagon, int startingSide)
 }
 
 /*
-// print hexagon index data
-// looking for the closer hexagons of hexagons with id = 0 ring = 0 ;
-vector<vector<int>> vIndexData = hexagonCanvas.getHexagonsIndexData();
-cout << "V Index Data sizes : " << vIndexData.size() << " , " << vIndexData[0].size() << endl;
-//
-//    for(int i=0;i<vIndexData.size();i++)
-//    {
-//        for(int j=0;j<vIndexData[i].size();j++)
-//        {
-//            cout << "index : " << i << " , " << j << " = " << vIndexData[i][j] << endl;
-//        }
-//
-//    }
-//
-
-
-
-
-*/
+ // print hexagon index data
+ // looking for the closer hexagons of hexagons with id = 0 ring = 0 ;
+ vector<vector<int>> vIndexData = hexagonCanvas.getHexagonsIndexData();
+ cout << "V Index Data sizes : " << vIndexData.size() << " , " << vIndexData[0].size() << endl;
+ //
+ //    for(int i=0;i<vIndexData.size();i++)
+ //    {
+ //        for(int j=0;j<vIndexData[i].size();j++)
+ //        {
+ //            cout << "index : " << i << " , " << j << " = " << vIndexData[i][j] << endl;
+ //        }
+ //
+ //    }
+ //
+ 
+ 
+ 
+ 
+ */

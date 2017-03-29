@@ -9,7 +9,7 @@ int main( ){
     ofGLWindowSettings settings;
     settings.width = 1200;
     settings.height = 1200;
-    settings.setGLVersion(3,3);
+    settings.setGLVersion(4,1);
     ofCreateWindow(settings);
 	// this kicks off the running of my app
 	// can be OF_WINDOW or OF_FULLSCREEN

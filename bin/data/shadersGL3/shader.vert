@@ -4,6 +4,7 @@
 #pragma include <of_default_uniforms.glsl>
 
 //layout(location = 1) in vec4 vertex_color;
+layout(location = 6) in uint u_vertexHexagonId; // requires gl 4,1
 
 uniform samplerBuffer texTransform;
 uniform samplerBuffer texCubeColors;
@@ -113,6 +114,7 @@ void main()
             out_colorMix = u_colorB;
         }
         //hexagonId = int(texelFetch(texNumElements,gl_VertexID).r);
+        hexagonId = int(u_vertexHexagonId);
         
     }
     

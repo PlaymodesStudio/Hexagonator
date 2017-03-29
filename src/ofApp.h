@@ -162,7 +162,7 @@ class ofApp : public ofBaseApp{
     vector<ofVec3f>                 vecVboGrow_Verts;
     vector<ofIndexType>             vecVboGrow_Faces;
     vector<ofFloatColor>            vecVboGrow_Colors;
-    vector<float>                   vecVboGrow_HexagonId;
+    vector<uint>                    vecVboGrow_HexagonId;
 
     
     // VBO CUCS STUFF
@@ -205,7 +205,7 @@ class ofApp : public ofBaseApp{
     // GROWING CUCS
     
     void occupyOneHexagon(ofVec2f startingHexagon, int startingSide);
-
+    int hexagonIdCustomLocation;
     
     void                    calculateStartEndPointsAndCurve();
     void                    calculateRibs();
@@ -216,6 +216,7 @@ class ofApp : public ofBaseApp{
     
     // CUCS GROW
     vector<bool>            usedHexagons;
+    vector<ofVec3f>         growingHexagons;
     
     /// RANDOM
     float                   lastRandomTime;

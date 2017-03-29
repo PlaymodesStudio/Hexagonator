@@ -78,7 +78,7 @@ void main()
     {
         //out_color = vec4(0.0,0.5,1.0,1.0);
         //out_color = out_colorA;
-        //out_color = out_vertexColor;
+        out_color = out_vertexColor;
     }
     
 
