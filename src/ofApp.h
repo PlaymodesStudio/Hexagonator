@@ -113,11 +113,12 @@ class ofApp : public ofBaseApp{
     string                  currentFolderName;
     int                     recordedFrame;
     
-    // SYPHON TEXTURE
+    // SYPHON
     ofxSyphonClient         syphon;
     ofxSyphonClient         syphonMax;
     bool                    useSyphon;
     bool                    useTransformMatrix;
+    ofxSyphonServer         syphonServer;
 
     
     /// OSC
@@ -318,5 +319,7 @@ class ofApp : public ofBaseApp{
     ofParameter<bool>   startStopRecording;
     ofParameter<int>    framesToRecord;
     ofParameter<string> recFilename;
+    
+    
     
 };

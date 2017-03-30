@@ -161,6 +161,9 @@ void ofApp::setup(){
         syphonMax.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
         syphonMax.unbind();
         
+        // SERVER
+        syphonServer.setName("Main");
+        
     }
     
     /////////////////////////////
@@ -594,6 +597,9 @@ void ofApp::update()
     {
         videoPlayer.update();
     }
+    
+    
+    syphonServer.publishTexture(&fboOut.getTexture());
 }
 
 //--------------------------------------------------------------
