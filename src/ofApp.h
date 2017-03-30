@@ -12,6 +12,7 @@
 #include "pmHexagonTile.hpp"
 #include "pmHexagonTileCanvas.hpp"
 #include "ofxEditableSVG.h"
+#include "threadedGrowCreator.hpp"
 
 enum sourceTextureType
 {
@@ -77,6 +78,7 @@ class ofApp : public ofBaseApp{
     void prepareHexagons();
     void prepareRandom();
     void prepareGrow();
+    void fillGrow();
     
     void buildTBOs();
     void buildNumElementsTBO();
@@ -216,6 +218,8 @@ class ofApp : public ofBaseApp{
 //    vector<float>           vecTempVboGrow_HexagonId;
 
     // GROWING CUCS
+    
+    threadedGrowCreator* growThread;
     
     bool occupyOneHexagon(ofVec2f startingHexagon, int startingSide);
     int hexagonIdCustomLocation;

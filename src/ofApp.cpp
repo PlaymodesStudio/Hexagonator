@@ -256,42 +256,42 @@ void ofApp::setup(){
     ///////////////////////////////////////////
     
     usedHexagons.resize(hexagonCanvas.getNumHexagons(),false);
-    occupyOneHexagon(ofVec2f(10,0),0);
+//    occupyOneHexagon(ofVec2f(10,0),0);
     
-    int howManyHexagonsOccupied = 0;
-    for(int i=0;i<usedHexagons.size();i++)
-    {
-        if(usedHexagons[i]==true)
-        {
-            howManyHexagonsOccupied = howManyHexagonsOccupied +1 ;
-        }
-    }
-    cout << " Occupation done ... Used : " << howManyHexagonsOccupied << endl;
-
-//    // CREATE A GROW PATH ... MANUAL
-//    ///////////////////////////////////////////
-//    ///////////////////////////////////////////
-//    
 //    int howManyHexagonsOccupied = 0;
-//    usedHexagons.resize(hexagonCanvas.getNumHexagons(),false);
-//    //occupyOneHexagon(ofVec2f(0,0),0);
-//    for(int i=0;i<hexagonCanvas.getNumHexagons();i++)
+//    for(int i=0;i<usedHexagons.size();i++)
 //    {
-//        if(hexagonCanvas.getHexagonIdAndRing(i)[0] == 0)
+//        if(usedHexagons[i]==true)
 //        {
-//            // we are in id = 0 ... select this hexagon !!
-//            usedHexagons[i] = true;
 //            howManyHexagonsOccupied = howManyHexagonsOccupied +1 ;
 //        }
 //    }
 //    cout << " Occupation done ... Used : " << howManyHexagonsOccupied << endl;
 //
-    
-    
-    ///////////////////////////////////////////
-    ///////////////////////////////////////////
-    
-    //buildNumElementsTBO();
+////    // CREATE A GROW PATH ... MANUAL
+////    ///////////////////////////////////////////
+////    ///////////////////////////////////////////
+////    
+////    int howManyHexagonsOccupied = 0;
+////    usedHexagons.resize(hexagonCanvas.getNumHexagons(),false);
+////    //occupyOneHexagon(ofVec2f(0,0),0);
+////    for(int i=0;i<hexagonCanvas.getNumHexagons();i++)
+////    {
+////        if(hexagonCanvas.getHexagonIdAndRing(i)[0] == 0)
+////        {
+////            // we are in id = 0 ... select this hexagon !!
+////            usedHexagons[i] = true;
+////            howManyHexagonsOccupied = howManyHexagonsOccupied +1 ;
+////        }
+////    }
+////    cout << " Occupation done ... Used : " << howManyHexagonsOccupied << endl;
+////
+//    
+//    
+//    ///////////////////////////////////////////
+//    ///////////////////////////////////////////
+//    
+//    //buildNumElementsTBO();
     prepareGrow();
     
     
@@ -569,7 +569,13 @@ void ofApp::updateVertexsForQuad()
 void ofApp::update()
 {
     updateOsc();
+    
+    
+    
+    prepareGrow();
+    
     updateTransformMatrices();
+
     
     if(dropdown_whichSource == HEX_SOURCE_QUADS )
     {
@@ -594,6 +600,12 @@ void ofApp::update()
     {
         videoPlayer.update();
     }
+    
+   
+//    if(growThread != nullptr)
+//        growThread->newFrame();
+    
+    if(growThread != nullptr) growThread->newFrame();
 }
 
 //--------------------------------------------------------------
@@ -1087,6 +1099,11 @@ void ofApp::keyPressed(int key){
         //            videoRecorder.setup("./recordings/" +ofGetTimestampString()+fileExt, fboOut.getWidth(), fboOut.getHeight(), desiredFramerate, 0, 0);
         //            videoRecorder.start();
         //        }
+    }
+    else if(key == 'a'){
+        growThread = new threadedGrowCreator(this);
+    }else if(key == 'z'){
+        if(growThread != nullptr) growThread->newFrame();
     }
     
 }
@@ -2410,11 +2427,11 @@ void ofApp::prepareGrow()
                 // STEPS
                 calculateStartEndPointsAndCurve();
                 
-                toSVGPath.newSubPath();
-                toSVGPath.moveTo(bezierLine.getVertices()[0]);
-
-                for(int jj= 1; jj < bezierLine.getVertices().size() ; jj++)
-                    toSVGPath.lineTo(bezierLine.getVertices()[jj] +  hexagonCanvas.getCentroidData()[i]);
+//                toSVGPath.newSubPath();
+//                toSVGPath.moveTo(bezierLine.getVertices()[0]);
+//
+//                for(int jj= 1; jj < bezierLine.getVertices().size() ; jj++)
+//                    toSVGPath.lineTo(bezierLine.getVertices()[jj] +  hexagonCanvas.getCentroidData()[i]);
                 calculateRibs();
                 calculateVboDataGrow();
                 
@@ -2454,10 +2471,10 @@ void ofApp::prepareGrow()
     vboGrow.setIndexData(vecVboGrow_Faces.data(), vecVboGrow_Faces.size(),GL_DYNAMIC_DRAW);
     vboGrow.setColorData(vecVboGrow_Colors.data(), vecVboGrow_Colors.size(),GL_DYNAMIC_DRAW);
     hexagonIdCustomLocation = 6;
-    while(vboGrow.hasAttribute(hexagonIdCustomLocation))
-    {
-        hexagonIdCustomLocation++;
-    }
+//    while(vboGrow.hasAttribute(hexagonIdCustomLocation))
+//    {
+//        hexagonIdCustomLocation++;
+//    }
     //cout << "Hexagon Id Custom Location : " << hexagonIdCustomLocation << endl;
     //cout << "Hexagon Id Custom data size : " << vecVboGrow_HexagonId.size() << endl;
     //cout << "While we had verts size  : " << vecVboGrow_Verts.size() << endl;
@@ -2470,9 +2487,194 @@ void ofApp::prepareGrow()
     //while(hasAttribute(customLocation++));
     //vboGrow.setAttributeData(<#int location#>, <#const float *vert0x#>, <#int numCoords#>, <#int total#>, <#int usage#>)
     
+//    cout << "!!! vboGrow sizes _ Verts = " << vecVboGrow_Verts.size() << " Faces = " << vecVboGrow_Faces.size() << endl;
+//    cout << "!!! matricesNumElements size  = " << matricesNumElements.size() << endl;
+    
+}
+
+void ofApp::fillGrow()
+{
+    int numMaxOfCucsInOneHexagon = 6;
+    
+    if(growingHexagons.size() > 0){
+        int i = growingHexagons.back()._num;
+        ofVec2f vIdRing = ofVec2f(growingHexagons.back()._id,growingHexagons.back()._ring);
+        int startingAt = growingHexagons.back()._startingAtSide;
+        int endingAt = growingHexagons.back()._endingAtSide;
+        
+        // for each hexagon if it's used on the grow path ....
+        // clear and resizing data
+        hexaPoints.clear();
+        hexaSides.clear();
+        
+        hexaPoints.resize(6,ofVec3f(0,0,0));
+        hexaSides.resize(6);
+        
+        // define HEXAGON POINTS
+        // add them to the hexagon
+        for(int m=0;m<6;m++)
+        {
+            hexaPoints[m] = vecVboTex_Verts[(i*7)+m+1]; //+1 because vecVbo[0s] are centroids?
+        }
+        // CALCULATE SIDES (SAME FOR EVERY HEXAGON)
+        // TODO : make this function return the vector ...
+        calculateSides();
+        ofVec2f idRing = hexagonCanvas.getHexagonIdAndRing(i);
+        
+        int choosedPattern;// = int(ofRandom(105,105));
+        
+        if(startingAt == 0)
+        {
+            if(endingAt == 1) choosedPattern = 0;
+            if(endingAt == 2) choosedPattern = 78;
+            if(endingAt == 3) choosedPattern = 126;
+            if(endingAt == 4) choosedPattern = 82;
+            if(endingAt == 5) choosedPattern = 5;
+        }
+        else if(startingAt == 1)
+        {
+            if(endingAt == 0) choosedPattern = 0;
+            if(endingAt == 2) choosedPattern = 1;
+            if(endingAt == 3) choosedPattern = 79;
+            if(endingAt == 4) choosedPattern = 127;
+            if(endingAt == 5) choosedPattern = 83;
+        }
+        else if(startingAt == 2)
+        {
+            if(endingAt == 0) choosedPattern = 78;
+            if(endingAt == 1) choosedPattern = 1;
+            if(endingAt == 3) choosedPattern = 2;
+            if(endingAt == 4) choosedPattern = 80;
+            if(endingAt == 5) choosedPattern = 128;
+        }
+        else if(startingAt == 3)
+        {
+            if(endingAt == 0) choosedPattern = 126;
+            if(endingAt == 1) choosedPattern = 79;
+            if(endingAt == 2) choosedPattern = 2;
+            if(endingAt == 4) choosedPattern = 3;
+            if(endingAt == 5) choosedPattern = 81;
+        }
+        else if(startingAt == 4)
+        {
+            if(endingAt == 0) choosedPattern = 82;
+            if(endingAt == 1) choosedPattern = 127;
+            if(endingAt == 2) choosedPattern = 80;
+            if(endingAt == 3) choosedPattern = 3;
+            if(endingAt == 5) choosedPattern = 4;
+        }
+        else if(startingAt == 5)
+        {
+            if(endingAt == 0) choosedPattern = 5;
+            if(endingAt == 1) choosedPattern = 83;
+            if(endingAt == 2) choosedPattern = 128;
+            if(endingAt == 3) choosedPattern = 81;
+            if(endingAt == 4) choosedPattern = 4;
+        }
+        else
+        {
+            choosedPattern = int(ofRandom(105,105));
+            cout << " !!!!!! RANDOM ???? WHYYY ????? !!!! " << endl;
+        }
+        
+        pmHexagonTile actualTilePattern = hexagonTilesDictionary[choosedPattern];
+        int numCucsActualHexagon = actualTilePattern.getConnections().size(); //int(ofRandom(0, 6));
+        //cout << "Get number of cucs in this pattern id : " << choosedPattern << " :: Number of Connections = " << numCucsActualHexagon << endl;
+        //int totalVerticesAddedToThisHexagon = 0;
+        for(int k=0;k<numCucsActualHexagon;k++)
+        {
+            
+            vecTempVboGrow_Verts.resize(numSteps*2,ofVec3f(0,0,0));
+            vecTempVboGrow_Colors.resize(vecTempVboGrow_Verts.size(),ofFloatColor(0.0,1.0,1.0));
+            //                vecTempVboGrow_TexCoords.resize(vecTempVbo_Verts.size(),ofVec2f(0,0));
+            vecTempVboGrow_Faces.resize((numSteps-1)*2*3,0);
+            //vecTempVboGrow_HexagonId.resize(vecTempVboGrow_Verts.size());
+            
+            if(k<numCucsActualHexagon)
+            {
+                // this is a user defined cuc ... take it normally
+                sampledPoints.clear();
+                ribs.clear();
+                sampledPoints.resize(numSteps);
+                ribs.resize(numSteps);
+                for(int i=0;i<numSteps;i++)
+                {
+                    ribs[i].resize(2);
+                }
+                
+                startSide = actualTilePattern.getConnections()[k].startsAt;
+                if(startSide == startingAt)
+                    endSide = actualTilePattern.getConnections()[k].endsAt;
+                else{
+                    endSide = startSide;
+                    startSide = actualTilePattern.getConnections()[k].endsAt;
+                }
+                
+                // STEPS
+                calculateStartEndPointsAndCurve();
+                
+                toSVGPath.newSubPath();
+                toSVGPath.moveTo(bezierLine.getVertices()[0]);
+                
+                for(int jj= 1; jj < bezierLine.getVertices().size() ; jj++)
+                    toSVGPath.lineTo(bezierLine.getVertices()[jj] +  hexagonCanvas.getCentroidData()[i]);
+                calculateRibs();
+                calculateVboDataGrow();
+                
+            }
+            else
+            {
+                // fill with "void" cucs
+                lastFaceAddedToGrow=lastFaceAddedToGrow + ((numSteps)*2);
+                
+            }
+            // inserting calculated hexagon cuc into vectors that will feed the vboCucs
+            vecVboGrow_Verts.insert(vecVboGrow_Verts.end(), vecTempVboGrow_Verts.begin(), vecTempVboGrow_Verts.end());
+            vecVboGrow_Faces.insert(vecVboGrow_Faces.end(), vecTempVboGrow_Faces.begin(), vecTempVboGrow_Faces.end());
+            vecVboGrow_Colors.insert(vecVboGrow_Colors.end(), vecTempVboGrow_Colors.begin(), vecTempVboGrow_Colors.end());
+            vecVboGrow_HexagonId.insert(vecVboGrow_HexagonId.end(),numSteps*2,float(i));
+            //cout << "Hexagon id : " << i << " we've added " << numSteps << " vertexs to the HexagonId" << endl;
+            
+            //totalVerticesAddedToThisHexagon = totalVerticesAddedToThisHexagon + ((numSteps-1)*2*3) ;
+            
+            //matricesNumElements.insert(matricesNumElements.end(),totalVerticesAddedToThisHexagon,100);
+            
+            //                for(int m=0;m<totalVerticesAddedToThisHexagon;m++)
+            //                {
+            //                    matricesNumElements.insert(matricesNumElements.end(),totalVerticesAddedToThisHexagon,ofFloatColor(1,1,1,1));
+            //                    matricesNumElements.push_back(ofFloatColor(0,0,0,0));
+            //                }
+        }
+    }
+        //cout << "Hexagon num = " << i << " _ Total vertices added to hexagon : " << vecTempVboGrow_Verts.size() <<  endl;
+        //cout << " -.-.-.-.-.- " << endl;
+    
+    //        svgSaver.addPath(toSVGPath);
+    //        svgSaver.save("HolaTest.svg");
+    
+    // FILL DATA INTO VBO CUCS
+    vboGrow.setVertexData(vecVboGrow_Verts.data(), vecVboGrow_Verts.size(),GL_DYNAMIC_DRAW);
+    vboGrow.setIndexData(vecVboGrow_Faces.data(), vecVboGrow_Faces.size(),GL_DYNAMIC_DRAW);
+    vboGrow.setColorData(vecVboGrow_Colors.data(), vecVboGrow_Colors.size(),GL_DYNAMIC_DRAW);
+    hexagonIdCustomLocation = 6;
+//    while(vboGrow.hasAttribute(hexagonIdCustomLocation))
+//    {
+//        hexagonIdCustomLocation++;
+//    }
+    cout << "Hexagon Id Custom Location : " << hexagonIdCustomLocation << endl;
+    cout << "Hexagon Id Custom data size : " << vecVboGrow_HexagonId.size() << endl;
+    cout << "While we had verts size  : " << vecVboGrow_Verts.size() << endl;
+    
+    vboGrow.setAttributeData( hexagonIdCustomLocation, reinterpret_cast<float *>( vecVboGrow_HexagonId.data() ),  1, vecVboGrow_HexagonId.size(), GL_STATIC_DRAW, sizeof( vecVboGrow_HexagonId[0] ) );
+    
+    //    vboGrow.setAttributeData(hexagonIdCustomLocation, vecVboGrow_HexagonId.data(), 1, vecVboGrow_HexagonId.size(), GL_STATIC_DRAW);
+    //void ofVbo::setAttributeBuffer(int location, ofBufferObject & buffer, int numCoords, int stride, int offset){Á
+    //int customLocation = 5; //
+    //while(hasAttribute(customLocation++));
+    //vboGrow.setAttributeData(<#int location#>, <#const float *vert0x#>, <#int numCoords#>, <#int total#>, <#int usage#>)
+    
     cout << "!!! vboGrow sizes _ Verts = " << vecVboGrow_Verts.size() << " Faces = " << vecVboGrow_Faces.size() << endl;
     cout << "!!! matricesNumElements size  = " << matricesNumElements.size() << endl;
-    
 }
 
 //--------------------------------------------------------------
