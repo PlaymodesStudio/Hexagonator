@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ofMain.h"
-#include "ofxSVG.h"
+//#include "ofxSVG.h"
 //#include "pmVbo.hpp"
 #include "ofxSyphon.h"
 #include "pmHexagonCanvas.hpp"
@@ -11,6 +11,7 @@
 #include "parametersControl.h"
 #include "pmHexagonTile.hpp"
 #include "pmHexagonTileCanvas.hpp"
+#include "ofxEditableSVG.h"
 
 enum sourceTextureType
 {
@@ -90,7 +91,7 @@ class ofApp : public ofBaseApp{
 
     /// SVG
     string              svgFilename;
-    ofxSVG              svg;
+    ofxEditableSVG              svg;
     vector<ofPolyline>  svgPolys;
     vector<ofPath>      svgPaths;
     
@@ -192,6 +193,8 @@ class ofApp : public ofBaseApp{
     float   widthStart;
     float   widthEnd;
     ofPolyline bezierLine;
+    ofPath     toSVGPath;
+    ofxEditableSVG  svgSaver;
     vector<ofVec3f> sampledPoints;
     // RIBS
     // init ribs vector

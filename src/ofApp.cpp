@@ -1322,6 +1322,8 @@ void ofApp::calculateStartEndPointsAndCurve()
     bezierLine.addVertex(startPoint);
     bezierLine.bezierTo(controlStart.x, controlStart.y, controlEnd.x, controlEnd.y, endPoint.x, endPoint.y);
     
+    
+    
     // calculate sampled line
     for(int i=0;i<numSteps;i++)
     {
@@ -2160,8 +2162,14 @@ void ofApp::prepareCucs()
                 
                 // STEPS
                 calculateStartEndPointsAndCurve();
+//                toSVGPath.newSubPath();
+//                toSVGPath.moveTo(bezierLine.getVertices()[0]);
+//                for(int jj= 1; jj < bezierLine.getVertices().size() ; jj++)
+//                    toSVGPath.lineTo(bezierLine.getVertices()[jj]);
                 calculateRibs();
                 calculateVboData();
+                
+                
                 
             }
             else
@@ -2180,6 +2188,11 @@ void ofApp::prepareCucs()
         
         
     }
+    
+    //save svg;
+//    svgSaver.addPath(toSVGPath);
+//    svgSaver.save("HolaTest.svg");
+    
     // FILL DATA INTO VBO CUCS
     vboCucs.setVertexData(vecVboCucs_Verts.data(), vecVboCucs_Verts.size(),GL_DYNAMIC_DRAW);
     vboCucs.setIndexData(vecVboCucs_Faces.data(), vecVboCucs_Faces.size(),GL_DYNAMIC_DRAW);
@@ -2284,7 +2297,7 @@ void ofApp::prepareGrow()
     // we put the vbo data of each hexagon cuc into a temp vector that will be inserted(appended) on the vecVboGrow_Verts
     // resize temp vectors that are recalculated for each hexaogn cuc
     int numMaxOfCucsInOneHexagon = 6;
-    
+
     for(int j=0;j<growingHexagons.size();j++)
     {
         int i = growingHexagons[j]._num;
@@ -2369,8 +2382,7 @@ void ofApp::prepareGrow()
     
         pmHexagonTile actualTilePattern = hexagonTilesDictionary[choosedPattern];
         int numCucsActualHexagon = actualTilePattern.getConnections().size(); //int(ofRandom(0, 6));
-        cout << "Get number of cucs in this pattern id : " << choosedPattern << " :: Number of Connections = " << numCucsActualHexagon << endl;
-        
+        //cout << "Get number of cucs in this pattern id : " << choosedPattern << " :: Number of Connections = " << numCucsActualHexagon << endl;
         //int totalVerticesAddedToThisHexagon = 0;
         for(int k=0;k<numCucsActualHexagon;k++)
         {
@@ -2394,10 +2406,21 @@ void ofApp::prepareGrow()
                 }
                 
                 startSide = actualTilePattern.getConnections()[k].startsAt;
-                endSide = actualTilePattern.getConnections()[k].endsAt;
+                if(startSide == startingAt)
+                    endSide = actualTilePattern.getConnections()[k].endsAt;
+                else{
+                    endSide = startSide;
+                    startSide = actualTilePattern.getConnections()[k].endsAt;
+                }
                 
                 // STEPS
                 calculateStartEndPointsAndCurve();
+                
+                toSVGPath.newSubPath();
+                toSVGPath.moveTo(bezierLine.getVertices()[0]);
+
+                for(int jj= 1; jj < bezierLine.getVertices().size() ; jj++)
+                    toSVGPath.lineTo(bezierLine.getVertices()[jj] +  hexagonCanvas.getCentroidData()[i]);
                 calculateRibs();
                 calculateVboDataGrow();
                 
@@ -2413,7 +2436,7 @@ void ofApp::prepareGrow()
             vecVboGrow_Faces.insert(vecVboGrow_Faces.end(), vecTempVboGrow_Faces.begin(), vecTempVboGrow_Faces.end());
             vecVboGrow_Colors.insert(vecVboGrow_Colors.end(), vecTempVboGrow_Colors.begin(), vecTempVboGrow_Colors.end());
             vecVboGrow_HexagonId.insert(vecVboGrow_HexagonId.end(),numSteps*2,float(i));
-            cout << "Hexagon id : " << i << " we've added " << numSteps << " vertexs to the HexagonId" << endl;
+            //cout << "Hexagon id : " << i << " we've added " << numSteps << " vertexs to the HexagonId" << endl;
             
             //totalVerticesAddedToThisHexagon = totalVerticesAddedToThisHexagon + ((numSteps-1)*2*3) ;
             
@@ -2425,9 +2448,13 @@ void ofApp::prepareGrow()
             //                    matricesNumElements.push_back(ofFloatColor(0,0,0,0));
             //                }
         }
-        cout << "Hexagon num = " << i << " _ Total vertices added to hexagon : " << vecTempVboGrow_Verts.size() <<  endl;
-        cout << " -.-.-.-.-.- " << endl;
+        //cout << "Hexagon num = " << i << " _ Total vertices added to hexagon : " << vecTempVboGrow_Verts.size() <<  endl;
+        //cout << " -.-.-.-.-.- " << endl;
     }
+    
+//        svgSaver.addPath(toSVGPath);
+//        svgSaver.save("HolaTest.svg");
+    
     // FILL DATA INTO VBO CUCS
     vboGrow.setVertexData(vecVboGrow_Verts.data(), vecVboGrow_Verts.size(),GL_DYNAMIC_DRAW);
     vboGrow.setIndexData(vecVboGrow_Faces.data(), vecVboGrow_Faces.size(),GL_DYNAMIC_DRAW);
@@ -2437,9 +2464,9 @@ void ofApp::prepareGrow()
     {
         hexagonIdCustomLocation++;
     }
-    cout << "Hexagon Id Custom Location : " << hexagonIdCustomLocation << endl;
-    cout << "Hexagon Id Custom data size : " << vecVboGrow_HexagonId.size() << endl;
-    cout << "While we had verts size  : " << vecVboGrow_Verts.size() << endl;
+    //cout << "Hexagon Id Custom Location : " << hexagonIdCustomLocation << endl;
+    //cout << "Hexagon Id Custom data size : " << vecVboGrow_HexagonId.size() << endl;
+    //cout << "While we had verts size  : " << vecVboGrow_Verts.size() << endl;
     
     vboGrow.setAttributeData( hexagonIdCustomLocation, reinterpret_cast<float *>( vecVboGrow_HexagonId.data() ),  1, vecVboGrow_HexagonId.size(), GL_STATIC_DRAW, sizeof( vecVboGrow_HexagonId[0] ) );
 
@@ -2540,7 +2567,7 @@ bool ofApp::occupyOneHexagon(ofVec2f startingHexagon, int startingSide)
     // we set it the origin as "used" on the usedHexagons
     int whichNumberOfHexagon = vIndexData[startingHexagon.x][startingHexagon.y];
     usedHexagons[vIndexData[startingHexagon.x][startingHexagon.y]] = true;
-    cout << "Marked hexagon " << whichNumberOfHexagon << " :: " << startingHexagon.x << " , " << startingHexagon.y << " as used !" <<endl;
+    //cout << "Marked hexagon " << whichNumberOfHexagon << " :: " << startingHexagon.x << " , " << startingHexagon.y << " as used !" <<endl;
     
     // NEIGHBOURS
     vector<ofVec2f> hexagonNeighbours;
@@ -2608,7 +2635,7 @@ bool ofApp::occupyOneHexagon(ofVec2f startingHexagon, int startingSide)
             {
                 if(usedHexagons[whichHexagonDoYouWantToGo]==false)
                 {
-                    cout << "Seems like you could go to neighbour : " << i << " :: Ring " << hexagonNeighbours[i].x << " Id :: " << hexagonNeighbours[i].y << endl;
+                    //cout << "Seems like you could go to neighbour : " << i << " :: Ring " << hexagonNeighbours[i].x << " Id :: " << hexagonNeighbours[i].y << endl;
                     possibleNextHexagons.push_back(hexagonNeighbours[i]);
                     possibleNumNexHexagons.push_back(i);
                 }
@@ -2620,46 +2647,56 @@ bool ofApp::occupyOneHexagon(ofVec2f startingHexagon, int startingSide)
     {
         int optionChoosed;
         // choose an option from the possible neighbours.
-//        if(possibleNumNexHexagons.size()>2) optionChoosed = 2 ; //ofRandom(0,possibleNextHexagons.size());
-//        else optionChoosed=0;
+        //        if(possibleNumNexHexagons.size()>2) optionChoosed = 2 ; //ofRandom(0,possibleNextHexagons.size());
+        //        else optionChoosed=0;
         
-        optionChoosed = ofRandom(0,possibleNextHexagons.size());
+        bool foundCulDeSac = false;
+        bool isFinishingGrow = false;
         
-        cout << "Random choosed to go to : " << optionChoosed << endl;
-        
-        ofVec2f nextHexagon = ofVec2f(possibleNextHexagons[optionChoosed].x,possibleNextHexagons[optionChoosed].y);
-        int whichSideItStarts = (possibleNumNexHexagons[optionChoosed]+3)%6;
-        
-        // add the next hexagon to the vector of hexagons in order to reconstruct the worm...
-        growTileInfo g;
-        g._num = hexagonCanvas.getHexagonNumberFromIdAndRing(startingHexagon);
-        g._id = startingHexagon.x;
-        g._ring = startingHexagon.y;
-        g._startingAtSide = startingSide;
-        g._endingAtSide = possibleNumNexHexagons[optionChoosed];
-        
-        growingHexagons.push_back(g);
-        
-        if(occupyOneHexagon(nextHexagon,whichSideItStarts)==false)
-        {
-            possibleNextHexagons.erase(possibleNextHexagons.begin()+optionChoosed);
-            if(possibleNextHexagons.size() > 0){
-                optionChoosed = ofRandom(0,possibleNextHexagons.size());
-                return occupyOneHexagon(nextHexagon, whichSideItStarts);
-            }else{
+        while(!foundCulDeSac){
+            
+            optionChoosed = ofRandom(0,possibleNextHexagons.size());
+            cout << "Random choosed to go to : " << optionChoosed << endl;
+            
+            ofVec2f nextHexagon = ofVec2f(possibleNextHexagons[optionChoosed].x,possibleNextHexagons[optionChoosed].y);
+            int whichSideItStarts = (possibleNumNexHexagons[optionChoosed]+3)%6;
+            
+            // add the next hexagon to the vector of hexagons in order to reconstruct the worm...
+            growTileInfo g;
+            g._num = hexagonCanvas.getHexagonNumberFromIdAndRing(startingHexagon);
+            g._id = startingHexagon.x;
+            g._ring = startingHexagon.y;
+            g._startingAtSide = startingSide;
+            g._endingAtSide = possibleNumNexHexagons[optionChoosed];
+            
+            growingHexagons.push_back(g);
+            
+            cout<< "INFO: " << g._num << " " << possibleNextHexagons.size()<<endl;
+            isFinishingGrow = occupyOneHexagon(nextHexagon, whichSideItStarts);
+  
+            if(!isFinishingGrow){
                 growingHexagons.pop_back();
-                usedHexagons[vIndexData[startingHexagon.x][startingHexagon.y]] = true;
-                return false;
+                cout<<"removed"<<endl;
             }
+            possibleNextHexagons.erase(possibleNextHexagons.begin()+optionChoosed);
+            possibleNumNexHexagons.erase(possibleNumNexHexagons.begin()+optionChoosed);
+            if(isFinishingGrow || !(possibleNextHexagons.size()>0)){
+                foundCulDeSac = true;
+            }
+            
         }
+        if(!isFinishingGrow) usedHexagons[vIndexData[startingHexagon.x][startingHexagon.y]] = false;
+        return isFinishingGrow;
     }
     else
     {
-        if(usedHexagons.size()>5) return true;
-        else return false;
+        if(growingHexagons.size()>100) return true;
+        else{
+            usedHexagons[vIndexData[startingHexagon.x][startingHexagon.y]] = false;
+            return false;
+        }
+//        return;
     }
-    
-    
     
 }
 
