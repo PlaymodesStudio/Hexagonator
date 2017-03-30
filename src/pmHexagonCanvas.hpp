@@ -11,7 +11,7 @@
 
 #include <stdio.h>
 #include "ofMain.h"
-#include "ofxSVG.h"
+#include "ofxEditableSVG.h"
 #include "pmHexagonGuell.hpp"
 
 typedef struct
@@ -49,7 +49,7 @@ class pmHexagonCanvas
         void                        orderHexagonOnRingsAndIds(int i);
         ofPoint                     projectPointToLine(ofPoint Point,ofPoint LineStart,ofPoint LineEnd);
     
-        ofxSVG                      svg;
+        ofxEditableSVG              svg;
         vector<hexagonData>         hexagonsData;
         vector<vector<int>>         hexagonsIndexData;  // each index gives the position on the hexagonsData vector of the [ring][id] element.
         string                      svgFilename;

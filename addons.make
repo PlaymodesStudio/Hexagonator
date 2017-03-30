@@ -1,7 +1,6 @@
 ofxAVScreenCapture
 ofxDatGui_PM
+ofxEditableSVG
 ofxOsc
-ofxSvg
 ofxSyphon
 ofxVideoRecorder
-ofxXmlSettings
