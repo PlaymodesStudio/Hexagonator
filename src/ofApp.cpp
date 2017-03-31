@@ -70,13 +70,51 @@ void ofApp::setup(){
     parametersRecording.add(startStopRecording.set("Recording", false));
     parametersRecording.add(framesToRecord.set("frames to Rec", 100, 1, 99999));
     parametersRecording.add(recFilename.set("Filename", ofGetTimestampString()+".mov"));
+
+    // DRAWING GUI
+    guiDrawing = new ofxDatGui();
+
+    drawingSizeX.set("Size X",4,1,64);
+    drawingSizeY.set("Size Y",20,1,35);
+    drawingSizeX.addListener(this,&ofApp::changedMatrixX);
+    drawingSizeX.addListener(this,&ofApp::changedMatrixY);
+
+    ofxDatGuiTheme* theme = new ofxDatGuiThemeCharcoal;
+    ofColor randColor =  ofColor::indianRed;
+    theme->color.slider.fill = randColor;
+    theme->color.textInput.text = randColor;
+    theme->color.icons = randColor;
+    guiDrawing->setTheme(theme);
+    
+    guiDrawing->setWidth(290);
+    guiDrawing->addHeader("Draw");
+    guiDrawing->addFooter();
+
+    drawingMatrix = guiDrawing->addMatrix("Drawing", drawingSizeX*drawingSizeY,true);
+    drawingMatrix->setRadioMode(false);
+    guiDrawing->setWidth(drawingSizeX*50);
+
+    drawingMatrix->onMatrixEvent(this, &ofApp::onGuiMatrixEvent);
+
+    // 400 .. 10 cols
+    // 350 .. 9 cols
+    // 300 .. 8
+    //
+    // 200 .. 5
+    // 100 .. 2
+//    guiDrawing->addSlider(drawingSizeX, 1, 32);
+    guiDrawing->addSlider(drawingSizeX);
+    guiDrawing->addSlider(drawingSizeY);
+    parametersControl::getInstance().addDatGui(guiDrawing);
+    
+
     
     // CREATE
     parametersControl::getInstance().createGuiFromParams(parametersGraphics, ofColor::orange);
     parametersControl::getInstance().createGuiFromParams(parametersRandom, ofColor::red);
     parametersControl::getInstance().createGuiFromParams(parametersRecording, ofColor::white);
     parametersControl::getInstance().setup();
-    parametersControl::getInstance().setSliderPrecision(2,"Fade Out", 4);
+    parametersControl::getInstance().setSliderPrecision(2,"Fade Out", 6);
     
     parametersControl::getInstance().distributeGuis();
     
@@ -162,7 +200,7 @@ void ofApp::setup(){
         syphonMax.unbind();
         
         // SERVER
-        syphonServer.setName("Main");
+        //syphonServer.setName("Main");
         
     }
     
@@ -599,7 +637,7 @@ void ofApp::update()
     }
     
     
-    syphonServer.publishTexture(&fboOut.getTexture());
+    //syphonServer.publishTexture(&fboOut.getTexture());
 }
 
 //--------------------------------------------------------------
@@ -979,7 +1017,14 @@ void ofApp::draw()
     /// DRAW FBO TO SCREEN
     ofPushMatrix();
     ofSetColor(255,255,255);
-    fboOut.draw(0,0,ofGetWidth(),ofGetWidth());
+    if(ofGetWidth()<1200.0)
+    {
+        fboOut.draw(0,0,ofGetWidth(),ofGetWidth());
+    }
+    else
+    {
+        fboOut.draw(0,0,ofGetHeight(),ofGetHeight());
+    }
     ofPopMatrix();
     
     // draw texture previews
@@ -2257,13 +2302,17 @@ void ofApp::updateRandom()
         for(int i=0;i<slider_howManyRandomHexagons;i++)
         {
             int whichHexagonToShow = int(ofRandom(0,hexagonCanvas.getNumHexagons()));
-            int whereIsIt = (whichHexagonToShow*7);
-            for(int j=0;j<7;j++)
+            //ofVec2f idRing = hexagonCanvas.getHexagonIdAndRing(whichHexagonToShow);
+            //if(int(idRing.x)%4==0)//
             {
-                vecVboRandom_Colors[whereIsIt + j] = vecVboRandom_Colors[whereIsIt + j] + ofFloatColor(color_shaderColorA->r/255.0,color_shaderColorA->g/255.0,color_shaderColorA->b/255.0,color_shaderColorA->a/255.0);
+                int whereIsIt = (whichHexagonToShow*7);
+                for(int j=0;j<7;j++)
+                {
+                    vecVboRandom_Colors[whereIsIt + j] = vecVboRandom_Colors[whereIsIt + j] + ofFloatColor(color_shaderColorA->r/255.0,color_shaderColorA->g/255.0,color_shaderColorA->b/255.0,color_shaderColorA->a/255.0);
+                }
+                lastRandomTime = ofGetElapsedTimeMillis();
             }
         }
-        lastRandomTime = ofGetElapsedTimeMillis();
     }
     
     vboRandom.updateColorData(vecVboRandom_Colors.data(),vecVboRandom_Colors.size());
@@ -2720,3 +2769,32 @@ bool ofApp::occupyOneHexagon(ofVec2f startingHexagon, int startingSide)
  
  
  */
+void ofApp::onGuiMatrixEvent(ofxDatGuiMatrixEvent e)
+{
+    cout << "Matrix : " << e.child << endl;
+//    if(ofGetKeyPressed(OF_KEY_SHIFT))
+//        savePreset(e.child+1, bankSelect->getSelected()->getName());
+//    else{
+//        loadPreset(e.child+1, bankSelect->getSelected()->getName());
+//    }
+}
+
+void ofApp::changedMatrixX(int &i)
+{
+    cout << "changedMatrixX :  " << i << endl;
+    drawingSizeX = i;
+    drawingMatrix = guiDrawing->getMatrix("Drawing");
+    drawingMatrix = new ofxDatGuiMatrix("Drawing", drawingSizeX*drawingSizeY, false);
+    guiDrawing->setWidth(drawingSizeX*50);
+}
+void ofApp::changedMatrixY(int &i)
+{
+    delete guiDrawing;
+    
+    cout << "changedMatrixY :  " << i << endl;
+    drawingSizeY = i;
+    drawingMatrix = guiDrawing->getMatrix("Drawing");
+    drawingMatrix = new ofxDatGuiMatrix("Drawing", drawingSizeX*drawingSizeY, false);
+    
+    guiDrawing->setWidth(drawingSizeX*50);
+}

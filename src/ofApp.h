@@ -318,11 +318,22 @@ class ofApp : public ofBaseApp{
     ofParameter<float>  slider_randomPeriod;
     
     // RECORDING GUI
+    ofxDatGui*          guiDrawing;
     ofParameterGroup    parametersRecording;
     ofParameter<bool>   startStopRecording;
     ofParameter<int>    framesToRecord;
     ofParameter<string> recFilename;
-    
+
+    // DRAWING GUI
+    ofParameterGroup        parametersDrawing;
+    ofParameter<int>        drawingSizeX;
+    ofParameter<int>        drawingSizeY;
+    ofxDatGuiMatrix*        drawingMatrix;
+    void onGuiMatrixEvent(ofxDatGuiMatrixEvent e);
+    void changedMatrixX(int &i);
+    void changedMatrixY(int &i);
+
+
     
     
 };

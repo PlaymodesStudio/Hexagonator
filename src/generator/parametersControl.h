@@ -93,6 +93,8 @@ public:
         
     }
     
+    void addDatGui(ofxDatGui* d){datGuis.push_back(d);};
+    
 private:
     
     ofxDatGui *datGui;
