@@ -116,12 +116,13 @@ void parametersControl::setup(){
     presetMatrix->onMatrixEvent(this, &parametersControl::onGuiMatrixEvent);
     
     
-    if(datGuis.size() != 0){
-        ofPoint guiPos = datGuis[0]->getPosition() + ofPoint(0, datGuis[0]->getWidth());
-        datGui->setPosition(guiPos.x, guiPos.y);
-    }else{
-        datGui->setPosition(0, 0);
-    }
+//    if(datGuis.size() != 0){
+//        ofPoint guiPos = datGuis[0]->getPosition() + ofPoint(0, datGuis[0]->getWidth());
+//        datGui->setPosition(guiPos.x, guiPos.y);
+//    }else{
+//        datGui->setPosition(0, 0);
+//    }
+    datGui->setPosition(ofxDatGuiAnchor::BOTTOM_LEFT);
     
     //ControlGui Events
     datGui->onButtonEvent(this, &parametersControl::onGuiButtonEvent);

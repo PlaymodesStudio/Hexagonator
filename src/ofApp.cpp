@@ -231,6 +231,7 @@ void ofApp::setup(){
     // VBO CUCS STUFF
     ///////////////////
     
+    
     prepareCucs();
     
     ///////////////////
@@ -256,6 +257,17 @@ void ofApp::setup(){
     ///////////////////////////////////////////
     
     usedHexagons.resize(hexagonCanvas.getNumHexagons(),false);
+    
+    parameterGroupGrow.setName("Grow Params");
+    ofParameter<int> tempInt;
+    parameterGroupGrow.add(tempInt.set("Min Size", 300, 1, hexagonCanvas.getNumHexagons()));
+    ofParameter<int> tempInt2;
+    parameterGroupGrow.add(tempInt2.set("Recyle Time", 200, 1, 10000));
+    ofParameter<int> tempBool;
+    parameterGroupGrow.add(tempBool.set("Sequential", 0, 0, 1));
+    
+    parametersControl::getInstance().createGuiFromParams(parameterGroupGrow, ofColor::green);
+    
 //    occupyOneHexagon(ofVec2f(10,0),0);
     
 //    int howManyHexagonsOccupied = 0;
@@ -1101,7 +1113,8 @@ void ofApp::keyPressed(int key){
         //        }
     }
     else if(key == 'a'){
-        growThread = new threadedGrowCreator(this);
+        growingHexagons.clear();
+        growThread = new threadedGrowCreator(this, parameterGroupGrow);
     }else if(key == 'z'){
         if(growThread != nullptr) growThread->newFrame();
     }

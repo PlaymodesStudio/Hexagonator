@@ -10,20 +10,22 @@
 #include "ofApp.h"
 
 
-threadedGrowCreator::threadedGrowCreator(ofApp* appPtr)
+threadedGrowCreator::threadedGrowCreator(ofApp* appPtr, ofParameterGroup &_parameters)
 {
+    parameters = _parameters;
     vIndexData = appPtr->hexagonCanvas.getHexagonsIndexData();
     usedHexagons.resize(appPtr->hexagonCanvas.getNumHexagons(),false);
+    timesGoneToHexagon.resize(appPtr->hexagonCanvas.getNumHexagons(),0);
     ofAppPtr = appPtr;
     startThread();
-    thread.setStackSize(1000000000000000) ;
-    cout<<thread.getStackSize()<<endl;
+//    thread.setStackSize(1000000000000000) ;
+//    cout<<thread.getStackSize()<<endl;
 }
 
 void threadedGrowCreator::threadedFunction(){
 //    test();
-    occupyOneHexagon(ofVec2f(0,ofRandom(64)), 0);
-    cout<<"torna a cridar"<<endl;
+    while(!occupyOneHexagon(ofVec2f(0,ofRandom(64)), 0));
+    cout<<"Used: " << ofAppPtr->growingHexagons.size() << " Pathos"<<endl;
 //    pair<ofVec2f, int> pairTest = occupyOneHexagonNonRecursive(pair<ofVec2f, int>(ofVec2f(0,0), 0));
 //    bool testCond = pairTest.second == -1 ? false : true;
 //    while(testCond){
@@ -32,8 +34,20 @@ void threadedGrowCreator::threadedFunction(){
 }
 
 bool threadedGrowCreator::occupyOneHexagon(ofVec2f startingHexagon, int startingSide){
-    while (!isFrameNew);
-    isFrameNew = false;
+    if(parameters.getBool("Sequential")){
+        while (!isFrameNew){sleep(1);};
+        isFrameNew = false;
+    }
+    
+    for(int i=0; i < timesGoneToHexagon.size() ; i++){
+        if(timesGoneToHexagon[i]>0){
+            timesGoneToHexagon[i]--;
+            if(timesGoneToHexagon[i] == 0){
+                usedHexagons[i] = false;
+//                cout<<"hexagon: " << i << " can be ocuupies" << endl;
+            }
+        }
+    }
     
     // we set it the origin as "used" on the usedHexagons
     int whichNumberOfHexagon =  vIndexData[startingHexagon.x][startingHexagon.y];
@@ -127,6 +141,7 @@ bool threadedGrowCreator::occupyOneHexagon(ofVec2f startingHexagon, int starting
         while(!foundCulDeSac){
             
             optionChoosed = ofRandom(0,possibleNextHexagons.size());
+//            optionChoosed = 0;
             //cout << "Random choosed to go to : " << optionChoosed << endl;
             
             ofVec2f nextHexagon = ofVec2f(possibleNextHexagons[optionChoosed].x,possibleNextHexagons[optionChoosed].y);
@@ -145,16 +160,25 @@ bool threadedGrowCreator::occupyOneHexagon(ofVec2f startingHexagon, int starting
             hexagonNeighbours.clear();
 
             
-            cout<< "INFO: " << ofAppPtr->growingHexagons.size() << " " << possibleNextHexagons.size()<<endl;
+//            cout<< "INFO: " << ofAppPtr->growingHexagons.size() << " " << possibleNextHexagons.size()<<endl;
             isFinishingGrow = occupyOneHexagon(nextHexagon, whichSideItStarts);
             
-//            while (!isFrameNew);
-//            isFrameNew = false;
+            if(parameters.getBool("Sequential")){
+                while (!isFrameNew){sleep(1);};
+                isFrameNew = false;
+            }
+        
             
             if(!isFinishingGrow){
                 ofAppPtr->growingHexagons.pop_back();
                 possibleNextHexagons.erase(possibleNextHexagons.begin()+optionChoosed);
                 possibleNumNexHexagons.erase(possibleNumNexHexagons.begin()+optionChoosed);
+                for(int i = 0; i < possibleNextHexagons.size() ; i++){
+                    if(usedHexagons[vIndexData[possibleNextHexagons[i].x][possibleNextHexagons[i].y]]){
+                        possibleNextHexagons.erase(possibleNextHexagons.begin()+i);
+                        possibleNumNexHexagons.erase(possibleNumNexHexagons.begin()+i);
+                    }
+                }
             }
             
             if(isFinishingGrow || !(possibleNextHexagons.size()>0)){
@@ -162,14 +186,20 @@ bool threadedGrowCreator::occupyOneHexagon(ofVec2f startingHexagon, int starting
             }
             
         }
-        if(!isFinishingGrow) usedHexagons[whichNumberOfHexagon] = false;
+        if(!isFinishingGrow){
+            timesGoneToHexagon[whichNumberOfHexagon] += parameters.getInt("Recyle Time");
+//            if((timesGoneToHexagon[whichNumberOfHexagon])<50)
+//                usedHexagons[whichNumberOfHexagon] = false;
+        }
         return isFinishingGrow;
     }
     else
     {
-        if(ofAppPtr->growingHexagons.size()>120) return true;
+        if(ofAppPtr->growingHexagons.size() > parameters.getInt("Min Size")) return true;
         else{
-            usedHexagons[whichNumberOfHexagon] = false;
+            timesGoneToHexagon[whichNumberOfHexagon] += parameters.getInt("Recyle Time");
+//            if((timesGoneToHexagon[whichNumberOfHexagon])<500)
+//                usedHexagons[whichNumberOfHexagon] = false;
             return false;
         }
     }

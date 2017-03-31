@@ -15,7 +15,7 @@ class ofApp;
 
 class threadedGrowCreator: public ofThread{
 public:
-    threadedGrowCreator(ofApp* appPtr);
+    threadedGrowCreator(ofApp* appPtr, ofParameterGroup &_parameters);
     ~threadedGrowCreator(){stopThread();};
     
     void newFrame(){isFrameNew = true;};
@@ -32,6 +32,9 @@ private:
     
     vector<bool>        usedHexagons;
     vector<vector<int>> vIndexData;
+    vector<int>         timesGoneToHexagon;
+    
+    ofParameterGroup    parameters;
 };
 
 #endif /* threadedGrowCreator_hpp */

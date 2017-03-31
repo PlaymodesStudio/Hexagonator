@@ -235,6 +235,8 @@ class ofApp : public ofBaseApp{
     vector<bool>            usedHexagons;
     vector<growTileInfo>    growingHexagons;
     
+    ofParameterGroup        parameterGroupGrow;
+    
     /// RANDOM
     float                   lastRandomTime;
     
