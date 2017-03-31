@@ -77,7 +77,7 @@ void ofApp::setup(){
     drawingSizeX.set("Size X",4,1,64);
     drawingSizeY.set("Size Y",20,1,35);
     drawingSizeX.addListener(this,&ofApp::changedMatrixX);
-    drawingSizeX.addListener(this,&ofApp::changedMatrixY);
+    drawingSizeY.addListener(this,&ofApp::changedMatrixY);
 
     ofxDatGuiTheme* theme = new ofxDatGuiThemeCharcoal;
     ofColor randColor =  ofColor::indianRed;
@@ -90,7 +90,7 @@ void ofApp::setup(){
     guiDrawing->addHeader("Draw");
     guiDrawing->addFooter();
 
-    drawingMatrix = guiDrawing->addMatrix("Drawing", drawingSizeX*drawingSizeY,true);
+    drawingMatrix = guiDrawing->addMatrix("Drawing", drawingSizeX*drawingSizeY,false);
     drawingMatrix->setRadioMode(false);
     guiDrawing->setWidth(drawingSizeX*50);
 
@@ -2778,23 +2778,25 @@ void ofApp::onGuiMatrixEvent(ofxDatGuiMatrixEvent e)
 //        loadPreset(e.child+1, bankSelect->getSelected()->getName());
 //    }
 }
-
+//---------------------------------------------------------------------------
 void ofApp::changedMatrixX(int &i)
 {
     cout << "changedMatrixX :  " << i << endl;
     drawingSizeX = i;
     drawingMatrix = guiDrawing->getMatrix("Drawing");
-    drawingMatrix = new ofxDatGuiMatrix("Drawing", drawingSizeX*drawingSizeY, false);
+    drawingMatrix->setNumButtons(drawingSizeX*drawingSizeY);
+    //    drawingMatrix = new ofxDatGuiMatrix("Drawing", drawingSizeX*drawingSizeY, false);
+    
     guiDrawing->setWidth(drawingSizeX*50);
 }
+//---------------------------------------------------------------------------
 void ofApp::changedMatrixY(int &i)
 {
-    delete guiDrawing;
-    
     cout << "changedMatrixY :  " << i << endl;
     drawingSizeY = i;
     drawingMatrix = guiDrawing->getMatrix("Drawing");
-    drawingMatrix = new ofxDatGuiMatrix("Drawing", drawingSizeX*drawingSizeY, false);
+    drawingMatrix->setNumButtons(drawingSizeX*drawingSizeY);
+    //    drawingMatrix = new ofxDatGuiMatrix("Drawing", drawingSizeX*drawingSizeY, false);
     
     guiDrawing->setWidth(drawingSizeX*50);
 }
