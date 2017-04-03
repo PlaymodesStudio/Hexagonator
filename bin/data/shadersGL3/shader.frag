@@ -43,7 +43,7 @@ void main()
 {
     if(u_source==0)
     {
-        if((u_textureSource==0)||(u_textureSource==1)||(u_textureSource==2)||(u_textureSource==3))
+        if((u_textureSource==0)||(u_textureSource==1)||(u_textureSource==2)||(u_textureSource==3)||((u_textureSource==4)))
         {
             out_color = texture(uTexture, out_vTexCoord);
             
@@ -79,6 +79,12 @@ void main()
         //out_color = vec4(0.0,0.5,1.0,1.0);
         //out_color = out_colorA;
         out_color = out_vertexColor;
+    }
+    else if(u_source==5)
+    {
+        //out_color = vec4(0.0,0.5,1.0,1.0);
+        //out_color = out_colorA;
+        out_color = texture(uTexture, out_vTexCoord);
     }
     
 

@@ -94,7 +94,7 @@ public:
     }
     
     void addDatGui(ofxDatGui* d){datGuis.push_back(d);};
-    
+    void setAllVisible(bool b){for(int i=0;i<datGuis.size();i++) datGuis[i]->setVisible(b);};
 private:
     
     ofxDatGui *datGui;

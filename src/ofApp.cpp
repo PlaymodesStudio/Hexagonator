@@ -14,7 +14,7 @@ void ofApp::setup(){
     /////////////////////////////
     /// VARS
     /////////////////////////////
-    
+    showGUIs = true;
     mode = 0;
     numModes = 1;
     numRings = 35;
@@ -42,7 +42,7 @@ void ofApp::setup(){
     parametersGraphics.add(toggle_showVertices.set("Show Vertices",false));
     parametersGraphics.add(toggle_drawMask.set("Draw Mask",true));
     parametersControl::addDropdownToParameterGroupFromParameters(parametersGraphics,"Texture Coordinates",{"64x35","1200x1200"},dropdown_whichTexCoord);
-    parametersControl::addDropdownToParameterGroupFromParameters(parametersGraphics,"Source",{"Texture","Quads","Cucs","Random","Grow"},dropdown_whichSource);
+    parametersControl::addDropdownToParameterGroupFromParameters(parametersGraphics,"Source",{"Texture","Quads","Cucs","Random","Grow","Draw"},dropdown_whichSource);
     parametersControl::addDropdownToParameterGroupFromParameters(parametersGraphics,"Texture Source",{"Image","Video","Syphon","Syph.Max","Cubes","Colors AB"},dropdown_whichTextureSource);
     parametersGraphics.add(color_shaderColorA.set("Color A", ofColor::white, ofColor::white, ofColor::black));
     parametersGraphics.add(color_shaderColorB.set("Color B", ofColor::white, ofColor::white, ofColor::black));
@@ -71,30 +71,36 @@ void ofApp::setup(){
     parametersRecording.add(framesToRecord.set("frames to Rec", 100, 1, 99999));
     parametersRecording.add(recFilename.set("Filename", ofGetTimestampString()+".mov"));
 
-    // DRAWING GUI
-    guiDrawing = new ofxDatGui();
-
-    drawingSizeX.set("Size X",4,1,64);
-    drawingSizeY.set("Size Y",20,1,35);
-    drawingSizeX.addListener(this,&ofApp::changedMatrixX);
-    drawingSizeY.addListener(this,&ofApp::changedMatrixY);
-
-    ofxDatGuiTheme* theme = new ofxDatGuiThemeCharcoal;
+    // DRAWING PARAMS GUI
+    theme = new ofxDatGuiThemeCharcoal;
     ofColor randColor =  ofColor::indianRed;
     theme->color.slider.fill = randColor;
     theme->color.textInput.text = randColor;
     theme->color.icons = randColor;
-    guiDrawing->setTheme(theme);
+    theme->layout.matrix.buttonSize = 10;
+
+    // DRAWING GUI
+    guiDrawing = new ofxDatGui();
     
-    guiDrawing->setWidth(290);
-    guiDrawing->addHeader("Draw");
+    guiDrawing->setTheme(theme);
+    guiDrawing->setWidth(550);
+    guiDrawing->addHeader("Drawing");
     guiDrawing->addFooter();
-
-    drawingMatrix = guiDrawing->addMatrix("Drawing", drawingSizeX*drawingSizeY,false);
+    
+    drawingSizeX = 32;
+    drawingSizeY = 35;
+    
+    drawingMatrix = guiDrawing->addMatrix("Draw",drawingSizeX*drawingSizeY);
     drawingMatrix->setRadioMode(false);
-    guiDrawing->setWidth(drawingSizeX*50);
-
     drawingMatrix->onMatrixEvent(this, &ofApp::onGuiMatrixEvent);
+    
+    //ofxDatGuiButton* button = new ofxDatGuiButton("Clear");
+    guiDrawing->addButton("Clear");
+    guiDrawing->onButtonEvent(this,&ofApp::onButtonEvent);
+    guiDrawing->setVisible(false);
+    guiDrawing->setPosition(ofGetWidth() - 550,ofGetHeight()-550);
+    //ofxDatGuiButton* b = guiDrawing->addButton("Clear");
+    
 
     // 400 .. 10 cols
     // 350 .. 9 cols
@@ -103,9 +109,8 @@ void ofApp::setup(){
     // 200 .. 5
     // 100 .. 2
 //    guiDrawing->addSlider(drawingSizeX, 1, 32);
-    guiDrawing->addSlider(drawingSizeX);
-    guiDrawing->addSlider(drawingSizeY);
-    parametersControl::getInstance().addDatGui(guiDrawing);
+    //parametersControl::getInstance().addDatGui(guiDrawingParams);
+    
     
 
     
@@ -636,7 +641,7 @@ void ofApp::update()
         videoPlayer.update();
     }
     
-    
+    drawingOffset = drawingOffset + ofVec2f(0.5,0.0);
     //syphonServer.publishTexture(&fboOut.getTexture());
 }
 
@@ -710,13 +715,10 @@ void ofApp::draw()
             {
                 shader.setUniform1i("u_modulo",numSteps*2*6);
             }
-            
-            
-            //                shader.setUniformTexture("uTexture", videoPlayer, 2);
-            //                shader.setUniformTexture("uTexture", image, 2);
-            //                image.bind();
-            //                shader.setUniform1i("uTexture", 2);
-            //                image.unbind();
+            else if(dropdown_whichSource == HEX_SOURCE_DRAW)
+            {
+                shader.setUniformTexture("uTexture",drawingTexture, 2);
+            }
             
         }
         
@@ -767,16 +769,19 @@ void ofApp::draw()
                     vboGrow.drawElements(GL_TRIANGLES, vecVboGrow_Faces.size());
                     break;
                 }
+                case HEX_SOURCE_DRAW :
+                {
+                    vboTex.bind();
+                    int numVertexsPerOneFace = 18;
+                    vboTex.drawElements(GL_TRIANGLES,hexagonCanvas.getNumHexagons()*numVertexsPerOneFace );
+                    vboTex.unbind();
+                    break;
+                }
+
                 
             }
             
             
-        }
-        else
-        {
-            if(useShader) shader.end();
-            ofSetColor(255,255,0);
-            vboQuads.draw(GL_QUADS,0,vecVboQuads_Verts.size());
         }
         
         // ... END SHADING
@@ -978,7 +983,7 @@ void ofApp::draw()
     
     
     
-    if(isRecording && (dropdown_whichTextureSource == HEX_TEXTURE_VIDEO))
+    if(isRecording && (dropdown_whichSource==HEX_SOURCE_TEXTURE)&&(dropdown_whichTextureSource == HEX_TEXTURE_VIDEO))
     {
         //currentFolderName
         
@@ -1044,6 +1049,11 @@ void ofApp::draw()
         imageToSave.save("./captures/" + ofGetTimestampString() +".png" );
     }
     
+    if(dropdown_whichSource==HEX_SOURCE_DRAW)
+    {
+        ofSetColor(255);
+        drawingTexture.draw(ofGetWidth()/2-(640/2)/2,ofGetHeight()-350/2,640/2,350/2);
+    }
 }
 
 
@@ -1052,7 +1062,8 @@ void ofApp::keyPressed(int key){
     
     if(key==' ')
     {
-        mode=(mode+1)%numModes;
+        showGUIs = ! showGUIs;
+        showGUI(showGUIs);
     }
     else if(key=='s')
     {
@@ -1087,7 +1098,7 @@ void ofApp::keyPressed(int key){
         
         if(isRecording)
         {
-            if(dropdown_whichTextureSource == HEX_TEXTURE_VIDEO) // video
+            if((dropdown_whichSource== HEX_SOURCE_TEXTURE)&&(dropdown_whichTextureSource == HEX_TEXTURE_VIDEO)) // video
             {
                 // extract video filename
                 string videoName;
@@ -1113,14 +1124,14 @@ void ofApp::keyPressed(int key){
             else
             {
                 recordedFrame = 0;
-                capture.startRecording("capture.mov", 60.0);
+                AVScreenCapture.startRecording(ofToString(ofGetTimestampString())+".mov", 60.0);
             }
         }
         else  // NOT RECORDING
         {
             if(dropdown_whichTextureSource != HEX_TEXTURE_VIDEO)
             {
-                capture.stopRecording();
+                AVScreenCapture.stopRecording();
             }
             else if (dropdown_whichTextureSource == HEX_TEXTURE_VIDEO)
             {
@@ -1139,6 +1150,7 @@ void ofApp::keyPressed(int key){
         //            videoRecorder.start();
         //        }
     }
+    
     
 }
 
@@ -1323,26 +1335,31 @@ void ofApp::changedTexSource(int &i)
 void ofApp::changedSource(int &i)
 {
     int source;
-    
+    guiDrawing->setVisible(false);
+
     switch (i) {
         case HEX_SOURCE_TEXTURE:
-        source = 0;
-        break;
+            source = 0;
+            break;
         case HEX_SOURCE_QUADS:
-        source = 1;
-        break;
+            source = 1;
+            break;
         case HEX_SOURCE_CUCS:
-        source = 2;
-        break;
+            source = 2;
+            break;
         case HEX_SOURCE_RANDOM:
-        source = 3;
-        break;
+            source = 3;
+            break;
         case HEX_SOURCE_GROW:
-        source = 4;
-        break;
+            source = 4;
+            break;
+        case HEX_SOURCE_DRAW:
+            source = 5;
+            guiDrawing->setVisible(true);
+            break;
         
         default:
-        break;
+            break;
     }
     shader.begin();
     shader.setUniform1i("u_source", source);
@@ -2749,54 +2766,149 @@ bool ofApp::occupyOneHexagon(ofVec2f startingHexagon, int startingSide)
     
 }
 
-/*
- // print hexagon index data
- // looking for the closer hexagons of hexagons with id = 0 ring = 0 ;
- vector<vector<int>> vIndexData = hexagonCanvas.getHexagonsIndexData();
- cout << "V Index Data sizes : " << vIndexData.size() << " , " << vIndexData[0].size() << endl;
- //
- //    for(int i=0;i<vIndexData.size();i++)
- //    {
- //        for(int j=0;j<vIndexData[i].size();j++)
- //        {
- //            cout << "index : " << i << " , " << j << " = " << vIndexData[i][j] << endl;
- //        }
- //
- //    }
- //
- 
- 
- 
- 
- */
+
+//---------------------------------------------------------------------------
+void ofApp::setPixel(ofPixels &pix,int i, int j,ofColor color)
+{
+    j = int(j + 0)%35;
+    
+    {
+        
+        int n = j*64 + i;
+        
+        cout << ":: Setting pixel N = " << n << " from ccords: " << i << "," << j << endl;
+        
+        pix[(n*3)]=color.r;
+        pix[(n*3)+1]=color.g;
+        pix[(n*3)+2]=color.b;
+        
+    }
+}
+
+//---------------------------------------------------------------------------
 void ofApp::onGuiMatrixEvent(ofxDatGuiMatrixEvent e)
 {
     cout << "Matrix : " << e.child << endl;
-//    if(ofGetKeyPressed(OF_KEY_SHIFT))
-//        savePreset(e.child+1, bankSelect->getSelected()->getName());
-//    else{
-//        loadPreset(e.child+1, bankSelect->getSelected()->getName());
+    
+    int ring;
+    int id;
+
+    cout << e.child%32 << endl;
+    cout << e.child/32 << endl;
+    cout << " ..... " << endl;
+    
+    ofPixels pixels;
+    pixels.allocate(64, 35,OF_PIXELS_RGB);
+    for(int i=0;i<pixels.size();i++)
+    {
+        pixels[i] = 0;
+    }
+    drawingTexture.allocate(pixels);
+    //    drawingTexture.allocate(64, 35,OF_IMAGE_COLOR);
+
+    
+    // get maximum and minimum
+    vector<int> vec = drawingMatrix->getSelected();
+    vector<vector<bool>> vecMatrix;
+    vecMatrix.resize(64);
+    for(int i=0;i<vecMatrix.size();i++)
+    {
+        vecMatrix[i].resize(35,false);
+    }
+    
+    cout << "Matrix has a vector of selected of size " << vec.size() << endl;
+    int maxId=0;
+    int maxRing=0;
+    for(int i=0;i<vec.size();i++)
+    {
+        int actualId = vec[i]%32;
+        int actualRing = vec[i]/32;
+
+        if(actualId>maxId) maxId = actualId;
+        if(actualRing>maxRing) maxRing = actualRing;
+        
+        // fill our vector that represents the matrix
+        vecMatrix[actualId][actualRing] =true;
+        cout << "Setting matrix position : " << vec[i] << " To true" << endl;
+    }
+
+    // draw the pixels with copy
+    int numOfCopies = ( 64.0 / (maxId+1) );
+    cout << ">>>> DRAWING TO :: numOfTimeToCopy = " << numOfCopies << endl;
+    
+    for(int j=0;j<35;j++)
+    {
+        // for each row
+        for(int i=0;i<numOfCopies;i++)
+        {
+            // for each fragment we need to copy ...
+            int startingAt = (maxId+1)*i;
+            cout << " Starting to copy at : " << startingAt << endl;
+            for(int k=0;k<maxId+1;k++)
+            {
+                int n = startingAt +k;
+                if(startingAt<64)
+                {
+                    if(vecMatrix[n%(maxId+1)][j]==true)
+                    {
+                        cout << "++++ " << n << " :: " << startingAt+k << "  ### " ;
+    //                    cout << " ++++" << n << " :: " << ofToString(startingAt + k) <<  "** "Ê;
+                        setPixel(pixels,startingAt+k,j,ofColor(color_shaderColorA));
+                    }
+                    else
+                    {
+                        cout << "--- " << n << " :: " << startingAt+k << "  ### " ;
+    //                    cout << " ----" << n << " :: " << ofToString(startingAt + k) <<  "** "Ê;
+                        setPixel(pixels,startingAt+k,j,ofColor::black);
+                    }
+                }
+                else
+                {
+                    cout << "-------------- " << n << " :: " << startingAt+k << "  ### " ;
+                    //                    cout << " ----" << n << " :: " << ofToString(startingAt + k) <<  "** "Ê;
+                    //setPixel(pixels,startingAt+k,j,ofColor::red);
+                }
+
+            }
+        
+        }
+    }
+//    // draw the needed pixels
+//    for(int i=0;i<vec.size();i++)
+//    {
+//        int actualId = vec[i]%32;
+//        int actualRing = vec[i]/32;
+//        
+//        cout << "::::::::: DRAWING PIXEL ::::::::: MaxId : "<< maxId << endl;
+//        cout << "Selected " << i << " : " << vec[i] << endl;
+//        cout << "Id : " << actualId << endl;
+//        cout << "Ring : " << actualRing << endl;
+//        
+//        setPixel(pixels,actualId,actualRing,ofColor(color_shaderColorA),(64.0/(maxId+1)));
 //    }
-}
-//---------------------------------------------------------------------------
-void ofApp::changedMatrixX(int &i)
-{
-    cout << "changedMatrixX :  " << i << endl;
-    drawingSizeX = i;
-    drawingMatrix = guiDrawing->getMatrix("Drawing");
-    drawingMatrix->setNumButtons(drawingSizeX*drawingSizeY);
-    //    drawingMatrix = new ofxDatGuiMatrix("Drawing", drawingSizeX*drawingSizeY, false);
     
-    guiDrawing->setWidth(drawingSizeX*50);
-}
-//---------------------------------------------------------------------------
-void ofApp::changedMatrixY(int &i)
-{
-    cout << "changedMatrixY :  " << i << endl;
-    drawingSizeY = i;
-    drawingMatrix = guiDrawing->getMatrix("Drawing");
-    drawingMatrix->setNumButtons(drawingSizeX*drawingSizeY);
-    //    drawingMatrix = new ofxDatGuiMatrix("Drawing", drawingSizeX*drawingSizeY, false);
+    cout << "Max Id : " << maxId << endl;
+    cout << "Max Ring " << maxRing << endl;
     
-    guiDrawing->setWidth(drawingSizeX*50);
+    drawingTexture.loadData(pixels);
+}
+
+//---------------------------------------------------------------------------
+void ofApp::onButtonEvent(ofxDatGuiButtonEvent e)
+{
+    if (e.target->getLabel() == "Clear")
+    {
+        drawingMatrix->clearAll();
+        ofxDatGuiMatrixEvent* e = new ofxDatGuiMatrixEvent(drawingMatrix,0,false);
+        
+        onGuiMatrixEvent(*e);
+    }
+}
+
+//---------------------------------------------------------------------------
+void ofApp::showGUI(bool b)
+{
+    parametersControl::getInstance().setAllVisible(b);
+    if(dropdown_whichSource==HEX_SOURCE_DRAW) guiDrawing->setVisible(b);
+
 }

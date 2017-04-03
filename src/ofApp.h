@@ -28,7 +28,8 @@ enum sourceType
     HEX_SOURCE_QUADS = 1,
     HEX_SOURCE_CUCS = 2,
     HEX_SOURCE_RANDOM = 3,
-    HEX_SOURCE_GROW = 4
+    HEX_SOURCE_GROW = 4,
+    HEX_SOURCE_DRAW = 5
 };
 
 
@@ -275,7 +276,9 @@ class ofApp : public ofBaseApp{
     int                     desiredFramerate;
     void recordingComplete(ofxVideoRecorderOutputFileCompleteEventArgs& args);
 
-    ofxAVScreenCapture      capture;
+    ofxAVScreenCapture      AVScreenCapture;
+    
+    void                    showGUI(bool b);
     
     //GUI
     //Each gui window is a parameterGroup, each parameter in parameterGroup a element in the gui. The parametersControl class keeps parameterGroup and gui is sync. The translation of parameterGroup to datgui elements is as follows:
@@ -318,22 +321,27 @@ class ofApp : public ofBaseApp{
     ofParameter<float>  slider_randomPeriod;
     
     // RECORDING GUI
-    ofxDatGui*          guiDrawing;
     ofParameterGroup    parametersRecording;
     ofParameter<bool>   startStopRecording;
     ofParameter<int>    framesToRecord;
     ofParameter<string> recFilename;
 
     // DRAWING GUI
+    ofxDatGui*          guiDrawing;
+    ofxDatGuiTheme*     theme;
+
     ofParameterGroup        parametersDrawing;
     ofParameter<int>        drawingSizeX;
     ofParameter<int>        drawingSizeY;
     ofxDatGuiMatrix*        drawingMatrix;
+    bool*                    drawingClear;
     void onGuiMatrixEvent(ofxDatGuiMatrixEvent e);
-    void changedMatrixX(int &i);
-    void changedMatrixY(int &i);
+    void onButtonEvent(ofxDatGuiButtonEvent e);
+    ofTexture           drawingTexture;
+    ofVec2f             drawingOffset;
+    void                setPixel(ofPixels &pix,int i, int j,ofColor color);
 
-
+    bool                showGUIs;
     
     
 };
