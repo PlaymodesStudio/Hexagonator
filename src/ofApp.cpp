@@ -16,6 +16,7 @@ void ofApp::setup(){
     /////////////////////////////
     /// VARS
     /////////////////////////////
+    isAdditive = false;
     showGUIs = true;
     mode = 0;
     numModes = 1;
@@ -60,12 +61,9 @@ void ofApp::setup(){
     slider_randomPeriod = 0.250;
     parametersRandom.setName("Random");
     parametersRandom.add(slider_howManyRandomHexagons.set("Num.Elem.", slider_howManyRandomHexagons,0,500));
-    parametersRandom.add(slider_decreaseRate.set("Fade Out", slider_decreaseRate,0.0,0.10));
-    
-    
-    
+    parametersRandom.add(slider_decreaseRate.set("Fade Out", slider_decreaseRate,0.0000,0.1000));
     parametersRandom.add(slider_randomPeriod.set("Period(ms)", slider_randomPeriod,0.0,1000.0));
-    
+    parametersRandom.add(isAdditive.set("Additive",false));
     
     // RECORDING GUI
     parametersRecording.setName("Recording");
@@ -73,6 +71,7 @@ void ofApp::setup(){
     parametersRecording.add(framesToRecord.set("frames to Rec", 100, 1, 99999));
     parametersRecording.add(recFilename.set("Filename", ofGetTimestampString()+".mov"));
 
+    
     // DRAWING PARAMS GUI
     theme = new ofxDatGuiThemeCharcoal;
     ofColor randColor =  ofColor::indianRed;
@@ -121,10 +120,10 @@ void ofApp::setup(){
     parametersControl::getInstance().createGuiFromParams(parametersRandom, ofColor::red);
     parametersControl::getInstance().createGuiFromParams(parametersRecording, ofColor::white);
     parametersControl::getInstance().setup();
-    parametersControl::getInstance().setSliderPrecision(2,"Fade Out", 6);
     
     parametersControl::getInstance().distributeGuis();
     
+    parametersControl::getInstance().setSliderPrecision(1,"Fade Out",8);
     
     /////////////////////////////
     /// VIDEO RECORDING
@@ -2328,13 +2327,15 @@ void ofApp::updateRandom()
                 int whereIsIt = (whichHexagonToShow*7);
                 for(int j=0;j<7;j++)
                 {
-                    vecVboRandom_Colors[whereIsIt + j] = vecVboRandom_Colors[whereIsIt + j] + ofFloatColor(color_shaderColorA->r/255.0,color_shaderColorA->g/255.0,color_shaderColorA->b/255.0,color_shaderColorA->a/255.0);
+                    ofFloatColor toAdd = ofFloatColor(0.0,0.0,0.0,1.0);
+                    if(isAdditive) toAdd = vecVboRandom_Colors[whereIsIt + j];
+                    vecVboRandom_Colors[whereIsIt + j] = toAdd + ofFloatColor(color_shaderColorA->r/255.0,color_shaderColorA->g/255.0,color_shaderColorA->b/255.0,color_shaderColorA->a/255.0);
                 }
                 lastRandomTime = ofGetElapsedTimeMillis();
             }
         }
     }
-    
+    cout << isAdditive << endl;
     vboRandom.updateColorData(vecVboRandom_Colors.data(),vecVboRandom_Colors.size());
     
     

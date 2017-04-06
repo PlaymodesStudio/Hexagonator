@@ -690,7 +690,9 @@ void parametersControl::listenerFunction(ofAbstractParameter& e){
 
 void parametersControl::setSliderPrecision(int guiId,string sliderName, int p)
 {
-    datGuis[guiId]->getSlider(sliderName)->setPrecision(p);
+    ofxDatGuiSlider* s = datGuis[guiId]->getSlider(sliderName);
+    s->setPrecision(p);
+    cout << "Setting precision for slider : " << s->getLabel() << " label : " << sliderName <<  " __ from gui : " << datGuis[guiId]->getHeader()->getLabel() <<endl;
     
 }
 

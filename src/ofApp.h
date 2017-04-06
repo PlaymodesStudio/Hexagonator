@@ -237,6 +237,7 @@ class ofApp : public ofBaseApp{
     float                   lastRandomTime;
     
     
+    
     // DATA VECTORS
     vector<ofVec3f>         vertexsRibbon;
 
@@ -319,6 +320,7 @@ class ofApp : public ofBaseApp{
     ofParameter<int>    slider_howManyRandomHexagons;
     ofParameter<float>  slider_decreaseRate;
     ofParameter<float>  slider_randomPeriod;
+    ofParameter<bool>   isAdditive;
     
     // RECORDING GUI
     ofParameterGroup    parametersRecording;
