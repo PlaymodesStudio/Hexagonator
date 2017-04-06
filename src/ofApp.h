@@ -340,7 +340,6 @@ class ofApp : public ofBaseApp{
     ofTexture           drawingTexture;
     ofVec2f             drawingOffset;
     void                setPixel(ofPixels &pix,int i, int j,ofColor color);
-
     bool                showGUIs;
     
     

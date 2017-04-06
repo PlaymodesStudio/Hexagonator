@@ -1,5 +1,7 @@
 
 #include "ofApp.h"
+
+
 //--------------------------------------------------------------
 void ofApp::setup(){
     
@@ -205,7 +207,7 @@ void ofApp::setup(){
         syphonMax.unbind();
         
         // SERVER
-        //syphonServer.setName("Main");
+        syphonServer.setName("Main");
         
     }
     
@@ -479,9 +481,9 @@ void ofApp::updateCubeColorsMatrices()
         //        ofFloatColor cube2(0.0,fabs(1.0 * cos(ofGetElapsedTimef())),0.0,1.0);
         //        ofFloatColor cube3(0.0,0.0,fabs(1.0 * sin(ofGetElapsedTimef()/13.0)),1.0);
         
-        ofFloatColor cube1(0.0,0.75,0.85,1.0);
-        ofFloatColor cube2(0.0,0.5,0.65,1.0);
-        ofFloatColor cube3(0.0,0.25,0.55,1.0);
+        ofFloatColor cube1(1.0,1.05,1.0,1.0);
+        ofFloatColor cube2(0.45,0.45,0.45,1.0);
+        ofFloatColor cube3(0.0,0.0,0.0,1.0);
         
         matricesCubeColors[(i*3)+0] = cube1;
         matricesCubeColors[(i*3)+1] = cube2;
@@ -614,6 +616,7 @@ void ofApp::updateVertexsForQuad()
 //--------------------------------------------------------------
 void ofApp::update()
 {
+    
     updateOsc();
     updateTransformMatrices();
     
@@ -642,7 +645,7 @@ void ofApp::update()
     }
     
     drawingOffset = drawingOffset + ofVec2f(0.5,0.0);
-    //syphonServer.publishTexture(&fboOut.getTexture());
+    syphonServer.publishTexture(&fboOut.getTexture());
 }
 
 //--------------------------------------------------------------
@@ -2853,7 +2856,7 @@ void ofApp::onGuiMatrixEvent(ofxDatGuiMatrixEvent e)
                     {
                         cout << "++++ " << n << " :: " << startingAt+k << "  ### " ;
     //                    cout << " ++++" << n << " :: " << ofToString(startingAt + k) <<  "** "Ê;
-                        setPixel(pixels,startingAt+k,j,ofColor(color_shaderColorA));
+                        setPixel(pixels,startingAt+k,j%35,ofColor(color_shaderColorA));
                     }
                     else
                     {
@@ -2900,7 +2903,6 @@ void ofApp::onButtonEvent(ofxDatGuiButtonEvent e)
     {
         drawingMatrix->clearAll();
         ofxDatGuiMatrixEvent* e = new ofxDatGuiMatrixEvent(drawingMatrix,0,false);
-        
         onGuiMatrixEvent(*e);
     }
 }

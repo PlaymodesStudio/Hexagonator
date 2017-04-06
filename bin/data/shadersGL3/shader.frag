@@ -43,7 +43,7 @@ void main()
 {
     if(u_source==0)
     {
-        if((u_textureSource==0)||(u_textureSource==1)||(u_textureSource==2)||(u_textureSource==3)||((u_textureSource==4)))
+        if((u_textureSource==0)||(u_textureSource==1)||(u_textureSource==2)||(u_textureSource==3))
         {
             out_color = texture(uTexture, out_vTexCoord);
             
