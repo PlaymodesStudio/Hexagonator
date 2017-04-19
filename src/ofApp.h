@@ -112,7 +112,7 @@ class ofApp : public ofBaseApp{
     // VIDEO
     ofVideoPlayer           videoPlayer;
     string                  videoFilename;
-    string                  currentFolderName;
+    string                  currentRecordingFolderName;
     int                     recordedFrame;
     
     // SYPHON
@@ -271,15 +271,14 @@ class ofApp : public ofBaseApp{
     
     // VIDEO RECORDING
     ofxVideoRecorder        videoRecorder;
-    bool                    isRecording;
-    string                  fileName;
+    //bool                    isRecording;
     string                  fileExt;
     int                     desiredFramerate;
-    void recordingComplete(ofxVideoRecorderOutputFileCompleteEventArgs& args);
-
-    ofxAVScreenCapture      AVScreenCapture;
+    //void                    recordingComplete(ofxVideoRecorderOutputFileCompleteEventArgs& args);
+    ofxOscSender            oscRecordingSender;
     
-    void                    showGUI(bool b);
+    
+    
     
     //GUI
     //Each gui window is a parameterGroup, each parameter in parameterGroup a element in the gui. The parametersControl class keeps parameterGroup and gui is sync. The translation of parameterGroup to datgui elements is as follows:
@@ -314,6 +313,7 @@ class ofApp : public ofBaseApp{
     void                changedTexCoord(int &i);
     void                changedTexSource(int &i);
     void                changedSource(int &i);
+    void                changedIsRecording(bool &b);
     
     // RANDOM GUI
     ofParameterGroup    parametersRandom;
@@ -324,14 +324,14 @@ class ofApp : public ofBaseApp{
     
     // RECORDING GUI
     ofParameterGroup    parametersRecording;
-    ofParameter<bool>   startStopRecording;
+    ofParameter<bool>   isRecording;
     ofParameter<int>    framesToRecord;
     ofParameter<string> recFilename;
 
     // DRAWING GUI
     ofxDatGui*          guiDrawing;
     ofxDatGuiTheme*     theme;
-
+    ofParameter<int>    drawingOffset;
     ofParameterGroup        parametersDrawing;
     ofParameter<int>        drawingSizeX;
     ofParameter<int>        drawingSizeY;
@@ -340,9 +340,11 @@ class ofApp : public ofBaseApp{
     void onGuiMatrixEvent(ofxDatGuiMatrixEvent e);
     void onButtonEvent(ofxDatGuiButtonEvent e);
     ofTexture           drawingTexture;
-    ofVec2f             drawingOffset;
     void                setPixel(ofPixels &pix,int i, int j,ofColor color);
+    
     bool                showGUIs;
+    void                 showGUI(bool b);
+
     
     
 };

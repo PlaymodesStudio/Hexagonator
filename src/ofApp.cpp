@@ -10,7 +10,7 @@ void ofApp::setup(){
     ofDisableArbTex();
     
     ofSetVerticalSync(true);
-    ofSetFrameRate(60);
+//    ofSetFrameRate(30);
     ofBackground(32);
     
     /////////////////////////////
@@ -67,10 +67,10 @@ void ofApp::setup(){
     
     // RECORDING GUI
     parametersRecording.setName("Recording");
-    parametersRecording.add(startStopRecording.set("Recording", false));
-    parametersRecording.add(framesToRecord.set("frames to Rec", 100, 1, 99999));
-    parametersRecording.add(recFilename.set("Filename", ofGetTimestampString()+".mov"));
+    parametersRecording.add(isRecording.set("Recording", false));
+    parametersRecording.add(framesToRecord.set("frames to Rec", 120, 1, 99999));
 
+    isRecording.addListener(this, &ofApp::changedIsRecording);
     
     // DRAWING PARAMS GUI
     theme = new ofxDatGuiThemeCharcoal;
@@ -97,12 +97,16 @@ void ofApp::setup(){
     
     //ofxDatGuiButton* button = new ofxDatGuiButton("Clear");
     guiDrawing->addButton("Clear");
+    drawingOffset.set("Offset X", 0, 0, 32);
+    guiDrawing->addSlider(drawingOffset);
     guiDrawing->onButtonEvent(this,&ofApp::onButtonEvent);
     guiDrawing->setVisible(false);
     guiDrawing->setPosition(ofGetWidth() - 550,ofGetHeight()-550);
     //ofxDatGuiButton* b = guiDrawing->addButton("Clear");
     
-
+    // osc sender to communicate with Generator
+    oscRecordingSender.setup("localhost", 12345);
+    
     // 400 .. 10 cols
     // 350 .. 9 cols
     // 300 .. 8
@@ -223,7 +227,7 @@ void ofApp::setup(){
         maskWireframe.load("./testMedia/masks/wireYellow.png");
         
         // VIDEO
-        videoFilename = "./testMedia/rings.mov";
+        videoFilename = "./testMedia/ringsH264.mov";
         videoPlayer.load(videoFilename);
         videoPlayer.setLoopState(OF_LOOP_NORMAL);
         if(dropdown_whichTextureSource == HEX_TEXTURE_VIDEO) videoPlayer.play();
@@ -303,7 +307,7 @@ void ofApp::setup(){
     ///////////////////////////////////////////
     
     usedHexagons.resize(hexagonCanvas.getNumHexagons(),false);
-    occupyOneHexagon(ofVec2f(10,0),0);
+    //occupyOneHexagon(ofVec2f(10,0),0);
     
     int howManyHexagonsOccupied = 0;
     for(int i=0;i<usedHexagons.size();i++)
@@ -398,29 +402,32 @@ void ofApp::setup(){
 void ofApp::updateOsc()
 {
     float now = ofGetElapsedTimef();
+    ofxOscMessage m;
     
-    if(oscReceiver.hasWaitingMessages())
+    while(oscReceiver.hasWaitingMessages())
     {
+        oscReceiver.getNextMessage(m);
         usingOsc = true;
         
         lastTimeWeReceivedOsc = now;
+//        if(isRecording) cout << "Osc In While Recording..." << endl;
+//        if(isRecording) cout << " i : " << 0 << " : " << m.getArgAsFloat(0) << endl;
+    }
         
-        ofxOscMessage m;
-        oscReceiver.getNextMessage(m);
-        //cout << m.getAddress() << endl;
+    //cout << m.getAddress() << endl;
+    
+    int whichId;
+    int whichRing;
+    
+    for(int i=0;i<m.getNumArgs();i++)
+    {
+        //int                         getHexagonIndex(int x, int y){return hexagonsIndexData[x][y];};
+        whichRing = i % 35;
+        whichId = int(float(i) / 35.0);
         
-        int whichId;
-        int whichRing;
+        // save the osc value in the vector<vector<>>
+        vecOsc[whichId][whichRing] = m.getArgAsFloat(i);
         
-        for(int i=0;i<m.getNumArgs();i++)
-        {
-            //int                         getHexagonIndex(int x, int y){return hexagonsIndexData[x][y];};
-            whichRing = i % 35;
-            whichId = int(float(i) / 35.0);
-            
-            // save the osc value in the vector<vector<>>
-            vecOsc[whichId][whichRing] = m.getArgAsFloat(i);
-        }
         
     }
     
@@ -643,7 +650,6 @@ void ofApp::update()
         videoPlayer.update();
     }
     
-    drawingOffset = drawingOffset + ofVec2f(0.5,0.0);
     syphonServer.publishTexture(&fboOut.getTexture());
 }
 
@@ -866,16 +872,19 @@ void ofApp::draw()
     }
     
     /// DRAW THE MASK
+    ofEnableBlendMode(OF_BLENDMODE_ALPHA);
     if(toggle_showLayout)
     {
         ofSetColor(128,128,128,128);
-        maskWireframe.draw(0,0,1200,1200);
+        if(!isRecording) maskWireframe.draw(0,0,1200,1200);
+        
     }
     if(toggle_drawMask)
     {
         ofSetColor(255);
         mask.draw(0,0,1200,1200);
     }
+    ofDisableBlendMode();
     
     /// DRAW VIDEO FILE INFO
     if(isRecording) ofSetColor(255,0,0);
@@ -985,39 +994,118 @@ void ofApp::draw()
     
     
     
-    if(isRecording && (dropdown_whichSource==HEX_SOURCE_TEXTURE)&&(dropdown_whichTextureSource == HEX_TEXTURE_VIDEO))
+    if(isRecording)
     {
-        //currentFolderName
-        
-        if(recordedFrame>videoPlayer.getTotalNumFrames()-1)
+        // RECORDING FROM TEXTURE!!
+        ////////////////////////////
+        if  ((dropdown_whichSource==HEX_SOURCE_TEXTURE))
         {
-            // stop the recording
-            isRecording = false;
-            recordedFrame = 0;
-            videoPlayer.play();
-            videoPlayer.setPaused(false);
+            // RECORDING VIDEO !!
+            //////////////////////
+            if(dropdown_whichTextureSource == HEX_TEXTURE_VIDEO)
+            {
+                if(recordedFrame>videoPlayer.getTotalNumFrames()-1)
+                {
+                    // stop the recording
+                    isRecording = false;
+                    recordedFrame = 0;
+                    videoPlayer.play();
+                    videoPlayer.setPaused(false);
+                    cout << "Stopping Recording in Video Texture mode" << endl;
+                    
+                }
+                else
+                {
+                    cout << "Rendering video : Length " << videoPlayer.getTotalNumFrames() << " // Rec.Frame is  = " << recordedFrame << " VideopPlayerCurrentFrame = " << videoPlayer.getCurrentFrame() <<endl;
+                    
+                    ofImage currentFrame;
+                    ofPixels pixels;
+                    fboOut.readToPixels(pixels);
+                    currentFrame.allocate(fboResolution.x,fboResolution.y, OF_IMAGE_COLOR);
+                    currentFrame.setFromPixels(pixels);
+                    currentFrame.save(currentRecordingFolderName + "/" +ofToString(recordedFrame) +".png" );
+                    
+                    videoPlayer.nextFrame();
+                    
+                    
+                }
+                
+                recordedFrame = recordedFrame + 1;
+            }
             
+            // RECORDING SYPHON !!
+            //////////////////////
+            if(dropdown_whichTextureSource==HEX_TEXTURE_SYPHON)
+            {
+                if(recordedFrame>=framesToRecord)
+                {
+                    // stop the recording
+                    isRecording = false;
+                    recordedFrame = 0;
+                    cout << "Stopping Recording in Syphon mode" << endl;
+                }
+                else
+                {
+                    // recording stuff ...
+                    cout << "Rendering Syphon : Length  // Rec.Frame is  = " << recordedFrame << endl;
+                    
+                    ofImage currentFrame;
+                    ofPixels pixels;
+                    fboOut.readToPixels(pixels);
+                    currentFrame.allocate(fboResolution.x,fboResolution.y, OF_IMAGE_COLOR);
+                    currentFrame.setFromPixels(pixels);
+                    currentFrame.save(currentRecordingFolderName +"/" +ofToString(recordedFrame) +".png" );
+                    
+                }
+                
+                recordedFrame = recordedFrame + 1;
+                ofxOscMessage m;
+                m.setAddress("/nextFrame");
+                oscRecordingSender.sendMessage(m);
+                
+                ofSleepMillis(250);
+                
+                
+            }
+            
+
         }
-        else
+
+        // RECORDING RANDOM !!
+        //////////////////////
+        if(dropdown_whichSource==HEX_SOURCE_RANDOM)
         {
-            cout << "Rendering video : Length " << videoPlayer.getTotalNumFrames() << " // Rec.Frames = " << recordedFrame << endl;
-            
-            ofImage currentFrame;
-            ofPixels pixels;
-            fboOut.readToPixels(pixels);
-            currentFrame.allocate(fboResolution.x,fboResolution.y, OF_IMAGE_COLOR);
-            currentFrame.setFromPixels(pixels);
-            currentFrame.save(currentFolderName + "/" +ofToString(recordedFrame) +".png" );
-            
-            videoPlayer.nextFrame();
-            
-            
-        }
+            if(recordedFrame>=framesToRecord)
+            {
+                // stop the recording
+                isRecording = false;
+                recordedFrame = 0;
+                cout << "Stopping Recording in Random mode" << endl;
+            }
+            else
+            {
+                // recording stuff ...
+                cout << "Rendering Random : Length  // Rec.Frame is  = " << recordedFrame << endl;
+                
+                ofImage currentFrame;
+                ofPixels pixels;
+                fboOut.readToPixels(pixels);
+                currentFrame.allocate(fboResolution.x,fboResolution.y, OF_IMAGE_COLOR);
+                currentFrame.setFromPixels(pixels);
+                currentFrame.save(currentRecordingFolderName +"/" +ofToString(recordedFrame) +".png" );
+
+            }
         
-        recordedFrame = recordedFrame + 1;
+            recordedFrame = recordedFrame + 1;
+            ofxOscMessage m;
+            m.setAddress("/nextFrame");
+            oscRecordingSender.sendMessage(m);
+            
+            ofSleepMillis(250);
+
+        }
         
     }
-    
     
     
     
@@ -1094,65 +1182,64 @@ void ofApp::keyPressed(int key){
     {
         toggle_useTBOMatrix = !toggle_useTBOMatrix;
     }
-    else if(key=='q')
-    {
-        isRecording=!isRecording;
-        
-        if(isRecording)
-        {
-            if((dropdown_whichSource== HEX_SOURCE_TEXTURE)&&(dropdown_whichTextureSource == HEX_TEXTURE_VIDEO)) // video
-            {
-                // extract video filename
-                string videoName;
-                vector<string> vfs = ofSplitString(videoFilename, "/");
-                videoName = vfs[vfs.size()-1];
-                
-                // create folder
-                string path = "./videoCaptures/" + videoName + "_" +ofToString(ofGetTimestampString());
-                currentFolderName = path;
-                ofDirectory dir(path);
-                if(!dir.exists())
-                {
-                    dir.create(true);
-                    //videoPlayer.stop();
-                    videoPlayer.setPosition(0.0);
-                    videoPlayer.setPaused(true);
-                    
-                    recordedFrame = 0;
-                    
-                    cout << "STARTING NEW RENDERING : Video Pos ." << videoPlayer.getPosition() << endl;
-                }
-            }
-            else
-            {
-                recordedFrame = 0;
-                AVScreenCapture.startRecording(ofToString(ofGetTimestampString())+".mov", 60.0);
-            }
-        }
-        else  // NOT RECORDING
-        {
-            if(dropdown_whichTextureSource != HEX_TEXTURE_VIDEO)
-            {
-                AVScreenCapture.stopRecording();
-            }
-            else if (dropdown_whichTextureSource == HEX_TEXTURE_VIDEO)
-            {
-                videoPlayer.play();
-            }
-        }
-        //        if(!isRecording)
-        //        {
-        //            cout << ">>>>> STOP RECORDING" << endl;
-        //            videoRecorder.close();
-        //        }
-        //        else
-        //        {
-        //            cout << ">>>> START RECORDING !!!!! " << endl;
-        //            videoRecorder.setup("./recordings/" +ofGetTimestampString()+fileExt, fboOut.getWidth(), fboOut.getHeight(), desiredFramerate, 0, 0);
-        //            videoRecorder.start();
-        //        }
-    }
-    
+//    else if(key=='q')
+//    {
+//
+//        if(isRecording)
+//        {
+//            if((dropdown_whichSource== HEX_SOURCE_TEXTURE)&&(dropdown_whichTextureSource == HEX_TEXTURE_VIDEO)) // video
+//            {
+//                // extract video filename
+//                string videoName;
+//                vector<string> vfs = ofSplitString(videoFilename, "/");
+//                videoName = vfs[vfs.size()-1];
+//                
+//                // create folder
+//                string path = "./videoCaptures/" + videoName + "_" +ofToString(ofGetTimestampString());
+//                currentFolderName = path;
+//                ofDirectory dir(path);
+//                if(!dir.exists())
+//                {
+//                    dir.create(true);
+//                    //videoPlayer.stop();
+//                    videoPlayer.setPosition(0.0);
+//                    videoPlayer.setPaused(true);
+//                    
+//                    recordedFrame = 0;
+//                    
+//                    cout << "STARTING NEW RENDERING : Video Pos ." << videoPlayer.getPosition() << endl;
+//                }
+//            }
+//            else
+//            {
+//                recordedFrame = 0;
+//                AVScreenCapture.startRecording(ofToString(ofGetTimestampString())+".mov", 60.0);
+//            }
+//        }
+//        else  // NOT RECORDING
+//        {
+//            if(dropdown_whichTextureSource != HEX_TEXTURE_VIDEO)
+//            {
+//                AVScreenCapture.stopRecording();
+//            }
+//            else if (dropdown_whichTextureSource == HEX_TEXTURE_VIDEO)
+//            {
+//                videoPlayer.play();
+//            }
+//        }
+//        //        if(!isRecording)
+//        //        {
+//        //            cout << ">>>>> STOP RECORDING" << endl;
+//        //            videoRecorder.close();
+//        //        }
+//        //        else
+//        //        {
+//        //            cout << ">>>> START RECORDING !!!!! " << endl;
+//        //            videoRecorder.setup("./recordings/" +ofGetTimestampString()+fileExt, fboOut.getWidth(), fboOut.getHeight(), desiredFramerate, 0, 0);
+//        //            videoRecorder.start();
+//        //        }
+//    }
+//    
     
 }
 
@@ -1289,14 +1376,14 @@ ofPoint ofApp::projectPointToLine(ofPoint Point,ofPoint LineStart,ofPoint LineEn
     
     return Intersection;//.length();
 }
-//--------------------------------------------------------------
-void ofApp::recordingComplete(ofxVideoRecorderOutputFileCompleteEventArgs& args){
-    cout << "The recoded video file is now complete." << endl;
-}
+////--------------------------------------------------------------
+//void ofApp::recordingComplete(ofxVideoRecorderOutputFileCompleteEventArgs& args){
+//    cout << "The recoded video file is now complete." << endl;
+//}
 
 //--------------------------------------------------------------
 void ofApp::exit(){
-    ofRemoveListener(videoRecorder.outputFileCompleteEvent, this, &ofApp::recordingComplete);
+    //ofRemoveListener(videoRecorder.outputFileCompleteEvent, this, &ofApp::recordingComplete);
     videoRecorder.close();
 }
 
@@ -1314,7 +1401,117 @@ void ofApp::resetVecOscVector()
     }
     
 }
+//--------------------------------------------------------------
+void ofApp::changedIsRecording(bool &b)
+{
+    cout << "Changed is Recording to : " << isRecording << endl;
+    //isRecording=!isRecording;
+    
+    if(isRecording)
+    {
+        if((dropdown_whichSource== HEX_SOURCE_TEXTURE))
+        {
+            if((dropdown_whichTextureSource == HEX_TEXTURE_VIDEO))
+            {
+                // RECORDING VIDEO
+                // extract video filename
+                string videoName;
+                vector<string> vfs = ofSplitString(videoFilename, "/");
+                videoName = vfs[vfs.size()-1];
+                
+                // create folder
+                string path = "./videoCaptures/" + videoName + "_" +ofToString(ofGetTimestampString());
+                currentRecordingFolderName = path;
+                ofDirectory dir(path);
+                if(!dir.exists())
+                {
+                    dir.create(true);
+                    //videoPlayer.stop();
+                    videoPlayer.setPosition(0.0);
+                    videoPlayer.setPaused(true);
+                    
+                    recordedFrame = 0;
+                    
+                    cout << "STARTING NEW RENDERING : Video Pos ." << videoPlayer.getPosition() << endl;
+                }
+            }
+            else if((dropdown_whichTextureSource == HEX_TEXTURE_SYPHON))
+            {
+                
+                // RECORDING SYPHON
+                // create folder
+                string path = "./videoCaptures/Syphon_" + ofToString(ofGetTimestampString());
+                currentRecordingFolderName = path;
+                ofDirectory dir(path);
+                if(!dir.exists())
+                {
+                    dir.create(true);
 
+                    // SENDING DATA TO GET GENERATOR READY
+                    ofxOscMessage m;
+                    m.setAddress("/phasor_1/Offline_mode");
+                    m.addBoolArg(true);
+                    oscRecordingSender.sendMessage(m);
+                    m.setAddress("/phasor_2/Offline_mode");
+                    m.addBoolArg(true);
+                    oscRecordingSender.sendMessage(m);
+
+                    recordedFrame = 0;
+                    cout << "STARTING NEW RENDERING : SYPHON !!" << endl;
+                }
+            }
+
+        }
+        if((dropdown_whichSource == HEX_SOURCE_RANDOM))
+        {
+            // RECORDING RANDOM
+            
+            // create folder
+            string path = "./videoCaptures/Random_" + ofToString(ofGetTimestampString());
+            currentRecordingFolderName = path;
+            ofDirectory dir(path);
+            if(!dir.exists())
+            {
+                dir.create(true);
+                recordedFrame = 0;
+                
+                // SENDING DATA TO GET GENERATOR READY
+                ofxOscMessage m;
+                m.setAddress("/phasor_1/Offline_mode");
+                m.addBoolArg(true);
+                oscRecordingSender.sendMessage(m);
+                m.setAddress("/phasor_2/Offline_mode");
+                m.addBoolArg(true);
+                oscRecordingSender.sendMessage(m);
+
+                cout << "STARTING NEW RENDERING : RANDOM !! " << endl;
+            }
+        }
+    }
+    else  // STOPPED RECORDING
+    {
+        
+        if((dropdown_whichTextureSource == HEX_TEXTURE_SYPHON)||(dropdown_whichSource==HEX_SOURCE_RANDOM))
+        {
+            ofxOscMessage m;
+            m.setAddress("/phasor_1/Offline_mode");
+            m.addBoolArg(false);
+            oscRecordingSender.sendMessage(m);
+            m.setAddress("/phasor_2/Offline_mode");
+            m.addBoolArg(false);
+            oscRecordingSender.sendMessage(m);
+            
+            cout << "Setting false offline mode" << endl;
+
+        }
+        if (dropdown_whichTextureSource == HEX_TEXTURE_VIDEO)
+        {
+            videoPlayer.play();
+        }
+    }
+
+    
+}
 //--------------------------------------------------------------
 void ofApp::changedTexCoord(int &i)
 {
@@ -2335,7 +2532,6 @@ void ofApp::updateRandom()
             }
         }
     }
-    cout << isAdditive << endl;
     vboRandom.updateColorData(vecVboRandom_Colors.data(),vecVboRandom_Colors.size());
     
     
@@ -2796,10 +2992,6 @@ void ofApp::onGuiMatrixEvent(ofxDatGuiMatrixEvent e)
     
     int ring;
     int id;
-
-    cout << e.child%32 << endl;
-    cout << e.child/32 << endl;
-    cout << " ..... " << endl;
     
     ofPixels pixels;
     pixels.allocate(64, 35,OF_PIXELS_RGB);
@@ -2850,25 +3042,25 @@ void ofApp::onGuiMatrixEvent(ofxDatGuiMatrixEvent e)
             cout << " Starting to copy at : " << startingAt << endl;
             for(int k=0;k<maxId+1;k++)
             {
-                int n = startingAt +k;
+                int n = startingAt +k ;
                 if(startingAt<64)
                 {
                     if(vecMatrix[n%(maxId+1)][j]==true)
                     {
-                        cout << "++++ " << n << " :: " << startingAt+k << "  ### " ;
+                        cout << "++++ " << n << " :: " << n << "  ### " ;
     //                    cout << " ++++" << n << " :: " << ofToString(startingAt + k) <<  "** "Ê;
-                        setPixel(pixels,startingAt+k,j%35,ofColor(color_shaderColorA));
+                        setPixel(pixels,n,j%35,ofColor(color_shaderColorA));
                     }
                     else
                     {
-                        cout << "--- " << n << " :: " << startingAt+k << "  ### " ;
+                        cout << "--- " << n << " :: " << n << "  ### " ;
     //                    cout << " ----" << n << " :: " << ofToString(startingAt + k) <<  "** "Ê;
-                        setPixel(pixels,startingAt+k,j,ofColor::black);
+                        setPixel(pixels,n,j,ofColor::black);
                     }
                 }
                 else
                 {
-                    cout << "-------------- " << n << " :: " << startingAt+k << "  ### " ;
+                    cout << "-------------- " << n << " :: " << n << "  ### " ;
                     //                    cout << " ----" << n << " :: " << ofToString(startingAt + k) <<  "** "Ê;
                     //setPixel(pixels,startingAt+k,j,ofColor::red);
                 }
