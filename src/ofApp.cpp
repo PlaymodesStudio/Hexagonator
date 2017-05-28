@@ -675,7 +675,7 @@ void ofApp::draw()
     fboOut.begin();
     {
         // draw background
-        ofSetColor(0,0,0);
+        ofSetColor(0,0,0,255);
         ofFill();
         ofDrawRectangle(0,0,1200,1200);
         
@@ -1021,7 +1021,7 @@ void ofApp::draw()
                     ofImage currentFrame;
                     ofPixels pixels;
                     fboOut.readToPixels(pixels);
-                    currentFrame.allocate(fboResolution.x,fboResolution.y, OF_IMAGE_COLOR);
+                    currentFrame.allocate(fboResolution.x,fboResolution.y, OF_IMAGE_COLOR_ALPHA);
                     currentFrame.setFromPixels(pixels);
                     currentFrame.save(currentRecordingFolderName + "/" +ofToString(recordedFrame) +".png" );
                     
@@ -1052,7 +1052,7 @@ void ofApp::draw()
                     ofImage currentFrame;
                     ofPixels pixels;
                     fboOut.readToPixels(pixels);
-                    currentFrame.allocate(fboResolution.x,fboResolution.y, OF_IMAGE_COLOR);
+                    currentFrame.allocate(fboResolution.x,fboResolution.y, OF_IMAGE_COLOR_ALPHA);
                     currentFrame.setFromPixels(pixels);
                     currentFrame.save(currentRecordingFolderName +"/" +ofToString(recordedFrame) +".png" );
                     
@@ -1090,7 +1090,7 @@ void ofApp::draw()
                 ofImage currentFrame;
                 ofPixels pixels;
                 fboOut.readToPixels(pixels);
-                currentFrame.allocate(fboResolution.x,fboResolution.y, OF_IMAGE_COLOR);
+                currentFrame.allocate(fboResolution.x,fboResolution.y, OF_IMAGE_COLOR_ALPHA);
                 currentFrame.setFromPixels(pixels);
                 currentFrame.save(currentRecordingFolderName +"/" +ofToString(recordedFrame) +".png" );
 
@@ -1134,7 +1134,7 @@ void ofApp::draw()
         saveNow = false;
         ofPixels pixels;
         fboOut.readToPixels(pixels);
-        imageToSave.allocate(fboResolution.x,fboResolution.y, OF_IMAGE_COLOR);
+        imageToSave.allocate(fboResolution.x,fboResolution.y, OF_IMAGE_COLOR_ALPHA);
         imageToSave.setFromPixels(pixels);
         imageToSave.save("./captures/" + ofGetTimestampString() +".png" );
     }
@@ -1449,10 +1449,16 @@ void ofApp::changedIsRecording(bool &b)
 
                     // SENDING DATA TO GET GENERATOR READY
                     ofxOscMessage m;
-                    m.setAddress("/phasor_1/Offline_mode");
+                    m.setAddress("/phasor_1/Offline_Mode");
                     m.addBoolArg(true);
                     oscRecordingSender.sendMessage(m);
-                    m.setAddress("/phasor_2/Offline_mode");
+                    m.setAddress("/phasor_2/Offline_Mode");
+                    m.addBoolArg(true);
+                    oscRecordingSender.sendMessage(m);
+                    m.setAddress("/phasor_3/Offline_Mode");
+                    m.addBoolArg(true);
+                    oscRecordingSender.sendMessage(m);
+                    m.setAddress("/phasor_4/Offline_Mode");
                     m.addBoolArg(true);
                     oscRecordingSender.sendMessage(m);
 
@@ -1477,10 +1483,16 @@ void ofApp::changedIsRecording(bool &b)
                 
                 // SENDING DATA TO GET GENERATOR READY
                 ofxOscMessage m;
-                m.setAddress("/phasor_1/Offline_mode");
+                m.setAddress("/phasor_1/Offline_Mode");
                 m.addBoolArg(true);
                 oscRecordingSender.sendMessage(m);
-                m.setAddress("/phasor_2/Offline_mode");
+                m.setAddress("/phasor_2/Offline_Mode");
+                m.addBoolArg(true);
+                oscRecordingSender.sendMessage(m);
+                m.setAddress("/phasor_3/Offline_Mode");
+                m.addBoolArg(true);
+                oscRecordingSender.sendMessage(m);
+                m.setAddress("/phasor_4/Offline_Mode");
                 m.addBoolArg(true);
                 oscRecordingSender.sendMessage(m);
 
@@ -1494,10 +1506,16 @@ void ofApp::changedIsRecording(bool &b)
         if((dropdown_whichTextureSource == HEX_TEXTURE_SYPHON)||(dropdown_whichSource==HEX_SOURCE_RANDOM))
         {
             ofxOscMessage m;
-            m.setAddress("/phasor_1/Offline_mode");
+            m.setAddress("/phasor_1/Offline_Mode");
             m.addBoolArg(false);
             oscRecordingSender.sendMessage(m);
-            m.setAddress("/phasor_2/Offline_mode");
+            m.setAddress("/phasor_2/Offline_Mode");
+            m.addBoolArg(false);
+            oscRecordingSender.sendMessage(m);
+            m.setAddress("/phasor_3/Offline_Mode");
+            m.addBoolArg(false);
+            oscRecordingSender.sendMessage(m);
+            m.setAddress("/phasor_4/Offline_Mode");
             m.addBoolArg(false);
             oscRecordingSender.sendMessage(m);
             
@@ -2375,24 +2393,32 @@ void ofApp::prepareCucs()
         // CALCULATE SIDES (SAME FOR EVERY HEXAGON)
         calculateSides();
         ofVec2f idRing = hexagonCanvas.getHexagonIdAndRing(i);
+
+        // PLENA TOT
+        int choosedPattern; // = int(ofRandom(168,183));
         
-        int choosedPattern = int(ofRandom(168,183));
-        
-        //        if(int(idRing.y)%3==0)
-        //        {
-        //            if(int(idRing.x)%2==0)
-        //            {
-        //                choosedPattern = 134;
-        //            }
-        //            else if(int(idRing.x)%2==1)
-        //            {
-        //                choosedPattern = 126;
-        //            }
-        //        }
-        //        else
-        //        {
-        //            choosedPattern = 90;
-        //        }
+        if(int(idRing.y)%2==0)
+        {
+            if(int(idRing.x)%2==0)
+            {
+                choosedPattern = 181;
+            }
+            else if(int(idRing.x)%2==1)
+            {
+                choosedPattern = 181;
+            }
+        }
+        else if(int(idRing.y)%2==1)
+        {
+            if(int(idRing.x)%2==0)
+            {
+                choosedPattern = 181;
+            }
+            else if(int(idRing.x)%2==1)
+            {
+                choosedPattern = 181;
+            }
+        }
         
         pmHexagonTile actualTilePattern = hexagonTilesDictionary[choosedPattern];
         int numCucsActualHexagon = actualTilePattern.getConnections().size(); //int(ofRandom(0, 6));
@@ -2476,7 +2502,7 @@ void ofApp::prepareRandom()
     // in Random mode we use the same ammount of data ... we just change the colors to hide/show hexagons
     vecVboRandom_Verts.resize(vecVboTex_Verts.size());
     vecVboRandom_Faces.resize(vecVboTex_Faces.size());
-    vecVboRandom_Colors.resize(vecVboTex_Colors.size(),ofFloatColor(0.0,0.0,0.0,1.0));
+    vecVboRandom_Colors.resize(vecVboTex_Colors.size(),ofFloatColor(0.0,0.0,0.0,0.0));
     
     // initialize arrays of verts and indeces
     vecVboRandom_Verts = vecVboTex_Verts;
@@ -2509,7 +2535,7 @@ void ofApp::updateRandom()
     {
         vecVboRandom_Colors[i] = vecVboRandom_Colors[i] - slider_decreaseRate; //*((1-(vecVboRandom_Colors[i].r))*(1-(vecVboRandom_Colors[i].r)));
         //        if(vecVboRandom_Colors[i].r!=0.0) cout << slider_decreaseRate*((1-(vecVboRandom_Colors[i].r))*(1-(vecVboRandom_Colors[i].r))) << endl;
-        
+        //vecVboRandom_Colors[i] = ofFloatColor(vecVboRandom_Colors[i].r - slider_decreaseRate,vecVboRandom_Colors[i].g - slider_decreaseRate,vecVboRandom_Colors[i].b - slider_decreaseRate,vecVboRandom_Colors[i].a - slider_decreaseRate);
     }
     
     if(ofGetElapsedTimeMillis()-lastRandomTime >=slider_randomPeriod)
@@ -2526,7 +2552,7 @@ void ofApp::updateRandom()
                 {
                     ofFloatColor toAdd = ofFloatColor(0.0,0.0,0.0,1.0);
                     if(isAdditive) toAdd = vecVboRandom_Colors[whereIsIt + j];
-                    vecVboRandom_Colors[whereIsIt + j] = toAdd + ofFloatColor(color_shaderColorA->r/255.0,color_shaderColorA->g/255.0,color_shaderColorA->b/255.0,color_shaderColorA->a/255.0);
+                    vecVboRandom_Colors[whereIsIt + j] =toAdd + ofFloatColor(color_shaderColorA->r/255.0,color_shaderColorA->g/255.0,color_shaderColorA->b/255.0,/*color_shaderColorA->a/255.0*/1.0);
                 }
                 lastRandomTime = ofGetElapsedTimeMillis();
             }

@@ -11,7 +11,6 @@
 #include "parametersControl.h"
 #include "pmHexagonTile.hpp"
 #include "pmHexagonTileCanvas.hpp"
-#include "ofxEditableSVG.h"
 
 enum sourceTextureType
 {

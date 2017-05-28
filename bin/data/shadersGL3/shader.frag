@@ -47,6 +47,10 @@ void main()
         {
             out_color = texture(uTexture, out_vTexCoord);
             
+//            float luma = (out_color.r + out_color.g + out_color.b ) / 3.0;
+//            
+//            out_color = vec4(1.0,1.0,1.0,luma);
+            
         }
         else if (u_textureSource==4)
         {
