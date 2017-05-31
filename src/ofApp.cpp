@@ -199,7 +199,11 @@ void ofApp::setup(){
         //    syphon.setApplicationName("Simple Server");
         //    syphon.setServerName("");
         //    syphon.set("","Simple Server");
-        syphon.set("Gen_Grayscale","MIRABCN_Generator");
+        
+        dir.setup();
+        dirIdx = -1;
+        
+//        syphon.set("Gen_Grayscale","MIRABCN_Generator");
         syphon.bind();
         syphon.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
         syphon.unbind();
@@ -1540,6 +1544,12 @@ void ofApp::changedTexCoord(int &i)
 void ofApp::changedTexSource(int &i)
 {
     if(i==HEX_TEXTURE_VIDEO) videoPlayer.play();
+    else if(i == HEX_TEXTURE_SYPHON){
+        dirIdx++;
+        if(dirIdx > dir.size() - 1)
+            dirIdx = 0;
+        syphon.set(dir.getDescription(dirIdx));
+    }
     
     shader.begin();
     shader.setUniform1i("u_textureSource", dropdown_whichTextureSource);

@@ -343,7 +343,9 @@ class ofApp : public ofBaseApp{
     
     bool                showGUIs;
     void                 showGUI(bool b);
-
     
+    
+    ofxSyphonServerDirectory dir;
+    int dirIdx;
     
 };
